@@ -56,7 +56,7 @@ export interface VistaHome {
   totalProximos: number;
   verTodos: boolean;
   realizados: VistaFila[];
-  tdc: { par: string; compra: TdcMicro; venta: TdcMicro; tendencia: number[]; hora: string; enVivo: boolean; otros: { par: string; base: Divisa; compra: TdcMicro; venta: TdcMicro }[] };
+  tdc: { par: string; compra: TdcMicro; venta: TdcMicro; tendencia: number[]; hora: string; enVivo: boolean; pausado: boolean; otros: { par: string; base: Divisa; compra: TdcMicro; venta: TdcMicro }[] };
   cuentas: VistaCuenta[];
   totalMXN: Centavos;
 }
@@ -146,7 +146,7 @@ export function vistaHome(e: EstadoApp): VistaHome {
     totalProximos: todas.length,
     verTodos: e.verTodosLosPagos,
     realizados: [...hechas, ...pasados],
-    tdc: { par: parPrincipal, compra: principal.compra, venta: principal.venta, tendencia: arq.tendencia, hora: HORA_TDC, enVivo: !e.congelado, otros: otrosPares.map((par) => ({ par, base: par.split('/')[0] as Divisa, compra: e.tdcVivo[par].compra, venta: e.tdcVivo[par].venta })) },
+    tdc: { par: parPrincipal, compra: principal.compra, venta: principal.venta, tendencia: arq.tendencia, hora: HORA_TDC, enVivo: !e.congelado, pausado: e.pausado, otros: otrosPares.map((par) => ({ par, base: par.split('/')[0] as Divisa, compra: e.tdcVivo[par].compra, venta: e.tdcVivo[par].venta })) },
     cuentas: ctas.map((c) => ({ id: c.id, nombre: c.nombre, mascara: c.mascara, saldo: c.saldo, divisa: c.divisa })),
     totalMXN,
   };
@@ -243,7 +243,7 @@ export interface VistaPanel {
     tdc: TdcMicro | null; motivo: string | null; motivos: string[]; referencia: string;
   } | null;
   precio: {
-    estado: 'fijo' | 'vencido' | 'sinTdc'; tdc: TdcMicro | null; segundos: number; porVencer: boolean;
+    estado: 'fijo' | 'vencido' | 'sinTdc'; tdc: TdcMicro | null; segundos: number; porVencer: boolean; pausado: boolean;
     pagas: Centavos; pagasAprox: boolean; pagasDivisa: Divisa; recibe: Centavos; recibeDivisa: Divisa; destinatario: string; desde: string; sale: string | null;
     token: string; tokenError: string | null; confirmando: boolean;
   } | null;
@@ -410,7 +410,7 @@ export function vistaPanel(e: EstadoApp): VistaPanel | null {
     const estadoPrecio = sinTdc ? 'sinTdc' : fijo ? 'fijo' : 'vencido';
     const cotFija = fijo && cot ? cot : null;
     precio = {
-      estado: estadoPrecio, tdc: fijo ? fijo.tdc : vencido ? vencido.tdc : cotInd.tdc, segundos: fijo ? fijo.venceEn : 0, porVencer: !!fijo && fijo.venceEn <= 30,
+      estado: estadoPrecio, tdc: fijo ? fijo.tdc : vencido ? vencido.tdc : cotInd.tdc, segundos: fijo ? fijo.venceEn : 0, porVencer: !!fijo && fijo.venceEn <= 30, pausado: e.pausado,
       pagas: cotFija ? cotFija.pagas : cotInd.pagas, pagasAprox: !fijo && !sinTdc, pagasDivisa: origen.divisa, recibe: cotFija ? cotFija.recibe : cotInd.recibe, recibeDivisa: orden.destino.divisa, destinatario: recibeNombre, desde: origen.nombre,
       sale: fechaEsHoy || sinTdc ? null : `El dinero sale el ${fechaDia}`,
       token: panel.token, tokenError: panel.tokenError, confirmando: panel.confirmando,

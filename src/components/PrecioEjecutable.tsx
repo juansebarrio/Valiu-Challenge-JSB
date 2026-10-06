@@ -10,6 +10,8 @@ export interface PrecioEjecutableProps {
   tdc: TdcMicro | null;
   segundos: number;
   porVencer?: boolean;
+  /** Tecla P: la cuenta regresiva está detenida (demo). */
+  pausado?: boolean;
   pagas: Centavos;
   pagasAprox?: boolean;
   pagasDivisa: Divisa;
@@ -30,7 +32,7 @@ function anuncioDe(estado: PrecioEjecutableProps['estado'], segundos: number): s
 }
 
 /** Badge Success "Precio fijo por m:ss" (Warning en los últimos 30 s). Al vencer, "Vencido" va sobre el precio que venció y los montos vuelven al indicativo. */
-export const PrecioEjecutable: FC<PrecioEjecutableProps> = ({ estado, tdc, segundos, porVencer, pagas, pagasAprox, pagasDivisa, recibe, recibeDivisa, destinatario, desde, sale }) => {
+export const PrecioEjecutable: FC<PrecioEjecutableProps> = ({ estado, tdc, segundos, porVencer, pausado, pagas, pagasAprox, pagasDivisa, recibe, recibeDivisa, destinatario, desde, sale }) => {
   const anuncio = anuncioDe(estado, segundos);
   return (
     <div data-component="PrecioEjecutable" className="flex flex-col gap-3 rounded-sm border border-app-divider p-4">
@@ -39,7 +41,7 @@ export const PrecioEjecutable: FC<PrecioEjecutableProps> = ({ estado, tdc, segun
           <div className="flex items-center justify-between gap-3">
             <span className="text-caption font-bold text-app-ink-label">Precio ejecutable</span>
             {estado === 'fijo' ? (
-              <Badge tono={porVencer ? 'warning' : 'success'}>Precio fijo por {fmt.cuentaRegresiva(segundos)}</Badge>
+              <Badge tono={porVencer ? 'warning' : 'success'}>Precio fijo por {fmt.cuentaRegresiva(segundos)}{pausado ? ' · pausa' : ''}</Badge>
             ) : (
               <Badge tono="neutral">Vencido</Badge>
             )}

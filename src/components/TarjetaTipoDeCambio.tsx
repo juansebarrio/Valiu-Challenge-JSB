@@ -12,19 +12,21 @@ export interface TarjetaTipoDeCambioProps {
   tendencia: number[];
   hora: string;
   enVivo: boolean;
+  /** Tecla P: el indicativo está detenido a mano (demo). */
+  pausado?: boolean;
   /** Otros pares de tus posiciones, en una línea con sus dos lados. */
   otros?: { par: string; base: Divisa; compra: TdcMicro; venta: TdcMicro }[];
   tour?: string;
 }
 
 /** Borde 1 px #E2E4E9, sin sombra. USD/MXN arriba con la gráfica y EUR/MXN debajo. Seis decimales siempre. */
-export const TarjetaTipoDeCambio: FC<TarjetaTipoDeCambioProps> = ({ par, compra, venta, tendencia, hora, enVivo, otros = [], tour }) => {
+export const TarjetaTipoDeCambio: FC<TarjetaTipoDeCambioProps> = ({ par, compra, venta, tendencia, hora, enVivo, pausado, otros = [], tour }) => {
   const base = par.split('/')[0];
   return (
     <section data-component="TarjetaTipoDeCambio" data-tour={tour} aria-labelledby="tdc-titulo" className="flex flex-col gap-3 rounded-sm border border-app-divider bg-app-surface p-4">
       <div className="flex items-center justify-between">
         <h2 id="tdc-titulo" className="text-h3 font-semibold">Tipo de cambio</h2>
-        {enVivo ? <Badge tono="success">En vivo</Badge> : <Badge tono="neutral">Congelado</Badge>}
+        {pausado ? <Badge tono="neutral">En pausa</Badge> : enVivo ? <Badge tono="success">En vivo</Badge> : <Badge tono="neutral">Congelado</Badge>}
       </div>
       <span className="text-body font-semibold">{par}</span>
       <dl className="flex flex-col gap-1.5 tabular-nums">

@@ -1,8 +1,9 @@
 'use client';
-import { useEffect, useReducer, useRef } from 'react';
-import { oscilarTdc } from '@/lib/dinero';
+import { useCallback, useEffect, useReducer, useRef } from 'react';
 import * as fmt from '@/lib/format';
-import { CONFIRMANDO_MS, ESCENARIOS, HOY, OSCILACION_MS, OSCILACION_TDC, type ArquetipoId, type EscenarioNombre } from '@/data/escenario';
+import type { TablaPares } from '@/lib/fx';
+import { CONFIRMANDO_MS, ESCENARIOS, HOY, type ArquetipoId, type EscenarioNombre } from '@/data/escenario';
+import { useTdcEnVivo } from '@/hooks/useTdcEnVivo';
 import { estadoInicial, pagoPorId, reducer, type Accion } from '@/state/estado';
 import { estadoDeEscenario } from '@/state/escenarios';
 import { ordenDePago } from '@/state/derivados';
@@ -67,28 +68,32 @@ export function HomeApp({ arquetipo }: { arquetipo: ArquetipoId }) {
     else if (huboRecorrido.current) RECORRIDOS_VISTOS.add(arquetipo);
   }, [onboardingActivo, arquetipo]);
 
+  const { congelado, pausado, tdcBase } = estado;
   const hayFijo = estado.panel.precio.estado === 'fijo' || estado.operar.precio.estado === 'fijo';
   useEffect(() => {
-    if (!hayFijo) return;
+    if (!hayFijo || pausado) return;
     const id = window.setInterval(() => dispatch({ tipo: 'tick' }), 1000);
     return () => window.clearInterval(id);
-  }, [hayFijo]);
+  }, [hayFijo, pausado]);
 
-  const { congelado, tdcBase } = estado;
+  // Indicativo en vivo: el último valor entregado es el que usan todos los montos "≈" (vistas.ts cotiza con estado.tdcVivo).
+  const onPaso = useCallback((pares: TablaPares) => dispatch({ tipo: 'tdcVivo', pares }), []);
+  useTdcEnVivo({ base: tdcBase, activo: !congelado && !pausado, onPaso });
+
+  // Tecla P: pausa el indicativo en vivo y la cuenta regresiva (demo). No interfiere con los campos de texto;
+  // en los numéricos (token, montos) la P no es un carácter válido, así que ahí también pausa.
   useEffect(() => {
-    if (congelado) return;
-    let id = 0;
-    const paso = () => {
-      const pares = Object.fromEntries(Object.entries(tdcBase).map(([par, v]) => {
-        const r = (Math.random() * 2 - 1) * OSCILACION_TDC;
-        return [par, { compra: oscilarTdc(v.compra, r), venta: oscilarTdc(v.venta, r) }];
-      }));
-      dispatch({ tipo: 'tdcVivo', pares });
-      id = window.setTimeout(paso, OSCILACION_MS[0] + Math.random() * (OSCILACION_MS[1] - OSCILACION_MS[0]));
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.key !== 'p' && e.key !== 'P') || e.ctrlKey || e.metaKey || e.altKey) return;
+      const t = e.target as HTMLElement | null;
+      const campoDeTexto = !!t && (t.tagName === 'TEXTAREA' || t.isContentEditable || (t.tagName === 'INPUT' && !['numeric', 'decimal'].includes((t as HTMLInputElement).inputMode)));
+      if (campoDeTexto) return;
+      e.preventDefault();
+      dispatch({ tipo: 'alternarPausa' });
     };
-    id = window.setTimeout(paso, OSCILACION_MS[0]);
-    return () => window.clearTimeout(id);
-  }, [congelado, tdcBase]);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
 
   const confirmandoPanel = estado.panel.confirmando;
   useEffect(() => {

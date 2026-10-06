@@ -206,6 +206,7 @@ export type Accion =
   | { tipo: 'verTodosLosPagos'; valor: boolean }
   | { tipo: 'tdcVivo'; pares: TablaPares }
   | { tipo: 'pausar'; valor: boolean }
+  | { tipo: 'alternarPausa' }
   | { tipo: 'tick' }
   | { tipo: 'vencerPrecio' }
   // Panel
@@ -415,6 +416,8 @@ export function reducer(e: EstadoApp, a: Accion): EstadoApp {
       return { ...e, verTodosLosPagos: a.valor };
     case 'pausar':
       return { ...e, pausado: a.valor };
+    case 'alternarPausa':
+      return { ...e, pausado: !e.pausado };
     case 'tdcVivo': {
       if (e.congelado || e.pausado) return e;
       const s = { ...e, tdcVivo: a.pares };
