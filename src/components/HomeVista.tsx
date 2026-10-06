@@ -241,7 +241,7 @@ const PanelContenido: FC<{ vista: VistaPanel; estado: EstadoApp; dispatch: (a: A
       {v.tipo === 'pago' && v.paso === 'origen' ? (
         <>
           <h3 className="text-h3 font-semibold">¿Desde qué cuenta pagas?</h3>
-          <GrupoOrigen opciones={v.origenes.map((o) => ({ id: o.id, cuenta: o.nombre, saldo: o.saldo, pagas: o.pagas, consecuencia: o.consecuencia, seleccionada: o.seleccionada }))} valor={estado.panel.origenId} onCambiar={(id) => dispatch({ tipo: 'elegirOrigen', origenId: id as CuentaId })} />
+          <GrupoOrigen opciones={v.origenes.map((o) => ({ id: o.id, cuenta: o.nombre, saldo: o.saldo, pagas: o.pagas, consecuencia: o.consecuencia, deshabilitada: o.deshabilitada }))} valor={estado.panel.origenId} onCambiar={(id) => dispatch({ tipo: 'elegirOrigen', origenId: id as CuentaId })} />
         </>
       ) : null}
 

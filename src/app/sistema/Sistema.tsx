@@ -11,7 +11,7 @@ import { Icono, ICONOS, type NombreIcono } from '@/components/ui/Icono';
 import { ChipDivisa } from '@/components/ui/ChipDivisa';
 import { Logo } from '@/components/ui/Logo';
 import { TarjetaPosicion } from '@/components/TarjetaPosicion';
-import { OpcionOrigen } from '@/components/OpcionOrigen';
+import { GrupoPago, OpcionOrigen } from '@/components/OpcionOrigen';
 import { BloqueMonto } from '@/components/BloqueMonto';
 import { PrecioEjecutable } from '@/components/PrecioEjecutable';
 import { CampoToken } from '@/components/CampoToken';
@@ -80,6 +80,7 @@ export const Sistema: FC = () => {
   const [selAbierto, setSelAbierto] = useState(false);
   const [sel, setSel] = useState<string | null>(null);
   const [origen, setOrigen] = useState('mxn');
+  const [pago, setPago] = useState<string | null>('t-p1');
 
   return (
     <div className="flex min-h-dvh flex-col bg-app-canvas text-app-ink">
@@ -188,6 +189,9 @@ export const Sistema: FC = () => {
             <TarjetaPosicion divisa="MXN" nombre="Pesos" saldo={centavos(1_180_000)} pactadasLiquidar={{ cantidad: 1, total: centavos(27_138.62) }} pagosFuturos={{ cantidad: 7, total: centavos(80_350.5) }} resultado={{ tipo: 'sobran', monto: centavos(1_072_510.88) }} linea="Incluye los 180,000.00 de Comercial Norte" />
             <TarjetaPosicion divisa="USD" nombre="Dólares" saldo={centavos(2000)} pactadasRecibir={{ cantidad: 1, total: centavos(1000) }} pagosFuturos={{ cantidad: 3, total: centavos(3000) }} resultado={{ tipo: 'sobran', monto: 0 }} proyeccion={{ serie: [2000, 2000, 500, 0].map(centavos), etiquetas: ['mar 6', 'mié 7', 'jue 8', 'vie 9'] }} />
             <TarjetaPosicion divisa="EUR" nombre="Euros" saldo={centavos(50_000)} resultado={{ tipo: 'nada', monto: 0 }} />
+            <TarjetaPosicion divisa="EUR" nombre="Euros" saldo={0} pagosFuturos={{ cantidad: 1, total: centavos(4200) }} resultado={{ tipo: 'faltan', monto: centavos(4200) }} proyeccion={{ serie: [0, 0, 0, -4200].map(centavos), etiquetas: ['mar 6', 'mié 7', 'jue 8', 'vie 9'], etiquetaCruce: 'faltante' }} linea="≈ 89,250.00 MXN a precio de compra" accion={{ label: 'Comprar 4,200 EUR', onClick: () => {} }} />
+            <TarjetaPosicion divisa="MXN" nombre="Pesos" saldo={centavos(420_000)} resultado={{ tipo: 'nada', monto: 0 }} linea="Incluye los 95,000.00 de Familia Ortega" />
+            <TarjetaPosicion divisa="EUR" nombre="Euros" saldo={0} resultado={{ tipo: 'nada', monto: 0 }} linea="Hotel Gran Vía Madrid: pactado en pesos, sale el vie 9" />
           </div>
         </Seccion>
 
@@ -197,6 +201,21 @@ export const Sistema: FC = () => {
             <OpcionOrigen cuenta="Cuenta USD" saldo="Saldo 2,000.00 USD" pagas="Pagas 1,500.00 USD, sin tipo de cambio" consecuencia={{ texto: 'Te faltarían 1,000.00 USD el vie 9', tono: 'warning' }} seleccionada={origen === 'usd'} onElegir={() => setOrigen('usd')} />
             <OpcionOrigen cuenta="Cuenta EUR" saldo="Saldo 50,000.00 EUR" pagas="Pagas ≈ 1,388.89 EUR" consecuencia={{ texto: 'Cubre el faltante en USD', tono: 'success' }} seleccionada={origen === 'eur'} onElegir={() => setOrigen('eur')} />
             <OpcionOrigen cuenta="Cuenta EUR" saldo="Saldo 50,000.00 EUR" pagas="Pagas ≈ 1,388.89 EUR" consecuencia={{ texto: 'Te quedan 48,611.11 EUR', tono: 'neutral' }} seleccionada={false} onElegir={() => {}} />
+            <OpcionOrigen cuenta="Cuenta Principal MXN" saldo="Saldo 420,000.00 MXN · incluye el cobro de hoy" pagas="Pagas ≈ 89,250.00 MXN" consecuencia={{ texto: 'Cubre el faltante en EUR', tono: 'success' }} seleccionada onElegir={() => {}} />
+            <OpcionOrigen cuenta="Cuenta EUR" saldo="Saldo 0.00 EUR" pagas="Pagas 4,200.00 EUR, sin tipo de cambio" consecuencia={{ texto: 'Sin saldo', tono: 'neutral' }} seleccionada={false} deshabilitada onElegir={() => {}} />
+          </div>
+        </Seccion>
+
+        <Seccion id="pago" titulo="OpcionPago" nota="Paso “¿Qué pagas con este cobro?” (D-30): misma anatomía que OpcionOrigen; nombre y monto del pago, línea con vencimiento, referencia y cuánto del cobro usa, consecuencia en badge. Una sola selección; el faltante viene seleccionado.">
+          <div className="max-w-(--app-panel-w)">
+            <GrupoPago
+              valor={pago}
+              onCambiar={setPago}
+              opciones={[
+                { id: 't-p2', destinatario: 'Mayorista Caribe', monto: '2,500.00 USD', linea: `Vence jue 8 · Bloqueo nov-26 · ${pago === 't-p2' ? 'usa' : 'usaría'} ≈ 45,227.96 MXN`, consecuencia: { texto: 'Ya lo cubre tu Cuenta USD', tono: 'neutral' } },
+                { id: 't-p1', destinatario: 'Hotel Gran Vía Madrid', monto: '4,200.00 EUR', linea: `Vence vie 9 · Reserva 88213 · ${pago === 't-p1' ? 'usa' : 'usaría'} ≈ 89,250.00 MXN`, consecuencia: { texto: 'Cubre el faltante en EUR', tono: 'success' } },
+              ]}
+            />
           </div>
         </Seccion>
 
@@ -211,7 +230,7 @@ export const Sistema: FC = () => {
           </div>
         </Seccion>
 
-        <Seccion id="home" titulo="Módulos del inicio" nota="FranjaNuevo, FilaMovimiento (badge solo en estados no finales, D-23), TarjetaTipoDeCambio con EUR/MXN y ModuloCuentas.">
+        <Seccion id="home" titulo="Módulos del inicio" nota="FranjaNuevo, FilaMovimiento (badge solo en estados no finales, D-23), TarjetaTipoDeCambio con el par de la decisión primero y los demás pares de las posiciones compactos (D-33), y ModuloCuentas.">
           <div className="grid grid-cols-3 gap-6">
             <div className="col-span-2 flex flex-col gap-4">
               <FranjaNuevo monto={centavos(180_000)} divisa="MXN" origen="Comercial Norte" meta="Hoy 10:42 · BBVA México · Ref. factura 2231" onUsar={() => {}} />
@@ -224,6 +243,7 @@ export const Sistema: FC = () => {
             </div>
             <div className="flex flex-col gap-4">
               <TarjetaTipoDeCambio par="USD/MXN" compra={18_091_183} venta={18_032_135} tendencia={[18.062, 18.071, 18.068, 18.084, 18.079, 18.095, 18.088, 18.091]} hora="10:42" enVivo otros={[{ par: 'EUR/MXN', base: 'EUR', compra: 19_619_888, venta: 19_474_706 }]} />
+              <TarjetaTipoDeCambio par="EUR/MXN" compra={21_250_000} venta={21_100_000} tendencia={[21.231, 21.238, 21.235, 21.246, 21.242, 21.255, 21.249, 21.25]} hora="10:42" enVivo otros={[{ par: 'USD/MXN', base: 'USD', compra: 18_091_183, venta: 18_032_135 }]} />
               <ModuloCuentas cuentas={[{ id: 'mxn', nombre: 'Cuenta Principal MXN', mascara: '1025', saldo: centavos(1_180_000), divisa: 'MXN' }, { id: 'usd', nombre: 'Cuenta USD', mascara: '2024', saldo: centavos(2000), divisa: 'USD' }]} />
             </div>
           </div>

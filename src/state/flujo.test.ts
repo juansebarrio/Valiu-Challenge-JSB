@@ -570,6 +570,79 @@ describe('flujo secundario · turismo (S01–S02)', () => {
     expect(aplicar([{ tipo: 'abrirCobro', cobroId: 'otro' }], t).panel.abierto).toBe(false);
     const imp = aplicar([{ tipo: 'abrirCobro', cobroId: 'r1' }], base);
     expect(vistaPanel(imp)).toMatchObject({ tipo: 'pago', paso: 'destino', titulo: 'Pagar' });
-    expect(imp.panel).toMatchObject({ origenId: 'mxn', cobroId: 'r1' });
+    expect(imp.panel).toMatchObject({ origenId: 'mxn', cobroId: null });
+  });
+});
+
+describe('flujo secundario · turismo (S03–S08)', () => {
+  const t = estadoInicial('faltante', {}, 'turismo');
+  const VIE9 = new Date(2026, 9, 9);
+  const s03 = aplicar([{ tipo: 'abrirCobro', cobroId: 't-r1' }, { tipo: 'continuarPago' }], t);
+  it('S03 · MXN con el cobro de hoy cubre el faltante; USD elegible con faltante el jue 8; EUR sin saldo, deshabilitada', () => {
+    const p = vistaPanel(s03)!;
+    expect(p.origenes.map((o) => [o.nombre, o.saldo, o.pagas, o.consecuencia.texto, o.consecuencia.tono, o.deshabilitada, o.seleccionada])).toEqual([
+      ['Cuenta Principal MXN', 'Saldo 420,000.00 MXN · incluye el cobro de hoy', 'Pagas ≈ 89,250.00 MXN', 'Cubre el faltante en EUR', 'success', false, true],
+      ['Cuenta USD', 'Saldo 6,000.00 USD', 'Pagas ≈ 4,557.00 USD', 'Te faltarían 1,057.00 USD el jue 8', 'warning', false, false],
+      ['Cuenta EUR', 'Saldo 0.00 EUR', 'Pagas 4,200.00 EUR, sin tipo de cambio', 'Sin saldo', 'neutral', true, false],
+    ]);
+    expect(aplicar([{ tipo: 'elegirOrigen', origenId: 'eur' }], s03).panel.origenId).toBe('mxn');
+    expect(aplicar([{ tipo: 'elegirOrigen', origenId: 'usd' }], s03).panel.origenId).toBe('usd');
+    // Desde la fila del Hotel ("Pagar") se entra directo a Origen, sin el cobro como contexto.
+    const directo = aplicar([{ tipo: 'abrirPanel', orden: ordenDePago(pagoPorId(t, 't-p1')!) }], t);
+    expect(vistaPanel(directo)!.origenes[0].saldo).toBe('Saldo 420,000.00 MXN');
+  });
+  const s04 = aplicar([{ tipo: 'irPaso', paso: 'revision' }, { tipo: 'fechaValor', fecha: VIE9 }], s03);
+  it('S04 · revisión con vie 9: cierra hoy el precio, el dinero sale el vie 9', () => {
+    const r = vistaPanel(s04)!.revision!;
+    expect(r.fechas.map((f) => [f.etiqueta, f.vence, f.seleccionada])).toEqual([['Hoy', false, false], ['mié 7', false, false], ['jue 8', false, false], ['vie 9', true, true]]);
+    expect(r.pagas).toBe(centavos(89_250));
+    expect(r.recibe).toBe(centavos(4200));
+    expect(r.texto).toBe('Cierras hoy el precio de 4,200.00 EUR. El vie 9 salen ≈ 89,250.00 MXN de tu Cuenta Principal MXN y se envía el pago a Hotel Gran Vía Madrid.');
+    expect(r.ayuda).toBe('Hoy tienes el saldo. Asegúrate de que siga en tu cuenta el vie 9.');
+    expect(r.efecto).toBe('El vie 9 tu cuenta en pesos queda en ≈ 330,750.00 MXN.');
+    expect(fmt.tdc(r.tdc!)).toBe('21.250000');
+    const hoy = vistaPanel(aplicar([{ tipo: 'irPaso', paso: 'revision' }], s03))!.revision!;
+    expect(hoy.texto).toBe('Vas a pagar 4,200.00 EUR con pesos. Compras los euros a 21.250000 MXN.');
+  });
+  const s05 = aplicar([{ tipo: 'pedirPrecio' }], s04);
+  it('S05 · precio ejecutable 21.251447 (indicativo × 1.0000681) → 89,256.08 MXN; S06 vencido conserva la fecha', () => {
+    const p = vistaPanel(s05)!.precio!;
+    expect(fmt.tdc(p.tdc!)).toBe('21.251447');
+    expect(p.pagas).toBe(centavos(89_256.08));
+    expect(p.sale).toBe('El dinero sale el vie 9');
+    expect(p.segundos).toBe(120);
+    const s06 = aplicar(tick(120), s05);
+    expect(vistaPanel(s06)!.precio!.estado).toBe('vencido');
+    expect(s06.panel.fechaValor).toEqual(VIE9);
+  });
+  const s07 = aplicar(TOKEN, s05);
+  it('S07 · Pago pactado con el aviso de fondeo', () => {
+    const c = vistaPanel(s07)!.confirmacion!;
+    expect(c.titulo).toBe('Pago pactado');
+    expect(c.texto).toBe('Cerraste el precio en 21.251447. El vie 9 salen 89,256.08 MXN de tu Cuenta Principal MXN y se envían 4,200.00 EUR a Hotel Gran Vía Madrid.');
+    expect(c.fondeo).toBe('Ten 89,256.08 MXN en tu Cuenta Principal MXN el vie 9 para que el pago salga.');
+  });
+  it('S08 · home con el pago pactado', () => {
+    const s08 = aplicar([{ tipo: 'volverInicio' }], s07);
+    expect(s08.aviso).toEqual({ tipo: 'info', texto: 'Pactaste el pago a Hotel Gran Vía Madrid. El dinero sale el vie 9.' });
+    expect(pos(s08, 'EUR').resultado.tipo).toBe('nada');
+    expect(pos(s08, 'EUR').linea).toBe('Hotel Gran Vía Madrid: pactado en pesos, sale el vie 9');
+    expect(pos(s08, 'MXN')).toMatchObject({ saldo: centavos(420_000), pactadasLiquidar: { cantidad: 1, total: centavos(89_256.08) }, resultado: { tipo: 'sobran', monto: centavos(330_743.92) } });
+    const hotel = vistaHome(s08).proximos.find((f) => f.nombre === 'Hotel Gran Vía Madrid')!;
+    expect(hotel).toMatchObject({ badge: { texto: 'Pactada', tono: 'pactada' }, detalle: '89,256.08 MXN a 21.251447' });
+    expect(vistaHome(s08).posiciones.map((p) => p.divisa)).toEqual(['EUR', 'USD', 'MXN']);
+  });
+  it('S07H/S08H · con Hoy: pago en proceso, Hotel en Realizados y MXN 330,743.92', () => {
+    const s08h = aplicar([{ tipo: 'irPaso', paso: 'revision' }, { tipo: 'pedirPrecio' }, ...TOKEN, { tipo: 'volverInicio' }], s03);
+    expect(s08h.aviso).toEqual({ tipo: 'success', texto: 'Pago en proceso. Ya te alcanza para los pagos en EUR de la semana.' });
+    expect(pos(s08h, 'MXN')).toMatchObject({ saldo: centavos(330_743.92), resultado: { tipo: 'nada', monto: 0 } });
+    expect(pos(s08h, 'EUR').linea).toBe('Hotel Gran Vía Madrid: pagado hoy en pesos');
+    expect(vistaHome(s08h).realizados[0]).toMatchObject({ nombre: 'Hotel Gran Vía Madrid', badge: { texto: 'En proceso', tono: 'warning' }, detalle: '4,200.00 EUR a 21.251447' });
+    expect(vistaHome(s08h).proximos.map((f) => f.nombre)).toEqual(['Mayorista Caribe']);
+  });
+  it('escenarios por URL del arquetipo: resuelta y pactada pagan el Hotel', () => {
+    expect(pos(estadoDeEscenario('pactada', {}, 'turismo'), 'MXN').pactadasLiquidar).toEqual({ cantidad: 1, total: centavos(89_256.08) });
+    expect(pos(estadoDeEscenario('resuelta', {}, 'turismo'), 'MXN').saldo).toBe(centavos(330_743.92));
+    expect(pos(estadoDeEscenario('sin-saldo', {}, 'turismo'), 'MXN').saldo).toBe(centavos(20_000));
   });
 });

@@ -368,6 +368,9 @@ function avisoCancelacion(e: EstadoApp, op: OperacionHecha): Aviso {
   return { tipo: 'info', texto: `Cancelaste el paso pactado de ${recibe} a tu ${op.destino.nombre}. No sale dinero de tu ${cuentaPorId(e, op.origenId)!.nombre}.` };
 }
 
+/** Una cuenta sin saldo en la divisa del pago no se puede elegir: sería una transferencia sin fondos, sin precio que cerrar ni fecha para fondear (D-31). */
+export const origenDeshabilitado = (cuenta: { divisa: Divisa; saldo: Centavos }, orden: Orden | null) => !!orden && cuenta.divisa === orden.destino.divisa && orden.destino.tipo === 'tercero' && cuenta.saldo <= 0;
+
 const inicioDelDia = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
 
 /** Última fecha de vencimiento que acepta "Agendar un pago". */
@@ -456,9 +459,8 @@ export function reducer(e: EstadoApp, a: Accion): EstadoApp {
       const cobro = e.datos.loNuevo;
       if (!cobro || cobro.id !== a.cobroId) return e;
       if (arquetipoDe(e.arquetipo).entradaCobro === 'destino') {
-        // La importadora entra al paso Destino con la cuenta del cobro preseleccionada (como quedó en el código).
-        const abierto = reducer(e, { tipo: 'abrirPanel', orden: null, origenId: cobro.cuentaId });
-        return { ...abierto, panel: { ...abierto.panel, cobroId: cobro.id } };
+        // La importadora entra al paso Destino con la cuenta del cobro preseleccionada, exactamente como quedó en el código.
+        return reducer(e, { tipo: 'abrirPanel', orden: null, origenId: cobro.cuentaId });
       }
       // Paso "¿Qué pagas con este cobro?" (D-30): el único faltante viene seleccionado.
       return {
@@ -498,6 +500,8 @@ export function reducer(e: EstadoApp, a: Accion): EstadoApp {
     }
     case 'elegirOrigen': {
       const orden = e.panel.orden;
+      const cuenta = cuentaPorId(e, a.origenId);
+      if (!cuenta || origenDeshabilitado(cuenta, orden)) return e;
       const motivo = orden && !orden.conFactura ? motivoPorDefecto(cuentaPorId(e, a.origenId)?.divisa ?? null, orden) : orden?.motivo ?? null;
       return { ...e, panel: sinPrecio({ ...e.panel, origenId: a.origenId, fechaValor: HOY, orden: orden ? { ...orden, motivo } : null }) };
     }

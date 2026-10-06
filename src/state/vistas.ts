@@ -7,7 +7,7 @@ import { HOY, HORARIO, HORA_TDC, MOTIVOS, NOMBRE_DIVISA, PARES_SELECTOR, AVISO_P
 import { ARQUETIPO_IDS, arquetipoDe } from '@/data/arquetipos';
 import { leerCentavos } from '@/lib/dinero';
 import { cuentaPorId, cuentasActuales, destinoDeCuenta, destinoDeDestinatario, finDeSemana, movimientoDe, opcionesDelCobro, ordenACuenta, ordenDePago, pactadas, pagosPendientes, posiciones, posicionesPorDivisa, proyecciones } from './derivados';
-import { cotizacionPanel, divisasOperar, estadoInicial, fechaAgendable, fechaMaximaAgendable, pagoAgendado, type Clase, type Destino, type EstadoApp, type OperacionHecha, type Orden } from './estado';
+import { cotizacionPanel, divisasOperar, estadoInicial, fechaAgendable, fechaMaximaAgendable, origenDeshabilitado, pagoAgendado, type Clase, type Destino, type EstadoApp, type OperacionHecha, type Orden } from './estado';
 
 
 export type TonoBadge = 'success' | 'warning' | 'error' | 'neutral' | 'pactada' | 'info';
@@ -200,6 +200,8 @@ export interface VistaOpcionOrigen {
   pagas: string;
   consecuencia: { texto: string; tono: TonoBadge; ayuda?: string };
   seleccionada: boolean;
+  /** Sin saldo en la divisa del pago: no se puede elegir (D-31). */
+  deshabilitada: boolean;
 }
 
 export interface VistaOpcionPago {
@@ -357,11 +359,15 @@ export function vistaPanel(e: EstadoApp): VistaPanel | null {
     : [fmt.monto(montoRecibe, orden.destino.divisa), orden.vence ? `vence ${fmt.diaCorto(orden.vence)}` : null, orden.referencia || null].filter(Boolean).join(' · ');
   const ultima = e.operaciones[0] ?? null;
 
+  const cobro = panel.cobroId && e.datos.loNuevo?.id === panel.cobroId ? e.datos.loNuevo : null;
   const origenes: VistaOpcionOrigen[] = ctas
     .filter((c) => c.id !== orden.destino.cuentaId)
     .map((c) => {
       const ev = evaluarOrigen({ origen: c, monto: montoRecibe, divisaDestino: orden.destino.divisa, destinoPropio: orden.destino.tipo === 'propia', pagoCargado: !!orden.pagoId, posiciones: pos, proyecciones: proy, pares: e.tdcVivo });
-      return { id: c.id, nombre: c.nombre, saldo: `Saldo ${fmt.monto(c.saldo, c.divisa)}`, pagas: ev.pagasTexto, consecuencia: { texto: ev.consecuencia.texto, tono: tonoBadge[ev.consecuencia.tono], ayuda: ev.consecuencia.ayuda }, seleccionada: c.id === panel.origenId };
+      const deshabilitada = origenDeshabilitado(c, orden);
+      const saldo = `Saldo ${fmt.monto(c.saldo, c.divisa)}${cobro && cobro.cuentaId === c.id ? ' · incluye el cobro de hoy' : ''}`;
+      const consecuencia = deshabilitada ? { texto: 'Sin saldo', tono: 'neutral' as const } : { texto: ev.consecuencia.texto, tono: tonoBadge[ev.consecuencia.tono], ayuda: ev.consecuencia.ayuda };
+      return { id: c.id, nombre: c.nombre, saldo, pagas: ev.pagasTexto, consecuencia, seleccionada: c.id === panel.origenId, deshabilitada };
     });
 
   const hoyNoAlcanza = !!origen && !!cotInd && cotInd.pagas > origen.saldo;
