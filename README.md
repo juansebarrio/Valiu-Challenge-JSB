@@ -68,6 +68,7 @@ docs/handoff/              el paquete de diseño tal como llegó: README, docs/,
 docs/handoff-turismo/      el paquete del flujo secundario (README, componentes, decisiones D-30 a D-34, prototipo, datos)
 docs/decisiones.md         correcciones aplicadas sobre el export, con el motivo
 docs/diferencias-cc-vs-diseno.md  diferencias entre el código y el archivo de diseño del flujo secundario (el código manda)
+docs/presentacion/         capturas para la presentación (capturas/README.md con tabla de archivo, frame o ruta y slide; capturas-deck.zip con las del deck)
 docs/design/frames/        una captura por frame del export · docs/design/verificacion/ capturas de los recorridos de verificación (01–40 flujo principal y clásico, A/M/V movimientos, B sección 7, P secciones y paneles, T arquetipos y turismo, W-* inicio/panel/clásico a 1024, 1100, 1280 y 1440 px)
 ```
 
