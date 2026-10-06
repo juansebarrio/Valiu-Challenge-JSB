@@ -29,11 +29,17 @@ const leerVar = (el: HTMLElement, nombre: string, fallback: number) => {
 /** Mide el objetivo en runtime (getBoundingClientRect), recorta con box-shadow 0 0 0 2000px y pone la tarjeta de 320 px al lado indicado, acotada al contenedor. */
 export const PasoOnboarding: FC<PasoOnboardingProps> = ({ paso, total, objetivo, lado, titulo, texto, onSiguiente, onAtras, onCerrar, contenedorRef, modo = 'app' }) => {
   const [geo, setGeo] = useState<Geo | null>(null);
+  const [intento, setIntento] = useState(0);
   const tarjetaRef = useRef<HTMLDivElement>(null);
 
   useLayoutEffect(() => {
     const cont = contenedorRef.current;
-    if (!cont) return;
+    if (!cont) {
+      // Con el recorrido activo desde el primer render (tablero) este efecto corre antes de que React asigne el ref del shell:
+      // se reintenta en el cuadro siguiente en vez de quedarse con la posición de respaldo (C-46).
+      const r = requestAnimationFrame(() => setIntento((n) => n + 1));
+      return () => cancelAnimationFrame(r);
+    }
     const medir = () => {
       const t = cont.querySelector<HTMLElement>(`[data-tour="${objetivo}"]`);
       const pad = leerVar(cont, '--app-tour-pad', 8);
@@ -56,7 +62,7 @@ export const PasoOnboarding: FC<PasoOnboardingProps> = ({ paso, total, objetivo,
     const t2 = setTimeout(medir, 1200);
     document.fonts?.ready.then(medir).catch(() => {});
     return () => { ro.disconnect(); window.removeEventListener('resize', medir); window.removeEventListener('scroll', medir, true); clearTimeout(t1); clearTimeout(t2); };
-  }, [objetivo, contenedorRef, modo, paso]);
+  }, [objetivo, contenedorRef, modo, paso, intento]);
 
   useLayoutEffect(() => {
     if (modo === 'app') tarjetaRef.current?.focus();

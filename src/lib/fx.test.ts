@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { cotizar, deducir, ejecutable, fechasLiquidacion, siguienteHabil } from './fx';
 import { centavos, entreTdc, escalarTdc, leerCentavos, porTdc } from './dinero';
 import * as fmt from './format';
+import { ARQUETIPO_IDS, arquetipoDe } from '@/data/arquetipos';
 
 describe('dinero', () => {
   it('redondea half-up a centavos', () => {
@@ -100,5 +101,32 @@ describe('flujo secundario · turismo (EUR/MXN 21.25, EUR/USD 1.175 / 1.171)', (
   it('fechas de liquidación con vencimiento vie 9: "vie 9" lleva vence', () => {
     const f = fechasLiquidacion(new Date(2026, 9, 6, 10, 42), new Date(2026, 9, 9));
     expect(f.map((x) => [x.etiqueta, x.vence])).toEqual([['Hoy', false], ['mié 7', false], ['jue 8', false], ['vie 9', true]]);
+  });
+});
+
+describe('la tabla de pares cierra (C-45)', () => {
+  const DIVISAS = ['MXN', 'USD', 'EUR'] as const;
+  type D = (typeof DIVISAS)[number];
+  // Todas las vueltas A → B → C → A entre las tres divisas, con la punta que corresponde en cada tramo (comprar la base al recibirla, vender al entregarla).
+  const vueltas: [D, D, D][] = [];
+  for (const a of DIVISAS) for (const b of DIVISAS) for (const c of DIVISAS) if (a !== b && b !== c && c !== a) vueltas.push([a, b, c]);
+  it('hay seis vueltas', () => { expect(vueltas).toHaveLength(6); });
+  for (const arquetipo of ARQUETIPO_IDS) {
+    it(`${arquetipo}: ninguna vuelta termina con más de lo que empezó`, () => {
+      const pares = arquetipoDe(arquetipo).pares;
+      const inicio = centavos(1_000_000);
+      for (const [a, b, c] of vueltas) {
+        let monto = inicio;
+        for (const [origen, destino] of [[a, b], [b, c], [c, a]] as [D, D][]) {
+          const cot = cotizar({ origen, destino, monto, ladoFijo: 'pagas', pares });
+          expect(cot, `${origen} → ${destino}`).not.toBeNull();
+          monto = cot!.recibe;
+        }
+        expect(monto, `${arquetipo} · ${a} → ${b} → ${c} → ${a}`).toBeLessThanOrEqual(inicio);
+      }
+    });
+  }
+  it('los dos arquetipos usan la misma tabla', () => {
+    expect(arquetipoDe('turismo').pares).toEqual(arquetipoDe('importadora').pares);
   });
 });

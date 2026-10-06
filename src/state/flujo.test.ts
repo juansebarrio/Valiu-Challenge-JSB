@@ -44,7 +44,7 @@ describe('frame 01 · inicio con faltante', () => {
   });
   it('tipo de cambio con EUR/MXN debajo', () => {
     expect(fmt.tdc(h.tdc.compra)).toBe('18.091183');
-    expect(h.tdc.otros[0]).toMatchObject({ par: 'EUR/MXN', compra: 19_619_888, venta: 19_474_706 });
+    expect(h.tdc.otros[0]).toMatchObject({ par: 'EUR/MXN', compra: 21_250_000, venta: 21_100_000 });
   });
 });
 
@@ -660,9 +660,9 @@ describe('sección 7 del brief · destino propio sin monto y transferencia por e
     expect(r.revision?.editable).toBe(true);
     expect(r.primario.habilitado).toBe(false);
     const conMonto = aplicar([{ tipo: 'monto', lado: 'recibe', valor: centavos(1000) }], rev);
-    expect(vistaPanel(conMonto)!.revision).toMatchObject({ pagas: centavos(19_619.89), recibe: centavos(1000), ladoFijo: 'recibe' });
+    expect(vistaPanel(conMonto)!.revision).toMatchObject({ pagas: centavos(21_250), recibe: centavos(1000), ladoFijo: 'recibe' }); // 1,000 × 21.250000
     const desdePagas = aplicar([{ tipo: 'monto', lado: 'pagas', valor: centavos(10_000) }], conMonto);
-    expect(vistaPanel(desdePagas)!.revision).toMatchObject({ pagas: centavos(10_000), recibe: centavos(509.69), ladoFijo: 'pagas' });
+    expect(vistaPanel(desdePagas)!.revision).toMatchObject({ pagas: centavos(10_000), recibe: centavos(470.59), ladoFijo: 'pagas' }); // 10,000 / 21.250000 = 470.588…
     expect(vistaPanel(desdePagas)!.primario).toEqual({ label: 'Pedir precio', habilitado: true, accion: 'pedirPrecio' });
   });
   it('Shenzhen desde la Cuenta USD es una transferencia: sin TDC, sin fecha valor, token al confirmar', () => {

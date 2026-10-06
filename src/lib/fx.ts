@@ -18,11 +18,15 @@ export interface Par {
 
 export type TablaPares = Record<string, Pick<Par, 'compra' | 'venta'>>;
 
-/** El par siempre es BASE/COTIZADA. USD/MXN y EUR/MXN vienen del handoff; EUR/USD cierra con ellos (1.175000 / 1.171000, sección 7 del brief); GBP y CAD solo pueblan el selector. */
+/**
+ * El par siempre es BASE/COTIZADA. USD/MXN viene del handoff; EUR/MXN 21.250000 / 21.100000 y EUR/USD 1.175000 / 1.171000 cierran con él:
+ * ninguna vuelta MXN → USD → EUR → MXN (ni la inversa) termina con más de lo que empezó (C-45). Una sola tabla para los dos arquetipos;
+ * el EUR/MXN 19.619888 / 19.474706 del handoff de la importadora no cerraba (19.474706 / 18.091183 = 1.0765 USD por EUR contra 1.171 directo). GBP y CAD solo pueblan el selector.
+ */
 export const PARES: Record<string, Par> = {
   'USD/MXN': { compra: 18_091_183, venta: 18_032_135, ejemplo: false },
   'EUR/USD': { compra: 1_175_000, venta: 1_171_000, ejemplo: false },
-  'EUR/MXN': { compra: 19_619_888, venta: 19_474_706, ejemplo: false },
+  'EUR/MXN': { compra: 21_250_000, venta: 21_100_000, ejemplo: false },
   'GBP/MXN': { compra: 24_300_000, venta: 24_100_000, ejemplo: true, sinPrototipo: true },
   'CAD/MXN': { compra: 13_200_000, venta: 13_050_000, ejemplo: true, sinPrototipo: true },
 };

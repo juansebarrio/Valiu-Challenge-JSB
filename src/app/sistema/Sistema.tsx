@@ -247,7 +247,7 @@ export const Sistema: FC = () => {
               </div>
             </div>
             <div className="flex flex-col gap-4">
-              <TarjetaTipoDeCambio par="USD/MXN" compra={18_091_183} venta={18_032_135} tendencia={[18.062, 18.071, 18.068, 18.084, 18.079, 18.095, 18.088, 18.091]} hora="10:42" enVivo otros={[{ par: 'EUR/MXN', base: 'EUR', compra: 19_619_888, venta: 19_474_706 }]} />
+              <TarjetaTipoDeCambio par="USD/MXN" compra={18_091_183} venta={18_032_135} tendencia={[18.062, 18.071, 18.068, 18.084, 18.079, 18.095, 18.088, 18.091]} hora="10:42" enVivo otros={[{ par: 'EUR/MXN', base: 'EUR', compra: 21_250_000, venta: 21_100_000 }]} />
               <TarjetaTipoDeCambio par="EUR/MXN" compra={21_250_000} venta={21_100_000} tendencia={[21.231, 21.238, 21.235, 21.246, 21.242, 21.255, 21.249, 21.25]} hora="10:42" enVivo otros={[{ par: 'USD/MXN', base: 'USD', compra: 18_091_183, venta: 18_032_135 }]} />
               <ModuloCuentas cuentas={[{ id: 'mxn', nombre: 'Cuenta Principal MXN', mascara: '1025', saldo: centavos(1_180_000), divisa: 'MXN' }, { id: 'usd', nombre: 'Cuenta USD', mascara: '2024', saldo: centavos(2000), divisa: 'USD' }]} />
             </div>
