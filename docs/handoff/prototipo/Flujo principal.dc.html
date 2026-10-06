@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="design-system/colors_and_type.css">
+<link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.0/css/line.css">
+<style>
+body{margin:0;background:#E9EBF0;color:#151522;font-family:Montserrat,"Helvetica Neue",Arial,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#151522}a:hover{color:#3D46CC}
+</style>
+</helmet>
+<div style="display:flex;flex-direction:column;min-height:100vh">
+  <div style="display:flex;align-items:center;gap:24px;padding:14px 24px;background:#fff;border-bottom:1px solid #DCDCDE">
+    <div style="display:flex;flex-direction:column;gap:2px"><span style="font:700 14px/20px Montserrat,sans-serif">Valiu · Flujo principal</span><span style="font:400 12px/16px Montserrat,sans-serif;color:#5B5B64">Flujo principal (01–07) y fecha valor (03B–07B) · Operar clásico (08–16) · Onboarding (17–20) · frames de 1280 px</span></div>
+    <div style="margin-left:auto;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+      <div style="display:flex;border:1px solid #DCDCDE;border-radius:4px;overflow:hidden">
+        <button onClick="{{ setTablero }}" style="height:32px;padding:0 14px;border:0;border-right:1px solid #DCDCDE;background:{{ tabBg }};color:{{ tabColor }};font:600 12px/16px Montserrat,sans-serif;cursor:pointer">Tablero</button>
+        <button onClick="{{ setPrototipo }}" style="height:32px;padding:0 14px;border:0;background:{{ protoBg }};color:{{ protoColor }};font:600 12px/16px Montserrat,sans-serif;cursor:pointer">Prototipo</button>
+      </div>
+      <sc-if value="{{ esPrototipo }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;gap:4px">
+          <sc-for list="{{ chips }}" as="ch" hint-placeholder-count="7">
+            <button onClick="{{ ch.pick }}" style="height:32px;min-width:32px;padding:0 8px;border:1px solid #DCDCDE;border-radius:4px;background:{{ ch.bg }};color:{{ ch.color }};font:600 12px/16px Montserrat,sans-serif;cursor:pointer">{{ ch.label }}</button>
+          </sc-for>
+        </div>
+        <span style="font:400 12px/16px Montserrat,sans-serif;color:#5B5B64">← → cambian de frame · P pausa la cuenta regresiva</span>
+      </sc-if>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:40px;padding:32px">
+  <sc-for list="{{ filas }}" as="fila" hint-placeholder-count="2">
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap"><h2 style="margin:0;font:700 20px/24px Montserrat,sans-serif">{{ fila.titulo }}</h2><span style="font:400 12px/16px Montserrat,sans-serif;color:#5B5B64">{{ fila.nota }}</span></div>
+      <div style="display:flex;gap:48px;align-items:flex-start">
+        <sc-if value="{{ fila.tieneHoja }}" hint-placeholder-val="{{ false }}">
+          <div data-screen-label="Estados · fecha valor" style="width:2608px;flex:none;display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;align-items:flex-start;gap:10px"><span style="padding:2px 8px;border-radius:4px;background:#151522;color:#fff;font:700 12px/16px Montserrat,sans-serif;flex:none">Estados</span><div style="display:flex;flex-direction:column;gap:2px"><span style="font:600 14px/20px Montserrat,sans-serif">Estados de componentes · fuera del escenario</span><span style="font:400 12px/16px Montserrat,sans-serif;color:#5B5B64">FechaLiquidacion, TarjetaPosicion con una pactada sin saldo y OpcionOrigen cuando hoy no alcanza</span></div></div>
+            <div style="display:flex;gap:48px;align-items:flex-start;padding:32px;background:#FFFFFF;box-shadow:0 6px 16px -2px rgba(0,0,0,.12)">
+              <div style="display:flex;flex-direction:column;gap:16px">
+                <span style="font:700 12px/16px Montserrat,sans-serif;color:#5B5B64;letter-spacing:.06em;text-transform:uppercase">FechaLiquidacion</span>
+                <div style="display:grid;grid-template-columns:repeat(2,432px);gap:28px 32px">
+                  <sc-for list="{{ hojaFechas }}" as="h" hint-placeholder-count="6">
+                    <div style="display:flex;flex-direction:column;gap:10px">
+                      <span style="font:600 12px/16px Montserrat,sans-serif">{{ h.caso }}</span>
+                      <sc-if value="{{ h.visible }}" hint-placeholder-val="{{ true }}">
+                        <div style="display:flex;flex-direction:column;gap:8px">
+                          <span style="font:700 12px/16px Montserrat,sans-serif;color:#1C293B">¿Cuándo sale el dinero?</span>
+                          <div style="display:flex;align-items:center;gap:4px;padding:4px;background:#F5F7FA;border-radius:999px;box-shadow:0 3px 6px rgba(0,0,0,.08)">
+                            <sc-for list="{{ h.fechas }}" as="fd" hint-placeholder-count="4">
+                              <span style="flex:1 1 auto;display:inline-flex;justify-content:center;align-items:center;gap:4px;padding:6px 12px;border-radius:999px;border:1px solid {{ fd.borde }};background:{{ fd.bg }};color:{{ fd.color }};font:{{ fd.peso }} 14px/20px Montserrat,sans-serif;white-space:nowrap;outline:{{ fd.outline }};outline-offset:2px">{{ fd.dia }}<sc-if value="{{ fd.vence }}" hint-placeholder-val="{{ false }}"><span style="font-weight:400">· vence</span></sc-if></span>
+                            </sc-for>
+                          </div>
+                          <span style="font:400 12px/16px Montserrat,sans-serif;color:#5B5B64">El precio queda cerrado hoy, elijas el día que elijas.</span>
+                        </div>
+                      </sc-if>
+                      <sc-if value="{{ h.oculto }}" hint-placeholder-val="{{ false }}">
+                        <div style="display:flex;align-items:center;min-height:86px;padding:16px;border:1px dashed #8492A6;border-radius:8px;font:400 12px/16px Montserrat,sans-serif;color:#5B5B64;text-wrap:pretty">No se muestra: sin tipo de cambio no hay precio que cerrar ni fecha que elegir.</div>
+                      </sc-if>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:16px;width:432px">
+                <span style="font:700 12px/16px Montserrat,sans-serif;color:#5B5B64;letter-spacing:.06em;text-transform:uppercase">OpcionOrigen</span>
+                <span style="font:600 12px/16px Montserrat,sans-serif">Hoy no alcanza el saldo · se puede elegir igual</span>
+                <div data-component="OpcionOrigen" style="display:flex;gap:12px;padding:12px 16px;border:1px solid #3D46CC;border-radius:8px;background:#F0F1FD">
+                  <span style="width:20px;height:20px;border-radius:50%;flex:none;margin-top:1px;border:1.5px solid #3D46CC;background:#3D46CC;box-shadow:inset 0 0 0 4px #fff"></span>
+                  <div style="display:flex;flex-direction:column;gap:4px;flex:1;min-width:0">
+                    <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px"><span style="font:600 14px/20px Montserrat,sans-serif;white-space:nowrap;flex:none">Cuenta Principal MXN</span><span style="font:600 14px/20px Montserrat,sans-serif;font-variant-numeric:tabular-nums;text-align:right;text-wrap:balance">Pagas ≈ 27,136.77 MXN</span></div>
+                    <span style="font:400 12px/16px Montserrat,sans-serif;color:#5B5B64;font-variant-numeric:tabular-nums">Saldo 20,000.00 MXN</span>
+                    <span style="align-self:flex-start;display:inline-flex;align-items:center;gap:6px;padding:4px 12px 4px 8px;border-radius:16px;background:#FCEFCE;font:500 12px/16px Montserrat,sans-serif"><span style="width:8px;height:8px;border-radius:50%;background:#F5CE6C;flex:none"></span>Hoy no alcanza</span>
+                    <span style="font:400 12px/16px Montserrat,sans-serif;color:#5B5B64;text-wrap:pretty">Puedes cerrar el precio y fondear antes del día que elijas.</span>
+                  </div>
+                </div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:16px">
+                <span style="font:700 12px/16px Montserrat,sans-serif;color:#5B5B64;letter-spacing:.06em;text-transform:uppercase">TarjetaPosicion</span>
+                <span style="font:600 12px/16px Montserrat,sans-serif">Pactada sin saldo en la cuenta de origen</span>
+                <div style="padding:24px;background:#F5F7FA;border-radius:8px">
+                  <article data-component="TarjetaPosicion" style="width:309px;box-sizing:border-box;background:#FFFFFF;border-radius:8px;box-shadow:0 3px 6px rgba(0,0,0,.08);padding:20px;display:flex;flex-direction:column;gap:10px">
+                    <div style="display:flex;align-items:center;gap:8px"><span style="padding:2px 8px;border-radius:4px;background:#F5F7FA;box-shadow:0 3px 6px rgba(0,0,0,.08);font:700 12px/16px Montserrat,sans-serif">MXN</span><span style="font:600 14px/20px Montserrat,sans-serif;color:#5B5B64">Pesos</span></div>
+                    <div style="display:flex;flex-direction:column;gap:4px;font:400 14px/20px Montserrat,sans-serif;font-variant-numeric:tabular-nums">
+                      <div style="display:flex;justify-content:space-between;gap:8px"><span style="color:#5B5B64">Saldo</span><span style="font-weight:600">0.00</span></div>
+                      <div style="display:flex;justify-content:space-between;gap:8px"><span style="color:#5B5B64">Pactadas por liquidar (1)</span><span style="font-weight:600">−27,138.62</span></div>
+                      <div style="display:flex;justify-content:space-between;gap:8px"><span style="color:#5B5B64">Pagos futuros</span><span style="font-weight:600">0.00</span></div>
+                    </div>
+                    <div style="height:1px;background:#E2E4E9"></div>
+                    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;min-height:52px">
+                      <div style="display:flex;flex-direction:column"><span style="font:500 14px/20px Montserrat,sans-serif;color:#5B5B64">Faltan</span><span style="font:600 24px/32px Montserrat,sans-serif;font-variant-numeric:tabular-nums;color:#B40909">27,138.62</span></div>
+                      <span style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px 4px 8px;border-radius:16px;background:#FFF1F1;font:500 12px/16px Montserrat,sans-serif;white-space:nowrap"><span style="width:8px;height:8px;border-radius:50%;background:#D26B6B;flex:none"></span>Falta</span>
+                    </div>
+                    <span style="font:500 14px/20px Montserrat,sans-serif;font-variant-numeric:tabular-nums;text-wrap:pretty">Fondea 27,138.62 MXN antes del jue 8</span>
+                    <button style="align-self:flex-start;background:none;border:0;padding:0;font:700 14px/20px Montserrat,sans-serif;color:#3D46CC;text-decoration:underline;cursor:pointer" style-focus="outline:2px solid #0086FF;outline-offset:2px">Ver datos para depositar</button>
+                  </article>
+                </div>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+        <sc-for list="{{ fila.frames }}" as="f" hint-placeholder-count="7">
+      <section id="{{ f.n }}" data-screen-label="{{ f.etiqueta }}" data-tour-frame="{{ f.tourObjetivo }}" style="display:flex;flex-direction:column;gap:10px;flex:none;margin-left:{{ f.ml }}px">
+        <div style="display:flex;align-items:flex-start;gap:10px"><span style="padding:2px 8px;border-radius:4px;background:#151522;color:#fff;font:700 12px/16px Montserrat,sans-serif;flex:none">{{ f.n }}</span><div style="display:flex;flex-direction:column;gap:2px"><span style="font:600 14px/20px Montserrat,sans-serif">{{ f.titulo }}</span><span style="font:400 12px/16px Montserrat,sans-serif;color:#5B5B64;max-width:1100px;text-wrap:pretty">{{ f.nota }}</span></div></div>
+
+        <div data-frame-box="1" style="position:relative;width:1280px;display:flex;background:#F5F7FA;color:#151522;font:400 14px/20px Montserrat,sans-serif;box-shadow:0 6px 16px -2px rgba(0,0,0,.12);overflow:hidden">
+          <aside style="width:240px;flex:none;background:#fff;border-right:0.5px solid #E2E4E9;display:flex;flex-direction:column;padding:16px 8px;gap:4px">
+            <div style="display:flex;align-items:center;height:32px;padding:0 12px;margin-bottom:16px"><img src="referencias/logo/logo-valiu-dark.svg" alt="Valiu" style="height:22px;display:block"></div>
+            <sc-for list="{{ nav }}" as="it" hint-placeholder-count="5">
+              <div style="display:flex;align-items:center;gap:10px;height:40px;padding:0 10px;border-radius:8px;background:{{ it.bg }};color:{{ it.color }};font:{{ it.peso }} 14px/20px Montserrat,sans-serif;cursor:pointer" style-hover="background:#F6FBFF"><i class="uil {{ it.icono }}" style="font-size:18px;line-height:1;width:18px;text-align:center;flex:none"></i><span style="white-space:nowrap">{{ it.label }}</span></div>
+            </sc-for>
+            <div style="flex:1"></div>
+            <div style="display:flex;align-items:center;gap:10px;height:40px;padding:0 10px;border-radius:8px;color:#5B5B64;font:500 14px/20px Montserrat,sans-serif;cursor:pointer" style-hover="background:#F6FBFF"><i class="uil uil-signout" style="font-size:18px;line-height:1;width:18px;text-align:center;flex:none"></i><span style="white-space:nowrap">Cerrar sesión</span></div>
+          </aside>
+
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+            <header style="height:48px;flex:none;display:flex;align-items:center;justify-content:flex-end;gap:24px;padding:0 32px;background:#fff;border-bottom:0.5px solid #E2E4E9">
+              <span style="display:inline-flex;align-items:center;gap:4px;padding:6px 12px;border:1px solid #3D46CC;border-radius:40px;background:#fff;box-shadow:0 3px 6px rgba(0,0,0,.15);font:600 12px/16px Montserrat,sans-serif;color:#3D46CC;cursor:pointer"><i class="uil uil-whatsapp" style="font-size:16px;line-height:1"></i>Contáctanos</span>
+              <i class="uil uil-bell" style="font-size:22px;line-height:1;color:#151522;cursor:pointer"></i>
+            </header>
+
+            <main style="flex:1;padding:24px 32px 32px;display:flex;flex-direction:column;gap:20px">
+              <sc-if value="{{ f.home.tieneAviso }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex;align-items:center;gap:16px;padding:12px 16px;border:1px solid #17714B;border-radius:8px;background:#D5F3E6;font:500 14px/20px Montserrat,sans-serif"><i class="uil uil-check-circle" style="font-size:20px;line-height:1;color:#17714B"></i><span style="flex:1">{{ f.home.aviso }}</span><i class="uil uil-times" style="font-size:18px;line-height:1;color:#5B5B64;cursor:pointer"></i></div>
+              </sc-if>
+              <sc-if value="{{ f.home.tieneAvisoInfo }}" hint-placeholder-val="{{ false }}">
+                <div data-component="AvisoResultado" style="display:flex;align-items:center;gap:16px;padding:12px 16px;border:1px solid #3D46CC;border-radius:8px;background:#F6FBFF;font:500 14px/20px Montserrat,sans-serif"><i class="uil uil-calendar-alt" style="font-size:20px;line-height:1;color:#3D46CC"></i><span style="flex:1">{{ f.home.avisoInfo }}</span><i class="uil uil-times" style="font-size:18px;line-height:1;color:#5B5B64;cursor:pointer"></i></div>
+              </sc-if>
+
+              <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:24px">
+                <div style="display:flex;flex-direction:column;gap:2px"><h1 style="margin:0;font:700 24px/28px Montserrat,sans-serif">Inicio</h1><span style="font:400 14px/20px Montserrat,sans-serif;color:#5B5B64">Servicios Corporativos KAAX · martes 6 de octubre</span></div>
+                <div style="display:flex;gap:12px">
+                  <button style="padding:8px 16px;border:1px solid #3D46CC;border-radius:4px;background:#fff;color:#3D46CC;font:700 14px/20px Montserrat,sans-serif;cursor:pointer" style-hover="background:#F6FBFF" style-focus="outline:2px solid #0086FF;outline-offset:2px">Subir documento</button>
+                  <button style="padding:8px 16px;border:1px solid #3D46CC;border-radius:4px;background:#fff;color:#3D46CC;font:700 14px/20px Montserrat,sans-serif;cursor:pointer" style-hover="background:#F6FBFF" style-focus="outline:2px solid #0086FF;outline-offset:2px">Pagar</button>
+                </div>
+              </div>
+
+              <div style="display:flex;border-bottom:1px solid #E2E4E9">
+                <button onClick="{{ f.home.irPosicion }}" style="padding:14px 16px;border:0;border-bottom:2px solid {{ f.home.tabPosBorde }};margin-bottom:-1px;background:{{ f.home.tabPosBg }};font:{{ f.home.tabPosPeso }} 16px/20px Montserrat,sans-serif;color:{{ f.home.tabPosColor }};cursor:pointer" style-focus="outline:2px solid #0086FF;outline-offset:-2px">Posición consolidada</button>
+                <button onClick="{{ f.home.irOperar }}" data-tour="clasico" style="padding:14px 16px;border:0;border-bottom:2px solid {{ f.home.tabOpBorde }};margin-bottom:-1px;background:{{ f.home.tabOpBg }};font:{{ f.home.tabOpPeso }} 16px/20px Montserrat,sans-serif;color:{{ f.home.tabOpColor }};cursor:pointer" style-focus="outline:2px solid #0086FF;outline-offset:-2px">Operar clásico</button>
+              </div>
+
+              <sc-if value="{{ f.home.tabPosicion }}" hint-placeholder-val="{{ true }}">
+              <div style="display:flex;flex-direction:column;gap:20px">
+              <section data-tour="posicion" style="display:flex;flex-direction:column;gap:10px">
+                <div style="display:flex;align-items:baseline;justify-content:space-between"><h2 style="margin:0;font:600 16px/24px Montserrat,sans-serif">Posición por divisa</h2><button style="background:none;border:0;padding:4px 0;font:600 12px/16px Montserrat,sans-serif;color:#151522;text-decoration:underline;cursor:pointer">Ver total en MXN</button></div>
+                <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px">
+                  <sc-for list="{{ f.home.posiciones }}" as="c" hint-placeholder-count="3">
+                    <article data-component="TarjetaPosicion" style="background:#fff;border-radius:8px;box-shadow:0 3px 6px rgba(0,0,0,.08);padding:20px;display:flex;flex-direction:column;gap:10px;min-width:0">
+                      <div style="display:flex;align-items:center;gap:8px"><span style="padding:2px 8px;border-radius:4px;background:#F5F7FA;box-shadow:0 3px 6px rgba(0,0,0,.08);font:700 12px/16px Montserrat,sans-serif">{{ c.div }}</span><span style="font:600 14px/20px Montserrat,sans-serif;color:#5B5B64">{{ c.nombre }}</span></div>
+                      <div style="display:flex;flex-direction:column;gap:4px;font:400 14px/20px Montserrat,sans-serif;font-variant-numeric:tabular-nums">
+                        <div style="display:flex;justify-content:space-between;gap:8px"><span style="color:#5B5B64">Saldo</span><span style="font-weight:600">{{ c.saldo }}</span></div>
+                        <sc-if value="{{ c.tienePactadas }}" hint-placeholder-val="{{ false }}"><div style="display:flex;justify-content:space-between;gap:8px"><span style="color:#5B5B64">{{ c.pactadasLabel }}</span><span style="font-weight:600">{{ c.pactadas }}</span></div></sc-if>
+                        <div style="display:flex;justify-content:space-between;gap:8px"><span style="color:#5B5B64">{{ c.pagosLabel }}</span><span style="font-weight:600">{{ c.pagos }}</span></div>
+                      </div>
+                      <div style="height:1px;background:#E2E4E9"></div>
+                      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;min-height:52px">
+                        <div style="display:flex;flex-direction:column"><span style="font:500 14px/20px Montserrat,sans-serif;color:#5B5B64">{{ c.resLabel }}</span><span style="font:600 24px/32px Montserrat,sans-serif;font-variant-numeric:tabular-nums;color:{{ c.resColor }}">{{ c.res }}</span></div>
+                        <sc-if value="{{ c.tieneBadge }}" hint-placeholder-val="{{ false }}"><span style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px 4px 8px;border-radius:16px;background:{{ c.badgeBg }};font:500 12px/16px Montserrat,sans-serif;white-space:nowrap"><span style="width:8px;height:8px;border-radius:50%;background:{{ c.badgeDot }};flex:none"></span>{{ c.badge }}</span></sc-if>
+                      </div>
+                      <sc-if value="{{ c.tieneGrafica }}" hint-placeholder-val="{{ false }}">
+                        <svg viewBox="0 0 269 48" width="100%" height="48" style="display:block;overflow:visible">
+                          <sc-if value="{{ c.g.tieneCero }}" hint-placeholder-val="{{ false }}"><line x1="14" y1="{{ c.g.ceroY }}" x2="269" y2="{{ c.g.ceroY }}" stroke="#DCDCDE" stroke-width="1" stroke-dasharray="3 3"></line><text x="0" y="{{ c.g.ceroLabelY }}" font-size="10" font-weight="600" fill="#5B5B64" font-family="Montserrat,sans-serif">0</text></sc-if>
+                          <polyline points="{{ c.g.puntos }}" fill="none" stroke="#4D9EF7" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"></polyline>
+                          <sc-if value="{{ c.g.tieneMarca }}" hint-placeholder-val="{{ false }}"><circle cx="{{ c.g.mx }}" cy="{{ c.g.my }}" r="4" fill="#B40909"></circle></sc-if>
+                        </svg>
+                        <div style="display:flex;justify-content:space-between;font:400 12px/16px Montserrat,sans-serif;color:#5B5B64"><span>mar 6</span><span>mié 7</span><span>jue 8</span><span style="color:{{ c.vieColor }};font-weight:{{ c.viePeso }}">vie 9</span></div>
+                      </sc-if>
+                      <span style="font:400 12px/16px Montserrat,sans-serif;color:#5B5B64;font-variant-numeric:tabular-nums;min-height:16px;text-wrap:pretty">{{ c.linea }}</span>
+                      <sc-if value="{{ c.tieneAccion }}" hint-placeholder-val="{{ false }}"><button style="align-self:flex-start;margin-top:4px;padding:8px 16px;border:0;border-radius:4px;background:#3D46CC;color:#fff;font:700 14px/20px Montserrat,sans-serif;cursor:pointer" style-hover="background:#0086FF" style-focus="outline:2px solid #0086FF;outline-offset:2px">{{ c.accion }}</button></sc-if>
+                    </article>
+                  </sc-for>
+                </div>
+              </section>
+
+              <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;align-items:start">
+                <div style="grid-column:span 2;display:flex;flex-direction:column;gap:20px;min-width:0">
+                  <section style="display:flex;flex-direction:column;gap:8px">
+                    <h2 style="margin:0;font:600 16px/24px Montserrat,sans-serif">Lo nuevo</h2>
+                    <div data-component="FranjaNuevo" style="display:flex;align-items:center;gap:16px;padding:12px 16px;border-radius:8px;background:#F6FBFF;border:1px solid #DCDCDE">
+                      <div style="display:flex;flex-direction:column;gap:2px;flex:1;min-width:0">
+                        <span style="font:400 14px/20px Montserrat,sans-serif"><span style="font-weight:600;color:#177B4B;font-variant-numeric:tabular-nums">{{ f.home.nuevo.monto }}</span> de {{ f.home.nuevo.de }}</span>
+                        <span style="font:400 12px/16px Montserrat,sans-serif;color:#5B5B64">{{ f.home.nuevo.meta }}</span>
+                      </div>
+                      <button style="background:none;border:0;padding:4px 8px;font:600 12px/16px Montserrat,sans-serif;color:#151522;text-decoration:underline;cursor:pointer">Comprobante</button>
+                      <button style="padding:4px 16px;border:1px solid #3D46CC;border-radius:4px;background:#fff;color:#3D46CC;font:700 14px/24px Montserrat,sans-serif;cursor:pointer;white-space:nowrap" style-hover="background:#F6FBFF" style-focus="outline:2px solid #0086FF;outline-offset:2px">Usar para pagar</button>
+                    </div>
+                  </section>
+
+                  <section data-tour="movimientos" style="display:flex;flex-direction:column">
+                    <div style="display:flex;align-items:baseline;justify-content:space-between;padding-bottom:8px;border-bottom:1px solid #E2E4E9"><h2 style="margin:0;font:600 16px/24px Montserrat,sans-serif">Movimientos</h2></div>
+                    <span style="padding:10px 0 2px;font:700 12px/16px Montserrat,sans-serif;color:#5B5B64">Próximos</span>
+                    <sc-for list="{{ f.home.proximos }}" as="p" hint-placeholder-count="3">
+                      <div data-component="FilaMovimiento" onClick="{{ p.onPagar }}" style="display:grid;grid-template-columns:56px minmax(0,1fr) 160px 120px;align-items:center;gap:16px;min-height:44px;padding:4px 8px;margin:0 -8px;border-bottom:1px solid #E2E4E9;border-radius:4px;cursor:pointer" style-hover="background:#F6FBFF">
+                        <span style="font:500 12px/16px Montserrat,sans-serif;color:#5B5B64">{{ p.fecha }}</span>
+                        <div style="display:flex;flex-direction:column;min-width:0"><span style="font:500 14px/20px Montserrat,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.nombre }}</span><sc-if value="{{ p.tieneDetalle }}" hint-placeholder-val="{{ false }}"><span style="font:400 12px/16px Montserrat,sans-serif;color:#5B5B64;font-variant-numeric:tabular-nums">{{ p.detalle }}</span></sc-if></div>
+                        <span style="text-align:right;font:600 14px/20px Montserrat,sans-serif;font-variant-numeric:tabular-nums;color:{{ p.color }}">{{ p.monto }}</span>
+                        <div style="display:flex;justify-content:flex-end"><sc-if value="{{ p.tieneAccion }}" hint-placeholder-val="{{ true }}"><button onClick="{{ p.onPagar }}" style="background:none;border:0;padding:4px 0;font:700 14px/20px Montserrat,sans-serif;color:#3D46CC;cursor:pointer" style-hover="text-decoration:underline" style-focus="outline:2px solid #0086FF;outline-offset:2px">Pagar</button></sc-if><sc-if value="{{ p.tieneBadge }}" hint-placeholder-val="{{ false }}"><span style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px 4px 8px;border-radius:16px;background:{{ p.badgeBg }};font:500 12px/16px Montserrat,sans-serif;white-space:nowrap"><span style="width:8px;height:8px;border-radius:50%;background:{{ p.badgeDot }};flex:none"></span>{{ p.badge }}</span></sc-if></div>
+                      </div>
+                    </sc-for>
+                    <div style="display:flex;align-items:center;gap:12px;padding:14px 0 2px"><span style="font:700 12px/16px Montserrat,sans-serif;color:#5B5B64;letter-spacing:.06em;text-transform:uppercase">Hoy</span><span style="flex:1;height:1px;background:#E2E4E9"></span></div>
+                    <span style="padding:4px 0 2px;font:700 12px/16px Montserrat,sans-serif;color:#5B5B64">Realizados</span>
+                    <sc-for list="{{ f.home.realizados }}" as="r" hint-placeholder-count="3">
+                      <div data-component="FilaMovimiento" style="display:grid;grid-template-columns:56px minmax(0,1fr) 160px 120px;align-items:center;gap:16px;min-height:44px;padding:4px 8px;margin:0 -8px;border-bottom:1px solid #E2E4E9;border-radius:4px;cursor:pointer" style-hover="background:#F6FBFF">
+                        <span style="font:500 12px/16px Montserrat,sans-serif;color:#5B5B64">{{ r.fecha }}</span>
+                        <div style="display:flex;flex-direction:column;min-width:0"><span style="font:500 14px/20px Montserrat,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.nombre }}</span><sc-if value="{{ r.tieneDetalle }}" hint-placeholder-val="{{ false }}"><span style="font:400 12px/16px Montserrat,sans-serif;color:#5B5B64;font-variant-numeric:tabular-nums">{{ r.detalle }}</span></sc-if></div>
+                        <span style="text-align:right;font:600 14px/20px Montserrat,sans-serif;font-variant-numeric:tabular-nums;color:{{ r.color }}">{{ r.monto }}</span>
+                        <div style="display:flex;justify-content:flex-end"><sc-if value="{{ r.tieneBadge }}" hint-placeholder-val="{{ false }}"><span style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px 4px 8px;border-radius:16px;background:{{ r.badgeBg }};font:500 12px/16px Montserrat,sans-serif;white-space:nowrap"><span style="width:8px;height:8px;border-radius:50%;background:{{ r.badgeDot }};flex:none"></span>{{ r.badge }}</span></sc-if></div>
+                      </div>
+                    </sc-for>
+                  </section>
+                </div>
+
+                <div style="display:flex;flex-direction:column;gap:20px;min-width:0">
+                  <section data-component="TarjetaTipoDeCambio" data-tour="tdc" style="background:#fff;border:1px solid #E2E4E9;border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:12px">
+                    <div style="display:flex;align-items:center;justify-content:space-between"><h2 style="margin:0;font:600 16px/24px Montserrat,sans-serif">Tipo de cambio</h2><span style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px 4px 8px;border-radius:16px;background:#EBFFF6;font:500 12px/16px Montserrat,sans-serif"><span style="width:8px;height:8px;border-radius:50%;background:#82DAB5"></span>En vivo</span></div>
+                    <span style="font:600 14px/20px Montserrat,sans-serif">USD/MXN</span>
+                    <div style="display:flex;flex-direction:column;gap:6px;font-variant-numeric:tabular-nums">
+                      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px"><span style="font:400 14px/20px Montserrat,sans-serif;color:#5B5B64">Para comprar USD</span><span style="font:600 16px/20px Montserrat,sans-serif">{{ f.home.tdc.compra }}</span></div>
+                      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px"><span style="font:400 14px/20px Montserrat,sans-serif;color:#5B5B64">Para vender USD</span><span style="font:600 16px/20px Montserrat,sans-serif">{{ f.home.tdc.venta }}</span></div>
+                    </div>
+                    <svg viewBox="0 0 288 36" width="100%" height="36" preserveAspectRatio="none" style="display:block;overflow:visible"><polyline points="{{ f.home.tdc.g.puntos }}" fill="none" stroke="#4D9EF7" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"></polyline></svg>
+                    <div style="display:flex;justify-content:space-between;font:400 12px/16px Montserrat,sans-serif;color:#5B5B64"><span>Tendencia del día</span><span>10:42</span></div>
+                    <span style="font:400 12px/16px Montserrat,sans-serif;color:#5B5B64;padding-top:10px;border-top:1px solid #E2E4E9">Solo los pares de tus posiciones</span>
+                  </section>
+
+                  <section data-component="ModuloCuentas" style="background:#fff;border:1px solid #E2E4E9;border-radius:8px;padding:16px;display:flex;flex-direction:column">
+                    <div style="display:flex;align-items:baseline;justify-content:space-between;padding-bottom:8px;border-bottom:1px solid #E2E4E9"><h2 style="margin:0;font:600 16px/24px Montserrat,sans-serif">Cuentas</h2></div>
+                    <sc-for list="{{ f.home.cuentas }}" as="k" hint-placeholder-count="3">
+                      <div style="display:flex;flex-direction:column;gap:2px;padding:10px 0;border-bottom:1px solid #E2E4E9">
+                        <span style="font:500 14px/20px Montserrat,sans-serif">{{ k.nombre }}</span>
+                        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px"><span style="font:400 12px/16px Montserrat,sans-serif;color:#5B5B64;font-variant-numeric:tabular-nums">{{ k.num }}</span><span style="font:600 14px/20px Montserrat,sans-serif;font-variant-numeric:tabular-nums;white-space:nowrap">{{ k.saldo }}</span></div>
+                      </div>
+                    </sc-for>
+                    <button style="margin-top:16px;padding:4px 16px;border:1px solid #3D46CC;border-radius:4px;background:#fff;color:#3D46CC;font:700 14px/24px Montserrat,sans-serif;cursor:pointer" style-hover="background:#F6FBFF" style-focus="outline:2px solid #0086FF;outline-offset:2px">Ver todas mis cuentas</button>
+                  </section>
+                </div>
+              </div>
+              </div>
+              </sc-if>
+
+              <sc-if value="{{ f.home.tabOperar }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;flex-direction:column;gap:16px">
+                <div data-component="AvisoVistaAnterior" style="display:flex;gap:16px;align-items:center;padding:16px;border:1px solid #3D46CC;border-radius:8px;background:#F6FBFF"><i class="uil uil-info-circle" style="font-size:20px;line-height:1;color:#3D46CC;flex:none"></i><span style="flex:1;font:400 14px/20px Montserrat,sans-serif;text-wrap:pretty">Estás en la vista anterior de Operar. Puedes seguir usándola mientras te acostumbras al nuevo flujo de pago.</span><button onClick="{{ f.op.onNuevoFlujo }}" style="background:none;border:0;padding:4px 0;font:700 14px/20px Montserrat,sans-serif;color:#3D46CC;text-decoration:underline;cursor:pointer;white-space:nowrap" style-focus="outline:2px solid #0086FF;outline-offset:2px">Probar el nuevo flujo</button></div>
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:16px"><span style="font:400 14px/20px Montserrat,sans-serif;color:#5B5B64">¿Qué quieres hacer hoy?</span><div style="display:flex;gap:20px"><button style="background:none;border:0;padding:4px 0;font:600 12px/16px Montserrat,sans-serif;color:#151522;text-decoration:underline;cursor:pointer">Horarios de operación</button><button style="background:none;border:0;padding:4px 0;font:600 12px/16px Montserrat,sans-serif;color:#151522;text-decoration:underline;cursor:pointer">Operaciones recientes</button></div></div>
+                <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;align-items:start">
+                  <section data-component="FormularioOperar" style="grid-column:span 2;background:#fff;border-radius:8px;box-shadow:0 3px 6px rgba(0,0,0,.08);display:flex;flex-direction:column">
+                    <div style="display:flex;border-bottom:1px solid #E2E4E9">
+                      <sc-for list="{{ f.op.tabs }}" as="t" hint-placeholder-count="3">
+                        <div onClick="{{ t.pick }}" style="flex:1;text-align:center;padding:14px 16px;margin-bottom:-1px;background:{{ t.bg }};border-bottom:2px solid {{ t.borde }};border-radius:{{ t.radio }};font:{{ t.peso }} 16px/20px Montserrat,sans-serif;color:{{ t.color }};cursor:pointer">{{ t.label }}</div>
+                      </sc-for>
+                    </div>
+                    <div style="padding:20px 24px 24px;display:flex;flex-direction:column;gap:16px">
+                      <sc-if value="{{ f.op.cerrado }}" hint-placeholder-val="{{ false }}">
+                        <div style="display:flex;gap:16px;align-items:center;padding:16px;border:1px solid #C78F00;border-radius:8px;background:#FCEFCE"><i class="uil uil-clock-ten" style="font-size:20px;line-height:1;color:#151522;flex:none"></i><div style="display:flex;flex-direction:column;gap:2px;flex:1"><span style="font:600 14px/20px Montserrat,sans-serif">Mercado cerrado. Abre mañana a las 6:30.</span><span style="font:400 12px/16px Montserrat,sans-serif;color:#5B5B64">Operas de lunes a viernes de 6:30 a 16:30, hora de CDMX. Puedes dejar el formulario listo.</span></div><span style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px 4px 8px;border-radius:16px;border:1px dashed #8492A6;font:500 12px/16px Montserrat,sans-serif;color:#5B5B64;white-space:nowrap">Programar · Futuro</span></div>
+                      </sc-if>
+                      <div style="display:flex;justify-content:space-between;align-items:center"><span style="font:600 14px/20px Montserrat,sans-serif;color:#5B5B64">{{ f.op.subtitulo }}</span><span style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px 4px 8px;border-radius:16px;background:{{ f.op.mercadoBg }};font:500 12px/16px Montserrat,sans-serif"><span style="width:8px;height:8px;border-radius:50%;background:{{ f.op.mercadoDot }}"></span>{{ f.op.mercado }}</span></div>
+
+                      <sc-if value="{{ f.op.esCambio }}" hint-placeholder-val="{{ true }}">
+                        <div style="display:grid;grid-template-columns:200px minmax(0,1fr);gap:16px">
+                          <div style="display:flex;flex-direction:column;gap:6px;position:relative">
+                            <label style="font:700 12px/16px Montserrat,sans-serif;color:#1C293B">Elige un par</label>
+                            <div onClick="{{ f.op.onPar }}" style="min-height:48px;padding:12px;border-radius:8px;display:flex;align-items:center;justify-content:space-between;gap:8px;border:{{ f.op.parBorde }};background:#fff;font:600 14px/20px Montserrat,sans-serif;cursor:pointer">{{ f.op.par }}<i class="uil {{ f.op.parChevron }}" style="font-size:16px;line-height:1;color:#5B5B64"></i></div>
+                            <sc-if value="{{ f.op.parAbierto }}" hint-placeholder-val="{{ false }}">
+                              <div data-component="SelectorPar" style="position:absolute;top:76px;left:0;width:300px;background:#fff;border-radius:8px;box-shadow:0 6px 16px -2px rgba(0,0,0,.12);border:1px solid #E2E4E9;padding:8px;display:flex;flex-direction:column;gap:2px;z-index:5">
+                                <sc-for list="{{ f.op.pares }}" as="g" hint-placeholder-count="2">
+                                  <span style="padding:8px 8px 4px;font:700 12px/16px Montserrat,sans-serif;color:#5B5B64">{{ g.titulo }}</span>
+                                  <sc-for list="{{ g.items }}" as="pi" hint-placeholder-count="2">
+                                    <div onClick="{{ pi.pick }}" style="display:flex;align-items:center;justify-content:space-between;gap:12px;height:40px;padding:0 8px;border-radius:8px;background:{{ pi.bg }};cursor:pointer" style-hover="background:#F6FBFF"><span style="font:600 14px/20px Montserrat,sans-serif">{{ pi.par }}</span><span style="font:400 12px/16px Montserrat,sans-serif;color:#5B5B64">{{ pi.nombre }}</span></div>
+                                  </sc-for>
+                                </sc-for>
+                              </div>
+                            </sc-if>
+                          </div>
+                          <div style="display:flex;flex-direction:column;gap:6px">
+                            <div style="display:grid;grid-template-columns:1fr 1fr"><label style="font:700 12px/16px Montserrat,sans-serif;color:#1C293B">{{ f.op.labelIzq }}</label><label style="font:700 12px/16px Montserrat,sans-serif;color:#1C293B;padding-left:12px">{{ f.op.labelDer }}</label></div>
+                            <div data-component="CampoMontoDoble" style="display:flex;min-height:48px;border:{{ f.op.splitBorde }};border-radius:8px;overflow:hidden;background:#fff;font-variant-numeric:tabular-nums">
+                              <div style="flex:1;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px;border-right:1px solid #E2E4E9;font:600 16px/20px Montserrat,sans-serif;color:{{ f.op.montoIzqColor }}">{{ f.op.montoIzq }}<span style="font:600 10px/12px Montserrat,sans-serif;letter-spacing:1.5px;color:#7A7A92">{{ f.op.divIzq }}</span></div>
+                              <div style="flex:1;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px;font:600 16px/20px Montserrat,sans-serif;color:{{ f.op.montoDerColor }}">{{ f.op.montoDer }}<span style="font:600 10px/12px Montserrat,sans-serif;letter-spacing:1.5px;color:#7A7A92">{{ f.op.divDer }}</span></div>
+                            </div>
+                            <sc-if value="{{ f.op.errorMonto }}" hint-placeholder-val="{{ false }}"><span style="display:flex;align-items:center;gap:6px;font:500 12px/16px Montserrat,sans-serif;color:#B40909"><i class="uil uil-info-circle" style="font-size:14px;line-height:1"></i>{{ f.op.errorTexto }}</span></sc-if>
+                          </div>
+                        </div>
+                      </sc-if>
+
+                      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+                        <div style="display:flex;flex-direction:column;gap:6px"><label style="font:700 12px/16px Montserrat,sans-serif;color:#1C293B">Origen</label><div style="min-height:48px;padding:12px;border-radius:8px;display:flex;align-items:center;justify-content:space-between;gap:8px;border:0.5px solid #021734;background:#fff;font:400 14px/20px Montserrat,sans-serif;color:{{ f.op.origenColor }};cursor:pointer">{{ f.op.origen }}<i class="uil uil-angle-down-b" style="font-size:16px;line-height:1;color:#5B5B64"></i></div></div>
+                        <div style="display:flex;flex-direction:column;gap:6px;position:relative">
+                          <label style="font:700 12px/16px Montserrat,sans-serif;color:#1C293B">Destino</label>
+                          <div onClick="{{ f.op.onDestino }}" style="min-height:48px;padding:12px;border-radius:8px;display:flex;align-items:center;justify-content:space-between;gap:8px;border:{{ f.op.destinoBorde }};background:#fff;font:400 14px/20px Montserrat,sans-serif;color:{{ f.op.destinoColor }};cursor:pointer"><span style="display:flex;align-items:center;gap:8px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><sc-if value="{{ f.op.destinoAbierto }}" hint-placeholder-val="{{ false }}"><i class="uil uil-search" style="font-size:16px;line-height:1;color:#5B5B64"></i></sc-if>{{ f.op.destino }}<sc-if value="{{ f.op.destinoAbierto }}" hint-placeholder-val="{{ false }}"><span style="width:1px;height:18px;background:#151522;display:inline-block"></span></sc-if></span><i class="uil {{ f.op.destinoChevron }}" style="font-size:16px;line-height:1;color:#5B5B64"></i></div>
+                          <sc-if value="{{ f.op.destinoAbierto }}" hint-placeholder-val="{{ false }}">
+                            <div data-component="SelectorDestino" style="position:absolute;top:76px;left:0;right:0;background:#fff;border-radius:8px;box-shadow:0 6px 16px -2px rgba(0,0,0,.12);border:1px solid #E2E4E9;padding:8px;display:flex;flex-direction:column;gap:2px;z-index:5">
+                              <sc-for list="{{ f.op.destinos }}" as="g" hint-placeholder-count="2">
+                                <span style="padding:8px 8px 4px;font:700 12px/16px Montserrat,sans-serif;color:#5B5B64">{{ g.titulo }}</span>
+                                <sc-for list="{{ g.items }}" as="di" hint-placeholder-count="2">
+                                  <div onClick="{{ di.pick }}" style="display:flex;align-items:center;gap:10px;min-height:44px;padding:4px 8px;border-radius:8px;background:{{ di.bg }};cursor:pointer" style-hover="background:#F6FBFF"><span style="padding:2px 6px;border-radius:4px;background:#F5F7FA;box-shadow:0 3px 6px rgba(0,0,0,.08);font:700 10px/14px Montserrat,sans-serif;flex:none">{{ di.div }}</span><div style="display:flex;flex-direction:column;flex:1;min-width:0"><span style="font:600 14px/20px Montserrat,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ di.nombre }}</span><span style="font:400 12px/16px Montserrat,sans-serif;color:#5B5B64;font-variant-numeric:tabular-nums">{{ di.sub }}</span></div></div>
+                                </sc-for>
+                              </sc-for>
+                              <div style="display:flex;align-items:center;gap:8px;padding:10px 8px 4px;border-top:1px solid #E2E4E9;margin-top:4px;font:600 12px/16px Montserrat,sans-serif;color:#3D46CC;cursor:pointer"><i class="uil uil-plus" style="font-size:16px;line-height:1"></i>Agregar destinatario</div>
+                            </div>
+                          </sc-if>
+                        </div>
+                      </div>
+
+                      <sc-if value="{{ f.op.esTransfer }}" hint-placeholder-val="{{ false }}">
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+                          <div style="display:flex;flex-direction:column;gap:6px"><label style="font:700 12px/16px Montserrat,sans-serif;color:#1C293B">Monto</label><div data-component="CampoMonto" style="min-height:48px;padding:12px;border-radius:8px;display:flex;align-items:center;justify-content:space-between;gap:8px;border:{{ f.op.splitBorde }};background:#fff;font:600 16px/20px Montserrat,sans-serif;font-variant-numeric:tabular-nums;color:{{ f.op.montoIzqColor }}">{{ f.op.montoIzq }}<span style="font:600 10px/12px Montserrat,sans-serif;letter-spacing:1.5px;color:#7A7A92">{{ f.op.divIzq }}</span></div></div>
+                          <div style="display:flex;flex-direction:column;gap:6px"><label style="font:700 12px/16px Montserrat,sans-serif;color:#1C293B">Disponible en origen</label><span style="min-height:48px;display:flex;align-items:center;font:400 14px/20px Montserrat,sans-serif;color:#5B5B64;font-variant-numeric:tabular-nums">{{ f.op.disponible }}</span></div>
+                        </div>
+                      </sc-if>
+
+                      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+                        <div style="display:flex;flex-direction:column;gap:6px"><label style="font:700 12px/16px Montserrat,sans-serif;color:#1C293B">Motivo de pago</label><div style="min-height:48px;padding:12px;border-radius:8px;display:flex;align-items:center;justify-content:space-between;gap:8px;border:0.5px solid #021734;background:#fff;font:400 14px/20px Montserrat,sans-serif;color:{{ f.op.motivoColor }};cursor:pointer">{{ f.op.motivo }}<i class="uil uil-angle-down-b" style="font-size:16px;line-height:1;color:#5B5B64"></i></div></div>
+                        <div style="display:flex;flex-direction:column;gap:6px"><label style="font:700 12px/16px Montserrat,sans-serif;color:#1C293B">Referencia <span style="font-weight:400;color:#5B5B64">(opcional)</span></label><div style="min-height:48px;padding:12px;border-radius:8px;display:flex;align-items:center;border:0.5px solid #021734;background:#fff;font:400 14px/20px Montserrat,sans-serif;color:{{ f.op.referenciaColor }};cursor:text">{{ f.op.referencia }}</div></div>
+                      </div>
+
+                      <sc-if value="{{ f.op.vencido }}" hint-placeholder-val="{{ false }}">
+                        <div style="display:flex;gap:16px;align-items:flex-start;padding:16px;border:1px solid #770505;border-radius:8px;background:#F0CECE"><i class="uil uil-info-circle" style="font-size:20px;line-height:1;color:#770505;flex:none"></i><div style="display:flex;flex-direction:column;gap:2px"><span style="font:600 14px/20px Montserrat,sans-serif">El precio venció. Pide uno nuevo.</span><span style="font:400 12px/16px Montserrat,sans-serif;color:#5B5B64">El precio fijo dura 2 minutos. Los montos volvieron al indicativo.</span></div></div>
+                      </sc-if>
+
+                      <div data-component="Cotizacion" style="display:flex;flex-direction:column;gap:8px">
+                        <div style="display:flex;justify-content:space-between;align-items:center;gap:16px"><span style="font:700 12px/16px Montserrat,sans-serif;color:#1C293B">{{ f.op.cotTitulo }}</span><span style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px 4px 8px;border-radius:16px;background:{{ f.op.precioBg }};font:500 12px/16px Montserrat,sans-serif;font-variant-numeric:tabular-nums"><span style="width:8px;height:8px;border-radius:50%;background:{{ f.op.precioDot }}"></span>{{ f.op.precioEstado }}</span></div>
+                        <div style="display:flex;align-items:stretch">
+                          <div style="flex:1;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:10px 16px;background:#F5F7FA;border-radius:{{ f.op.cotRadio }};font-variant-numeric:tabular-nums">
+                            <div style="display:flex;flex-direction:column;gap:2px"><span style="font:400 12px/16px Montserrat,sans-serif;color:#5B5B64">{{ f.op.cotIzqLabel }}</span><span style="font:600 16px/20px Montserrat,sans-serif;color:{{ f.op.cotColor }}">{{ f.op.cotIzq }}</span></div>
+                            <i class="uil uil-arrow-right" style="font-size:18px;line-height:1;color:#5B5B64"></i>
+                            <div style="display:flex;flex-direction:column;gap:2px;text-align:right"><span style="font:400 12px/16px Montserrat,sans-serif;color:#5B5B64">{{ f.op.cotDerLabel }}</span><span style="font:600 16px/20px Montserrat,sans-serif;color:{{ f.op.cotColor }}">{{ f.op.cotDer }}</span></div>
+                          </div>
+                          <sc-if value="{{ f.op.esCambio }}" hint-placeholder-val="{{ true }}">
+                            <div data-component="CajaTdcValiu" style="min-width:170px;padding:10px 16px;background:#fff;border:2px solid {{ f.op.tdcBorde }};border-radius:0 8px 8px 0;display:flex;flex-direction:column;gap:3px;justify-content:center">
+                              <div style="display:flex;justify-content:space-between;gap:8px"><span style="font:700 10px/14px Montserrat,sans-serif">TDC Valiu</span><span style="font:400 10px/14px Montserrat,sans-serif;color:#5B5B64">{{ f.op.tdcTipo }}</span></div>
+                              <div style="display:flex;align-items:baseline;gap:4px"><span style="font:700 18px/24px Montserrat,sans-serif;font-variant-numeric:tabular-nums;color:{{ f.op.tdcColor }}">{{ f.op.tdc }}</span><span style="font:400 11px/14px Montserrat,sans-serif;color:#5B5B64">MXN</span></div>
+                            </div>
+                          </sc-if>
+                        </div>
+                        <sc-if value="{{ f.op.esTransfer }}" hint-placeholder-val="{{ false }}"><span style="font:400 12px/16px Montserrat,sans-serif;color:#5B5B64">Misma divisa en origen y destino: no hay tipo de cambio ni precio que fijar.</span></sc-if>
+                      </div>
+
+                      <sc-if value="{{ f.op.conToken }}" hint-placeholder-val="{{ false }}">
+                        <div data-component="CampoToken" style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;border-top:1px solid #E2E4E9;padding-top:16px">
+                          <div style="display:flex;flex-direction:column;gap:8px">
+                            <label style="font:700 12px/16px Montserrat,sans-serif;color:#1C293B">Ingresa el código de tu token</label>
+                            <div style="display:flex;gap:8px">
+                              <sc-for list="{{ f.op.cajas }}" as="cj" hint-placeholder-count="6">
+                                <span style="width:44px;height:48px;border:{{ cj.borde }};border-radius:8px;background:#fff;display:flex;align-items:center;justify-content:center;font:600 18px/24px Montserrat,sans-serif;font-variant-numeric:tabular-nums">{{ cj.valor }}<span style="width:1px;height:20px;background:{{ cj.caret }}"></span></span>
+                              </sc-for>
+                            </div>
+                          </div>
+                          <div style="display:flex;align-items:center;gap:16px"><button onClick="{{ f.op.onCancelar }}" style="background:none;border:0;padding:4px 0;font:700 14px/20px Montserrat,sans-serif;color:#3D46CC;cursor:pointer">Cancelar</button><button onClick="{{ f.op.onCta }}" style="padding:8px 16px;border:0;border-radius:4px;background:#3D46CC;color:#fff;font:700 14px/24px Montserrat,sans-serif;cursor:pointer;white-space:nowrap" style-hover="background:#0086FF" style-focus="outline:2px solid #0086FF;outline-offset:2px">{{ f.op.cta }}</button></div>
+                        </div>
+                      </sc-if>
+                      <sc-if value="{{ f.op.sinToken }}" hint-placeholder-val="{{ true }}">
+                        <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding-top:4px">
+                          <span style="display:flex;align-items:center;gap:8px;font:400 12px/16px Montserrat,sans-serif;color:#5B5B64"><i class="uil uil-info-circle" style="font-size:14px;line-height:1"></i>{{ f.op.nota }}</span>
+                          <button onClick="{{ f.op.onCta }}" style="padding:8px 16px;border:0;border-radius:4px;background:{{ f.op.ctaBg }};color:{{ f.op.ctaColor }};font:700 14px/24px Montserrat,sans-serif;cursor:{{ f.op.ctaCursor }};white-space:nowrap" style-focus="outline:2px solid #0086FF;outline-offset:2px">{{ f.op.cta }}</button>
+                        </div>
+                      </sc-if>
+                    </div>
+                  </section>
+
+                  <section data-component="ModuloCuentas" style="background:#fff;border:1px solid #E2E4E9;border-radius:8px;padding:16px;display:flex;flex-direction:column;align-self:start">
+                    <div style="display:flex;align-items:baseline;justify-content:space-between;padding-bottom:8px;border-bottom:1px solid #E2E4E9"><h2 style="margin:0;font:600 16px/24px Montserrat,sans-serif">Cuentas</h2></div>
+                    <sc-for list="{{ f.op.cuentasModulo }}" as="k" hint-placeholder-count="3">
+                      <div style="display:flex;flex-direction:column;gap:2px;padding:10px 0;border-bottom:1px solid #E2E4E9">
+                        <span style="font:500 14px/20px Montserrat,sans-serif">{{ k.nombre }}</span>
+                        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px"><span style="font:400 12px/16px Montserrat,sans-serif;color:#5B5B64;font-variant-numeric:tabular-nums">{{ k.num }}</span><span style="font:600 14px/20px Montserrat,sans-serif;font-variant-numeric:tabular-nums;white-space:nowrap">{{ k.saldo }}</span></div>
+                      </div>
+                    </sc-for>
+                    <button style="margin-top:16px;padding:4px 16px;border:1px solid #3D46CC;border-radius:4px;background:#fff;color:#3D46CC;font:700 14px/24px Montserrat,sans-serif;cursor:pointer" style-hover="background:#F6FBFF" style-focus="outline:2px solid #0086FF;outline-offset:2px">Ver todas mis cuentas</button>
+                  </section>
+                </div>
+              </div>
+              </sc-if>
+            </main>
+
+            <footer style="height:40px;flex:none;display:flex;align-items:center;justify-content:center;gap:16px;padding:0 32px;font:400 12px/16px Montserrat,sans-serif;color:#5B5B64;border-top:0.5px solid #E2E4E9;white-space:nowrap">Las operaciones bancarias serán realizadas por Banco BASE<span style="color:#DCDCDE">·</span><a href="#" style="color:#5B5B64">Términos y condiciones</a><span style="color:#DCDCDE">·</span><a href="#" style="color:#5B5B64">Aviso de privacidad</a></footer>
+          </div>
+
+          <sc-if value="{{ f.tienePanel }}" hint-placeholder-val="{{ false }}">
+            <div onClick="{{ f.panel.onCerrar }}" style="position:absolute;inset:0;background:rgba(21,21,34,.4)"></div>
+            <aside data-component="PanelOperar" style="position:absolute;top:0;right:0;bottom:0;width:480px;background:#fff;box-shadow:0 18px 40px -12px rgba(21,21,34,.22);border-radius:16px 0 0 16px;display:flex;flex-direction:column">
+              <div style="padding:20px 24px 16px;border-bottom:1px solid #E2E4E9;display:flex;flex-direction:column;gap:4px">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:12px"><h2 style="margin:0;font:600 20px/24px Montserrat,sans-serif">{{ f.panel.titulo }}</h2><button onClick="{{ f.panel.onCerrar }}" aria-label="Cerrar" style="width:32px;height:32px;border:0;border-radius:8px;background:none;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#151522" style-hover="background:#F5F7FA" style-focus="outline:2px solid #0086FF;outline-offset:2px"><i class="uil uil-times" style="font-size:20px;line-height:1"></i></button></div>
+                <span style="font:400 14px/20px Montserrat,sans-serif;color:#5B5B64;font-variant-numeric:tabular-nums">{{ f.panel.sub }}</span>
+              </div>
+
+              <div style="flex:1;min-height:0;padding:20px 24px;display:flex;flex-direction:column;gap:16px">
+                <sc-if value="{{ f.panel.esOrigen }}" hint-placeholder-val="{{ false }}">
+                  <h3 style="margin:0;font:600 16px/24px Montserrat,sans-serif">¿Desde qué cuenta pagas?</h3>
+                  <div style="display:flex;flex-direction:column;gap:10px">
+                    <sc-for list="{{ f.panel.origenes }}" as="o" hint-placeholder-count="3">
+                      <div data-component="OpcionOrigen" onClick="{{ o.pick }}" style="display:flex;gap:12px;padding:12px 16px;border:1px solid {{ o.borde }};border-radius:8px;background:{{ o.bg }};cursor:pointer" style-focus="outline:2px solid #0086FF;outline-offset:2px" tabIndex="0">
+                        <span style="width:20px;height:20px;border-radius:50%;flex:none;margin-top:1px;border:1.5px solid {{ o.radioBorde }};background:{{ o.radioBg }};box-shadow:{{ o.radioSombra }}"></span>
+                        <div style="display:flex;flex-direction:column;gap:4px;flex:1;min-width:0">
+                          <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px"><span style="font:600 14px/20px Montserrat,sans-serif;white-space:nowrap;flex:none">{{ o.nombre }}</span><span style="font:600 14px/20px Montserrat,sans-serif;font-variant-numeric:tabular-nums;text-align:right;text-wrap:balance">{{ o.pagas }}</span></div>
+                          <span style="font:400 12px/16px Montserrat,sans-serif;color:#5B5B64;font-variant-numeric:tabular-nums">{{ o.saldo }}</span>
+                          <span style="align-self:flex-start;display:inline-flex;align-items:center;gap:6px;padding:4px 12px 4px 8px;border-radius:16px;background:{{ o.consBg }};font:500 12px/16px Montserrat,sans-serif;font-variant-numeric:tabular-nums"><span style="width:8px;height:8px;border-radius:50%;background:{{ o.consDot }};flex:none"></span>{{ o.cons }}</span>
+                        </div>
+                      </div>
+                    </sc-for>
+                  </div>
+                </sc-if>
+
+                <sc-if value="{{ f.panel.esRevision }}" hint-placeholder-val="{{ false }}">
+                  <div data-component="BloqueMonto" style="border:1px solid #E2E4E9;border-radius:8px;display:flex;flex-direction:column">
+                    <div style="padding:12px 16px;display:flex;flex-direction:column;gap:4px">
+                      <div style="display:flex;justify-content:space-between;align-items:center"><span style="font:700 12px/16px Montserrat,sans-serif;color:#1C293B">Pagas</span><span style="display:inline-flex;align-items:center;gap:6px;font:400 12px/16px Montserrat,sans-serif;color:#5B5B64"><span style="width:8px;height:8px;border-radius:50%;background:#8BCAFB"></span>se actualiza en vivo</span></div>
+                      <div style="display:flex;align-items:baseline;gap:6px;font-variant-numeric:tabular-nums"><span style="font:600 24px/32px Montserrat,sans-serif">≈ 27,136.77</span><span style="font:600 12px/16px Montserrat,sans-serif;color:#5B5B64">MXN</span></div>
+                    </div>
+                    <div style="height:1px;background:#E2E4E9"></div>
+                    <div style="padding:12px 16px;display:flex;flex-direction:column;gap:4px">
+                      <div style="display:flex;justify-content:space-between;align-items:center"><span style="font:700 12px/16px Montserrat,sans-serif;color:#1C293B">Shenzhen Parts Co. recibe</span><span style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px 4px 8px;border-radius:16px;background:#F5F7FA;font:500 12px/16px Montserrat,sans-serif"><i class="uil uil-lock" style="font-size:14px;line-height:1"></i>Fijo</span></div>
+                      <div style="display:flex;align-items:baseline;gap:6px;font-variant-numeric:tabular-nums"><span style="font:600 24px/32px Montserrat,sans-serif">1,500.00</span><span style="font:600 12px/16px Montserrat,sans-serif;color:#5B5B64">USD</span></div>
+                    </div>
+                  </div>
+                  <div data-component="FechaLiquidacion" style="display:flex;flex-direction:column;gap:8px">
+                    <span style="font:700 12px/16px Montserrat,sans-serif;color:#1C293B">¿Cuándo sale el dinero?</span>
+                    <div role="radiogroup" aria-label="¿Cuándo sale el dinero?" style="display:flex;align-items:center;gap:4px;padding:4px;background:#F5F7FA;border-radius:999px;box-shadow:0 3px 6px rgba(0,0,0,.08)">
+                      <sc-for list="{{ f.panel.fechas }}" as="fd" hint-placeholder-count="4">
+                        <sc-if value="{{ fd.sel }}" hint-placeholder-val="{{ false }}"><button role="radio" aria-checked="true" onClick="{{ fd.pick }}" style="flex:1 1 auto;display:inline-flex;justify-content:center;align-items:center;gap:4px;padding:6px 12px;border-radius:999px;border:1px solid #3D46CC;background:#F6FBFF;color:#3D46CC;font:600 14px/20px Montserrat,sans-serif;white-space:nowrap;cursor:pointer" style-focus="outline:2px solid #0086FF;outline-offset:2px">{{ fd.dia }}<sc-if value="{{ fd.vence }}" hint-placeholder-val="{{ false }}"><span style="font-weight:400">· vence</span></sc-if></button></sc-if>
+                        <sc-if value="{{ fd.noSel }}" hint-placeholder-val="{{ true }}"><button role="radio" aria-checked="false" onClick="{{ fd.pick }}" style="flex:1 1 auto;display:inline-flex;justify-content:center;align-items:center;gap:4px;padding:6px 12px;border-radius:999px;border:1px solid transparent;background:transparent;color:#5B5B64;font:400 14px/20px Montserrat,sans-serif;white-space:nowrap;cursor:pointer" style-hover="background:#FFFFFF;color:#151522" style-focus="outline:2px solid #0086FF;outline-offset:2px">{{ fd.dia }}<sc-if value="{{ fd.vence }}" hint-placeholder-val="{{ false }}"><span>· vence</span></sc-if></button></sc-if>
+                      </sc-for>
+                    </div>
+                    <span style="font:400 12px/16px Montserrat,sans-serif;color:#5B5B64">El precio queda cerrado hoy, elijas el día que elijas.</span>
+                  </div>
+                  <sc-if value="{{ f.panel.fechaEsHoy }}" hint-placeholder-val="{{ true }}">
+                    <p style="margin:0;font:500 14px/20px Montserrat,sans-serif;font-variant-numeric:tabular-nums;text-wrap:pretty">Vas a pagar 1,500.00 USD con pesos. Compras los dólares a 18.091183 MXN.</p>
+                  </sc-if>
+                  <sc-if value="{{ f.panel.fechaPactada }}" hint-placeholder-val="{{ false }}">
+                    <div style="display:flex;flex-direction:column;gap:6px">
+                      <p style="margin:0;font:500 14px/20px Montserrat,sans-serif;font-variant-numeric:tabular-nums;text-wrap:pretty">Cierras hoy el precio de 1,500.00 USD. El {{ f.panel.fechaDia }} salen ≈&nbsp;27,136.77 MXN de tu Cuenta Principal MXN y se envía el pago a Shenzhen Parts Co.</p>
+                      <span style="display:flex;align-items:center;gap:8px;font:400 12px/16px Montserrat,sans-serif;color:#5B5B64"><i class="uil uil-info-circle" style="font-size:14px;line-height:1"></i><span>Hoy tienes el saldo. Asegúrate de que siga en tu cuenta el {{ f.panel.fechaDia }}.</span></span>
+                    </div>
+                  </sc-if>
+                  <div style="align-self:flex-start;min-width:170px;padding:10px 16px;border:2px solid #0086FF;border-radius:8px;display:flex;flex-direction:column;gap:3px">
+                    <div style="display:flex;justify-content:space-between;gap:12px"><span style="font:700 10px/14px Montserrat,sans-serif">TDC Valiu</span><span style="font:400 10px/14px Montserrat,sans-serif;color:#5B5B64">Precio indicativo</span></div>
+                    <div style="display:flex;align-items:baseline;gap:4px"><span style="font:700 18px/24px Montserrat,sans-serif;font-variant-numeric:tabular-nums">18.091183</span><span style="font:400 11px/14px Montserrat,sans-serif;color:#5B5B64">MXN</span></div>
+                  </div>
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                    <div style="display:flex;flex-direction:column;gap:6px"><label style="font:700 12px/16px Montserrat,sans-serif;color:#1C293B">Concepto</label><div style="min-height:48px;padding:12px;border:0.5px solid #021734;border-radius:8px;display:flex;align-items:center;justify-content:space-between;gap:8px;font:400 14px/20px Montserrat,sans-serif;cursor:pointer">Pago de factura<i class="uil uil-angle-down-b" style="font-size:16px;line-height:1;color:#5B5B64"></i></div></div>
+                    <div style="display:flex;flex-direction:column;gap:6px"><label style="font:700 12px/16px Montserrat,sans-serif;color:#1C293B">Referencia</label><div style="min-height:48px;padding:12px;border:0.5px solid #021734;border-radius:8px;display:flex;align-items:center;font:400 14px/20px Montserrat,sans-serif;cursor:text">Factura 0457</div></div>
+                  </div>
+                  <span style="font:400 14px/20px Montserrat,sans-serif;color:#5B5B64;font-variant-numeric:tabular-nums">Tu cuenta en pesos queda en ≈ 1,152,863.23 MXN.</span>
+                  <span style="display:flex;align-items:center;gap:8px;font:400 12px/16px Montserrat,sans-serif;color:#5B5B64"><i class="uil uil-info-circle" style="font-size:14px;line-height:1"></i>Ten tu token a mano: el precio dura 2 minutos.</span>
+                </sc-if>
+
+                <sc-if value="{{ f.panel.esPrecio }}" hint-placeholder-val="{{ false }}">
+                  <sc-if value="{{ f.panel.vencido }}" hint-placeholder-val="{{ false }}">
+                    <div style="display:flex;gap:16px;align-items:flex-start;padding:16px;border:1px solid #770505;border-radius:8px;background:#F0CECE"><i class="uil uil-info-circle" style="font-size:20px;line-height:1;color:#770505;flex:none"></i><div style="display:flex;flex-direction:column;gap:2px"><span style="font:600 14px/20px Montserrat,sans-serif">El precio venció. Pide uno nuevo.</span><span style="font:400 12px/16px Montserrat,sans-serif;color:#5B5B64">El precio fijo dura 2 minutos. Los montos volvieron al indicativo.</span></div></div>
+                  </sc-if>
+                  <div data-component="PrecioEjecutable" style="border:1px solid #E2E4E9;border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:12px">
+                    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px"><span style="font:700 12px/16px Montserrat,sans-serif;color:#1C293B">{{ f.panel.precioLabel }}</span><span style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px 4px 8px;border-radius:16px;background:{{ f.panel.badgeBg }};font:500 12px/16px Montserrat,sans-serif;font-variant-numeric:tabular-nums;white-space:nowrap"><span style="width:8px;height:8px;border-radius:50%;background:{{ f.panel.badgeDot }};flex:none"></span>{{ f.panel.badge }}</span></div>
+                    <div style="display:flex;align-items:baseline;gap:6px;font-variant-numeric:tabular-nums;color:{{ f.panel.precioColor }}"><span style="font:600 24px/32px Montserrat,sans-serif">{{ f.panel.tdc }}</span><span style="font:600 12px/16px Montserrat,sans-serif;color:#5B5B64">MXN</span></div>
+                    <div style="height:1px;background:#E2E4E9"></div>
+                    <div style="display:flex;flex-direction:column;gap:6px;font-variant-numeric:tabular-nums">
+                      <div style="display:flex;justify-content:space-between;gap:12px"><span style="font:400 14px/20px Montserrat,sans-serif;color:#5B5B64">Pagas</span><span style="font:600 14px/20px Montserrat,sans-serif">{{ f.panel.pagas }}</span></div>
+                      <div style="display:flex;justify-content:space-between;gap:12px"><span style="font:400 14px/20px Montserrat,sans-serif;color:#5B5B64">Shenzhen Parts Co. recibe</span><span style="font:600 14px/20px Montserrat,sans-serif">1,500.00 USD</span></div>
+                      <div style="display:flex;justify-content:space-between;gap:12px"><span style="font:400 14px/20px Montserrat,sans-serif;color:#5B5B64">Desde</span><span style="font:600 14px/20px Montserrat,sans-serif">Cuenta Principal MXN</span></div>
+                      <sc-if value="{{ f.panel.tieneSale }}" hint-placeholder-val="{{ false }}"><div style="display:flex;align-items:center;gap:8px;padding-top:2px;font:600 14px/20px Montserrat,sans-serif"><i class="uil uil-calendar-alt" style="font-size:16px;line-height:1;color:#5B5B64"></i><span>El dinero sale el {{ f.panel.fechaDia }}</span></div></sc-if>
+                    </div>
+                  </div>
+                  <div data-component="CampoToken" style="display:flex;flex-direction:column;gap:8px">
+                    <label style="font:700 12px/16px Montserrat,sans-serif;color:{{ f.panel.tokenLabelColor }}">Ingresa el código de tu token</label>
+                    <div style="display:flex;gap:8px">
+                      <sc-for list="{{ f.panel.cajas }}" as="cj" hint-placeholder-count="6">
+                        <span style="width:48px;height:48px;border:{{ cj.borde }};border-radius:8px;background:{{ cj.bg }};display:flex;align-items:center;justify-content:center"><span style="width:1px;height:20px;background:{{ cj.caret }}"></span></span>
+                      </sc-for>
+                    </div>
+                  </div>
+                </sc-if>
+
+                <sc-if value="{{ f.panel.esConfirmacionPactada }}" hint-placeholder-val="{{ false }}">
+                  <div style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:16px 0 8px;text-align:center">
+                    <i class="uil uil-calendar-alt" style="font-size:48px;line-height:1;color:#3D46CC"></i>
+                    <h3 style="margin:0;font:600 20px/24px Montserrat,sans-serif">Pago pactado</h3>
+                    <span style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px 4px 8px;border-radius:16px;background:#EDF3FF;font:500 12px/16px Montserrat,sans-serif"><span style="width:8px;height:8px;border-radius:50%;background:#0086FF"></span>Pactada</span>
+                  </div>
+                  <p style="margin:0;font:400 14px/20px Montserrat,sans-serif;font-variant-numeric:tabular-nums;text-align:center;text-wrap:pretty">Cerraste el precio en 18.092415. El {{ f.panel.fechaDia }} salen 27,138.62 MXN de tu Cuenta Principal MXN y se envían 1,500.00 USD a Shenzhen Parts Co.</p>
+                  <div style="display:flex;gap:16px;align-items:flex-start;padding:16px;border:1px solid #3D46CC;border-radius:8px;background:#F6FBFF"><i class="uil uil-info-circle" style="font-size:20px;line-height:1;color:#3D46CC;flex:none"></i><span style="font:400 14px/20px Montserrat,sans-serif;font-variant-numeric:tabular-nums;text-wrap:pretty">Ten 27,138.62 MXN en tu Cuenta Principal MXN el {{ f.panel.fechaDia }} para que el pago salga.</span></div>
+                </sc-if>
+                <sc-if value="{{ f.panel.esConfirmacion }}" hint-placeholder-val="{{ false }}">
+                  <div style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:16px 0 8px;text-align:center">
+                    <i class="uil uil-check-circle" style="font-size:48px;line-height:1;color:#3D46CC"></i>
+                    <h3 style="margin:0;font:600 20px/24px Montserrat,sans-serif">Pago enviado</h3>
+                    <span style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px 4px 8px;border-radius:16px;background:#FCEFCE;font:500 12px/16px Montserrat,sans-serif"><span style="width:8px;height:8px;border-radius:50%;background:#F5CE6C"></span>En proceso</span>
+                  </div>
+                  <div style="display:flex;flex-direction:column;border:1px solid #E2E4E9;border-radius:8px;padding:4px 16px;font-variant-numeric:tabular-nums">
+                    <sc-for list="{{ f.panel.detalle }}" as="d" hint-placeholder-count="4">
+                      <div style="display:flex;justify-content:space-between;gap:16px;padding:10px 0;border-bottom:1px solid #E2E4E9"><span style="font:400 14px/20px Montserrat,sans-serif;color:#5B5B64">{{ d.k }}</span><span style="font:600 14px/20px Montserrat,sans-serif;text-align:right">{{ d.v }}</span></div>
+                    </sc-for>
+                  </div>
+                  <span style="font:400 12px/16px Montserrat,sans-serif;color:#5B5B64;text-align:center;text-wrap:pretty">Te avisamos cuando Banco BASE confirme el envío.</span>
+                </sc-if>
+              </div>
+
+              <div style="padding:16px 24px 20px;border-top:1px solid #E2E4E9;display:flex;gap:12px">
+                <sc-if value="{{ f.panel.tieneSecundario }}" hint-placeholder-val="{{ true }}"><button onClick="{{ f.panel.onSecundario }}" style="flex:1;padding:8px 16px;border:1px solid #3D46CC;border-radius:4px;background:#fff;color:#3D46CC;font:700 14px/24px Montserrat,sans-serif;cursor:pointer" style-hover="background:#F6FBFF" style-focus="outline:2px solid #0086FF;outline-offset:2px">{{ f.panel.secundario }}</button></sc-if>
+                <button onClick="{{ f.panel.onPrimario }}" style="flex:1;padding:8px 16px;border:0;border-radius:4px;background:#3D46CC;color:#fff;font:700 16px/24px Montserrat,sans-serif;cursor:pointer" style-hover="background:#0086FF" style-focus="outline:2px solid #0086FF;outline-offset:2px">{{ f.panel.primario }}</button>
+              </div>
+            </aside>
+          </sc-if>
+
+          <sc-if value="{{ f.tieneTour }}" hint-placeholder-val="{{ false }}">
+            <div onClick="{{ f.tour.onCerrar }}" style="position:absolute;inset:0;z-index:5"></div>
+            <div style="position:absolute;left:{{ f.tour.x }}px;top:{{ f.tour.y }}px;width:{{ f.tour.w }}px;height:{{ f.tour.h }}px;border-radius:12px;box-shadow:0 0 0 2000px rgba(21,21,34,.55);outline:2px solid #0086FF;pointer-events:none;z-index:6"></div>
+            <div data-component="PasoOnboarding" style="position:absolute;left:{{ f.tour.cx }}px;top:{{ f.tour.cy }}px;width:320px;background:#fff;border-radius:8px;box-shadow:0 18px 40px -12px rgba(21,21,34,.22);padding:20px;display:flex;flex-direction:column;gap:12px;z-index:7">
+              <div style="display:flex;align-items:center;justify-content:space-between"><span style="font:700 12px/16px Montserrat,sans-serif;color:#5B5B64">{{ f.tour.pasoTxt }}</span><button onClick="{{ f.tour.onCerrar }}" aria-label="Cerrar recorrido" style="width:28px;height:28px;margin:-6px -8px -6px 0;border:0;border-radius:8px;background:none;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#151522" style-hover="background:#F5F7FA" style-focus="outline:2px solid #0086FF;outline-offset:2px"><i class="uil uil-times" style="font-size:18px;line-height:1"></i></button></div>
+              <h3 style="margin:0;font:600 16px/24px Montserrat,sans-serif">{{ f.tour.titulo }}</h3>
+              <p style="margin:0;font:400 14px/20px Montserrat,sans-serif;color:#5B5B64;text-wrap:pretty">{{ f.tour.texto }}</p>
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding-top:4px">
+                <div style="display:flex;gap:6px"><sc-for list="{{ f.tour.puntos }}" as="pt" hint-placeholder-count="4"><span style="width:8px;height:8px;border-radius:50%;background:{{ pt.bg }}"></span></sc-for></div>
+                <div style="display:flex;align-items:center;gap:16px">
+                  <sc-if value="{{ f.tour.tieneAtras }}" hint-placeholder-val="{{ false }}"><button onClick="{{ f.tour.onAtras }}" style="background:none;border:0;padding:4px 0;font:700 14px/20px Montserrat,sans-serif;color:#3D46CC;cursor:pointer" style-focus="outline:2px solid #0086FF;outline-offset:2px">Atrás</button></sc-if>
+                  <button onClick="{{ f.tour.onSiguiente }}" style="padding:8px 16px;border:0;border-radius:4px;background:#3D46CC;color:#fff;font:700 14px/20px Montserrat,sans-serif;cursor:pointer" style-hover="background:#0086FF" style-focus="outline:2px solid #0086FF;outline-offset:2px">{{ f.tour.cta }}</button>
+                </div>
+              </div>
+            </div>
+          </sc-if>
+        </div>
+      </section>
+    </sc-for>
+      </div>
+    </div>
+  </sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;modo&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;tablero&quot;,&quot;tsType&quot;:&quot;'tablero' | 'prototipo'&quot;,&quot;options&quot;:[&quot;tablero&quot;,&quot;prototipo&quot;],&quot;section&quot;:&quot;Vista&quot;}}">
+class Component extends DCLogic {
+  state = { modo: null, actual: 17, restante: 119, pausado: false, rects: {}, fecha: 'hoy' };
+  orden = [1, 2, 3, 4, 5, 6, 7, 21, 22, 23, 24, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
+  ir(n) {
+    if (!n) return;
+    const s = { actual: n };
+    if (n === 4 || n === 11 || n === 22) Object.assign(s, { restante: 119, pausado: false });
+    if (n === 3) s.fecha = 'hoy';
+    if (n >= 21 && (this.state.fecha || 'hoy') === 'hoy') s.fecha = 'jue8';
+    this.setState(s);
+  }
+  medir() {
+    const rects = {};
+    document.querySelectorAll('section[data-tour-frame]:not([data-tour-frame=""])').forEach(sec => {
+      const box = sec.querySelector('[data-frame-box]'), t = sec.querySelector('[data-tour="' + sec.getAttribute('data-tour-frame') + '"]');
+      if (!box || !t) return;
+      const a = box.getBoundingClientRect(), b = t.getBoundingClientRect(), k = a.width ? 1280 / a.width : 1;
+      rects[sec.id] = { x: Math.round((b.left - a.left) * k), y: Math.round((b.top - a.top) * k), w: Math.round(b.width * k), h: Math.round(b.height * k), H: Math.round(a.height * k) };
+    });
+    if (JSON.stringify(rects) !== JSON.stringify(this.state.rects)) this.setState({ rects });
+  }
+  componentDidUpdate() {
+    const m = this.modo();
+    if (m !== this._modoPrev) { this._modoPrev = m; if (m === 'prototipo') { this.setState({ actual: 17, restante: 119, pausado: false }); return; } }
+    this.medir();
+  }
+  modo() { return this.state.modo || this.props.modo || 'tablero'; }
+  componentDidMount() {
+    this._key = (e) => {
+      if (this.modo() !== 'prototipo') return;
+      if (e.key === 'p' || e.key === 'P') this.setState(s => ({ pausado: !s.pausado }));
+      if (e.key === 'ArrowRight') this.ir(this.orden[Math.min(this.orden.length - 1, this.orden.indexOf(this.state.actual) + 1)]);
+      if (e.key === 'ArrowLeft') this.ir(this.orden[Math.max(0, this.orden.indexOf(this.state.actual) - 1)]);
+    };
+    window.addEventListener('keydown', this._key);
+    this._modoPrev = this.modo();
+    this._medir = () => this.medir();
+    setTimeout(this._medir, 300); setTimeout(this._medir, 1500);
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => setTimeout(this._medir, 50));
+    this._tick = setInterval(() => {
+      const s = this.state, sig = { 4: 5, 11: 12, 22: 5 }[s.actual];
+      if (this.modo() !== 'prototipo' || !sig || s.pausado) return;
+      if (s.restante <= 1) this.setState({ actual: sig, restante: 0 }); else this.setState({ restante: s.restante - 1 });
+    }, 1000);
+  }
+  componentWillUnmount() { window.removeEventListener('keydown', this._key); clearInterval(this._tick); }
+  renderVals() {
+    const modo = this.modo(), proto = modo === 'prototipo';
+    const { actual, restante, pausado } = this.state;
+    const noop = () => {};
+    const go = n => () => { if (this.modo() !== 'prototipo') return; this.ir(n); };
+    const spark = (vals, w, h, desdeCero, escalonado) => {
+      const pad = 4, mn = desdeCero ? Math.min(0, ...vals) : Math.min(...vals), mx = Math.max(...vals), rng = (mx - mn) || 1;
+      const x = i => pad + i * (w - 2 * pad) / (vals.length - 1), y = v => (h - pad) - (v - mn) / rng * (h - 2 * pad);
+      const neg = vals.findIndex(v => v < 0), pts = [];
+      vals.forEach((v, i) => { pts.push([x(i), y(v)]); if (escalonado && i < vals.length - 1) pts.push([x(i + 1), y(v)]); });
+      return { puntos: pts.map(p => p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' '), ceroY: y(0).toFixed(1), ceroLabelY: (y(0) + 3.5).toFixed(1), tieneCero: mn < 0, tieneMarca: neg >= 0, mx: neg >= 0 ? x(neg).toFixed(1) : 0, my: neg >= 0 ? y(vals[neg]).toFixed(1) : 0 };
+    };
+    const TAG = { ok: ['#EBFFF6', '#82DAB5'], warn: ['#FCEFCE', '#F5CE6C'], err: ['#FFF1F1', '#D26B6B'], neutro: ['#F5F7FA', '#8492A6'] };
+    const pos = (o) => Object.assign({ resColor: '#151522', tieneBadge: !!o.badge, tieneAccion: !!o.accion, tienePactadas: !!o.pactadas, pactadasLabel: '', pactadas: '', linea: '', vieColor: '#5B5B64', viePeso: 400 }, o, { g: o.serie ? spark(o.serie, 269, 48, true, true) : {}, tieneGrafica: !!o.serie, badgeBg: o.badge ? TAG[o.tag][0] : '', badgeDot: o.badge ? TAG[o.tag][1] : '' });
+    const fila = (fecha, nombre, monto, extra) => Object.assign({ fecha, nombre, monto, color: monto.charAt(0) === '+' ? '#177B4B' : '#151522', tieneAccion: false, tieneBadge: false, tieneDetalle: false, detalle: '', onPagar: noop }, extra || {});
+    // Datos: montos del brief. La distribución diaria de los 7 pagos en MXN y la tendencia intradía son inventadas para la gráfica.
+    const usdFalta = pos({ div: 'USD', nombre: 'Dólares', saldo: '2,000.00', pagosLabel: 'Pagos futuros (3)', pagos: '−3,000.00', resLabel: 'Faltan', res: '1,000.00', resColor: '#B40909', badge: 'Falta', tag: 'err', linea: '≈ 18,091.18 MXN a precio de compra', accion: 'Comprar 1,000 USD', serie: [2000, 2000, 500, -1000], vieColor: '#B40909', viePeso: 600 });
+    const usdOk = pos({ div: 'USD', nombre: 'Dólares', saldo: '2,000.00', pagosLabel: 'Pagos futuros (2)', pagos: '−1,500.00', resLabel: 'Sobran', res: '500.00', badge: 'Alcanza', tag: 'ok', serie: [2000, 2000, 2000, 500] });
+    const mxn = pos({ div: 'MXN', nombre: 'Pesos', saldo: '1,180,000.00', pagosLabel: 'Pagos futuros (7)', pagos: '−80,350.50', resLabel: 'Sobran', res: '1,099,649.50', badge: 'Alcanza', tag: 'ok', linea: 'Incluye los 180,000.00 de Comercial Norte' });
+    const mxnOk = pos({ div: 'MXN', nombre: 'Pesos', saldo: '1,152,861.38', pagosLabel: 'Pagos futuros (7)', pagos: '−80,350.50', resLabel: 'Sobran', res: '1,072,510.88', badge: 'Alcanza', tag: 'ok', linea: 'Incluye los 180,000.00 de Comercial Norte' });
+    const eur = pos({ div: 'EUR', nombre: 'Euros', saldo: '50,000.00', pagosLabel: 'Pagos futuros', pagos: '0.00', resLabel: 'Nada pendiente en euros', res: '' });
+    const nuevo = { monto: '+180,000.00 MXN', de: 'Comercial Norte', meta: 'Hoy 10:42 · BBVA México · Ref. factura 2231' };
+    const tdc = { compra: '18.091183', venta: '18.032135', g: spark([18.062, 18.071, 18.068, 18.084, 18.079, 18.095, 18.088, 18.091], 288, 36, false) };
+    const shenzhen = fila('jue 8', 'Shenzhen Parts Co.', '−1,500.00 USD', { tieneAccion: true, onPagar: go(2) });
+    const logistica = fila('vie 9', 'Logística Pacífico', '−1,000.00 USD', { tieneAccion: true });
+    const asia = fila('vie 9', 'Asia Packaging', '−500.00 USD', { tieneAccion: true });
+    const pasados = [fila('Hoy', 'Comercial Norte', '+180,000.00 MXN'), fila('4 oct', 'Logística y Abastecimiento', '−1,250.50 MXN'), fila('1 oct', 'Distribuidora Norte', '+50,000.00 MXN')];
+    const shenzhenHecho = fila('Hoy', 'Shenzhen Parts Co.', '−27,138.62 MXN', { tieneDetalle: true, detalle: '1,500.00 USD a 18.092415', tieneBadge: true, badge: 'En proceso', badgeBg: TAG.warn[0], badgeDot: TAG.warn[1] });
+    const cuentas = (mxnSaldo) => [{ nombre: 'Cuenta Principal MXN', num: '****1025', saldo: mxnSaldo }, { nombre: 'Cuenta USD', num: '****2024', saldo: '2,000.00 USD' }, { nombre: 'Cuenta EUR', num: '****3033', saldo: '50,000.00 EUR' }];
+    const tabsHome = (operar, irPos, irOp) => ({ tabPosicion: !operar, tabOperar: operar, tabPosBorde: operar ? 'transparent' : '#0086FF', tabPosBg: operar ? 'transparent' : '#F6FBFF', tabPosPeso: operar ? 400 : 600, tabPosColor: operar ? '#5B5B64' : '#151522', tabOpBorde: operar ? '#0086FF' : 'transparent', tabOpBg: operar ? '#F6FBFF' : 'transparent', tabOpPeso: operar ? 600 : 400, tabOpColor: operar ? '#151522' : '#5B5B64', irPosicion: irPos, irOperar: irOp });
+    // Pestaña Operar (frames 08–16): el formulario del producto actual llevado al DS, con los patrones corregidos
+    const IN = '0.5px solid #021734', INACT = '1px solid #0086FF', INERR = '1px solid #B40909', PH = '#8492A6', INK = '#151522';
+    const cuentasOp = [{ div: 'MXN', num: '**** 1025', saldo: '1,180,000.00', alias: 'Cuenta Principal MXN' }, { div: 'USD', num: '**** 2024', saldo: '2,000.00', alias: 'Cuenta USD' }, { div: 'EUR', num: '**** 3033', saldo: '50,000.00', alias: 'Cuenta EUR' }];
+    const tabsOp = (activa, picks) => ['Comprar', 'Vender', 'Transferir'].map((label, i) => ({ label, bg: label === activa ? '#F6FBFF' : 'transparent', borde: label === activa ? '#0086FF' : 'transparent', peso: label === activa ? 600 : 400, color: label === activa ? INK : '#5B5B64', radio: i === 0 ? '8px 0 0 0' : i === 2 ? '0 8px 0 0' : '0', pick: (picks || {})[label] || noop }));
+    const paresLista = (sel, pick) => [
+      { titulo: 'Tus posiciones', items: [['USD/MXN', 'Dólar · Peso'], ['EUR/MXN', 'Euro · Peso']] },
+      { titulo: 'Otros pares', items: [['EUR/USD', 'Euro · Dólar'], ['GBP/MXN', 'Libra · Peso'], ['CAD/MXN', 'Dólar canadiense · Peso']] }
+    ].map(g => ({ titulo: g.titulo, items: g.items.map(([par, nombre]) => ({ par, nombre, bg: par === sel ? '#F0F1FD' : 'transparent', pick: par === sel ? (pick || noop) : noop })) }));
+    const destinosLista = (sel, pick) => [
+      { titulo: 'Tus cuentas', items: [['USD', 'Cuenta USD', 'Banco BASE · **** 2024', 'usd']] },
+      { titulo: 'Destinatarios en USD', items: [['USD', 'Logística Pacífico', 'Citibanamex · **** 0931', 'log'], ['USD', 'Shenzhen Parts Co.', 'HSBC Hong Kong · **** 4410', 'sz'], ['USD', 'Asia Packaging', 'DBS Singapur · **** 7712', 'ap']] }
+    ].map(g => ({ titulo: g.titulo, items: g.items.map(([div, nombre, sub, id]) => ({ div, nombre, sub, bg: id === sel ? '#F0F1FD' : 'transparent', pick: id === sel ? (pick || noop) : noop })) }));
+    const cajasOp = (digitos) => [0, 1, 2, 3, 4, 5].map(i => { const v = digitos[i] || ''; const activa = !v && (i === 0 || !!digitos[i - 1]); return { valor: v, borde: activa ? INACT : IN, caret: activa ? INK : 'transparent' }; });
+    const opBase = (o) => Object.assign({
+      tabs: tabsOp('Comprar'), cerrado: false, subtitulo: 'Completa los campos', mercado: 'Mercado abierto', mercadoBg: TAG.ok[0], mercadoDot: TAG.ok[1],
+      esCambio: true, esTransfer: false, parBorde: IN, par: 'USD/MXN', parChevron: 'uil-angle-down-b', parAbierto: false, pares: paresLista('USD/MXN'),
+      labelIzq: 'Compras', labelDer: 'Pagas', splitBorde: IN, montoIzq: '0.00', montoDer: '0.00', montoIzqColor: PH, montoDerColor: PH, divIzq: 'USD', divDer: 'MXN', errorMonto: false, errorTexto: '',
+      origen: 'Elige una cuenta', origenColor: PH, destinoBorde: IN, destino: 'Elige una cuenta', destinoColor: PH, destinoAbierto: false, destinoChevron: 'uil-angle-down-b', destinos: destinosLista(''), disponible: '',
+      motivo: 'Elige un motivo', motivoColor: PH, referencia: 'Ej. Factura 0457', referenciaColor: PH, vencido: false,
+      cotTitulo: 'Cotización', precioEstado: 'Precio indicativo', precioBg: '#F6FBFF', precioDot: '#8BCAFB', cotRadio: '8px 0 0 8px', cotIzqLabel: 'Tu compra', cotIzq: '0.00 USD', cotDerLabel: 'Total a pagar', cotDer: '0.00 MXN', cotColor: PH, tdcBorde: '#0086FF', tdcTipo: 'Indicativo', tdc: '18.091183', tdcColor: INK,
+      conToken: false, sinToken: true, cajas: cajasOp([]), cta: 'Pedir precio', nota: 'Ten tu token a mano: el precio dura 2 minutos.', ctaBg: '#F5F7FA', ctaColor: '#DCDCDE', ctaCursor: 'not-allowed',
+      cuentas: cuentasOp, cuentasModulo: cuentas('1,180,000.00 MXN'), onNuevoFlujo: go(2), onPar: noop, onDestino: noop, onCta: noop, onCancelar: noop
+    }, o);
+    const ctaOn = { ctaBg: '#3D46CC', ctaColor: '#fff', ctaCursor: 'pointer' };
+    const compraLlena = { montoIzq: '1,000.00', montoDer: '18,091.18', montoIzqColor: INK, montoDerColor: INK, splitBorde: '1.5px solid #0086FF', origen: 'Cuenta Principal MXN · **** 1025', origenColor: INK, destino: 'Cuenta USD · **** 2024', destinoColor: INK, motivo: 'Compra de divisas', motivoColor: INK, referencia: 'Cobertura pagos USD', referenciaColor: INK, cotIzq: '1,000.00 USD', cotDer: '18,091.18 MXN', cotColor: INK };
+    const tabsCompra = tabsOp('Comprar', { Vender: go(13), Transferir: go(14) });
+    const operar = opBase({});
+    const homeFalta = Object.assign({ tieneAviso: false, aviso: '', posiciones: [usdFalta, mxn, eur], nuevo, proximos: [shenzhen, logistica, asia], realizados: pasados, tdc, cuentas: cuentas('1,180,000.00 MXN') }, tabsHome(false, noop, go(8)), { operar });
+    const homeOk = (aviso) => Object.assign({ tieneAviso: !!aviso, aviso: aviso || '', posiciones: [usdOk, mxnOk, eur], nuevo, proximos: [logistica, asia], realizados: [shenzhenHecho].concat(pasados), tdc, cuentas: cuentas('1,152,861.38 MXN') }, tabsHome(false, noop, go(8)), { operar });
+    const homeOp = (op) => Object.assign({ tieneAviso: false, aviso: '', posiciones: [], nuevo, proximos: [], realizados: [], tdc, cuentas: [], operar: op }, tabsHome(true, go(1), noop));
+
+    const mm = Math.floor(restante / 60), ss = String(restante % 60).padStart(2, '0');
+    const cuenta = proto ? mm + ':' + ss : '1:59';
+    const porVencer = proto && restante <= 30;
+    const cajas = (activo) => [0, 1, 2, 3, 4, 5].map(i => ({ borde: !activo ? '0.5px solid #DCDCDE' : i === 0 ? '1px solid #0086FF' : '0.5px solid #021734', bg: activo ? '#fff' : '#F5F7FA', caret: activo && i === 0 ? '#151522' : 'transparent' }));
+    const origenes = [
+      { nombre: 'Cuenta Principal MXN', saldo: 'Saldo 1,180,000.00 MXN', pagas: 'Pagas ≈ 27,136.77 MXN', cons: 'Cubre el faltante en USD', tag: 'ok', sel: true },
+      { nombre: 'Cuenta USD', saldo: 'Saldo 2,000.00 USD', pagas: 'Pagas 1,500.00 USD, sin tipo de cambio', cons: 'Te faltarían 1,000.00 USD el viernes', tag: 'warn', sel: false },
+      { nombre: 'Cuenta EUR', saldo: 'Saldo 50,000.00 EUR', pagas: 'Pagas ≈ 1,388.89 EUR', cons: 'Sin pagos pendientes en euros', tag: 'neutro', sel: false }
+    ].map(o => Object.assign(o, { consBg: TAG[o.tag][0], consDot: TAG[o.tag][1], borde: o.sel ? '#3D46CC' : '#E2E4E9', bg: o.sel ? '#F0F1FD' : '#fff', radioBorde: o.sel ? '#3D46CC' : '#8492A6', radioBg: o.sel ? '#3D46CC' : '#fff', radioSombra: o.sel ? 'inset 0 0 0 4px #fff' : 'none', pick: o.sel ? noop : noop }));
+    const panel = (o) => Object.assign({ fechas: [], fechaEsHoy: true, fechaPactada: false, fechaDia: '', tieneSale: false, esConfirmacionPactada: false, titulo: 'Pagar a Shenzhen Parts Co.', sub: '1,500.00 USD · vence jue 8 · Factura 0457', esOrigen: false, esRevision: false, esPrecio: false, esConfirmacion: false, vencido: false, tieneSecundario: true, primario: '', secundario: '', onPrimario: noop, onSecundario: noop, onCerrar: go(1), origenes, cajas: cajas(true), tokenLabelColor: '#1C293B', precioColor: '#151522', detalle: [] }, o);
+    const sinPanel = panel({});
+    const framesOperar = [
+      { n: '08', titulo: 'Operar clásico · Comprar, vacío', nota: 'Punto de partida: el Operar actual con el DS. Cambios: badge de mercado, TDC indicativo visible desde el inicio, un solo CTA "Pedir precio" deshabilitado hasta completar, sin el aviso de "15 segundos".', op: opBase({ tabs: tabsCompra, onPar: go(9) }) },
+      { n: '09', titulo: 'Operar clásico · Selector de par', nota: 'Selector agrupado: primero los pares de tus posiciones, después el resto.', op: opBase({ tabs: tabsCompra, parBorde: INACT, parChevron: 'uil-angle-up-b', parAbierto: true, pares: paresLista('USD/MXN', go(10)) }) },
+      { n: '10', titulo: 'Operar clásico · Compra completa, precio indicativo', nota: 'El lado que escribes queda con borde activo y el otro se calcula en vivo; el CTA se habilita recién acá.', op: opBase(Object.assign({ tabs: tabsCompra, onCta: go(11) }, compraLlena, ctaOn)) },
+      { n: '11', titulo: 'Operar clásico · Precio fijo y token', nota: 'Precio ejecutable con cuenta regresiva y token dentro del formulario. Hoy el token se ingresa en la página de Banco BASE.', op: opBase(Object.assign({ tabs: tabsCompra, subtitulo: 'Revisa y confirma' }, compraLlena, { splitBorde: IN, montoDer: '18,092.42', cotDer: '18,092.42 MXN', precioEstado: 'Precio fijo por ' + cuenta + (pausado ? ' · pausa' : ''), precioBg: porVencer ? TAG.warn[0] : TAG.ok[0], precioDot: porVencer ? TAG.warn[1] : TAG.ok[1], tdc: '18.092415', tdcTipo: 'Ejecutable', conToken: true, sinToken: false, cajas: cajasOp(['4', '7']), cta: 'Confirmar compra', onCta: go(8), onCancelar: go(8) })) },
+      { n: '12', titulo: 'Operar clásico · Precio vencido', nota: 'Al vencer, los montos vuelven al indicativo y la única salida es pedir un precio nuevo.', op: opBase(Object.assign({ tabs: tabsCompra, vencido: true, precioEstado: 'Vencido', precioBg: TAG.err[0], precioDot: TAG.err[1], tdcBorde: '#DCDCDE', tdcColor: '#5B5B64', onCta: go(11) }, compraLlena, { splitBorde: IN, cotColor: '#5B5B64' }, ctaOn)) },
+      { n: '13', titulo: 'Operar clásico · Vender con error de saldo', nota: 'Error inline bajo el campo, con el saldo disponible. Hoy el formulario deja avanzar y falla después.', op: opBase({ tabs: tabsOp('Vender', { Comprar: go(8), Transferir: go(14) }), labelIzq: 'Vendes', labelDer: 'Recibes', montoIzq: '5,000.00', montoDer: '90,160.68', montoIzqColor: INK, montoDerColor: INK, splitBorde: INERR, errorMonto: true, errorTexto: 'Supera tu saldo disponible: 2,000.00 USD.', origen: 'Cuenta USD · **** 2024', origenColor: INK, destino: 'Cuenta Principal MXN · **** 1025', destinoColor: INK, motivo: 'Venta de divisas', motivoColor: INK, cotIzqLabel: 'Tu venta', cotIzq: '5,000.00 USD', cotDerLabel: 'Recibirás', cotDer: '90,160.68 MXN', cotColor: INK, tdc: '18.032135' }) },
+      { n: '14', titulo: 'Operar clásico · Transferir, selector de destino', nota: 'Destino con buscador y grupos (tus cuentas, destinatarios) en lugar del modal "A quién envías el dinero".', op: opBase({ tabs: tabsOp('Transferir', { Comprar: go(8), Vender: go(13) }), esCambio: false, esTransfer: true, origen: 'Cuenta USD · **** 2024', origenColor: INK, destinoBorde: INACT, destino: 'Logí', destinoColor: INK, destinoAbierto: true, destinoChevron: 'uil-angle-up-b', destinos: destinosLista('log', go(15)), disponible: '2,000.00 USD', cotTitulo: 'Resumen', precioEstado: 'Sin tipo de cambio', precioBg: TAG.neutro[0], precioDot: TAG.neutro[1], cotRadio: '8px', cotIzqLabel: 'Envías', cotIzq: '0.00 USD', cotDerLabel: 'Recibe', cotDer: '0.00 USD', cta: 'Continuar', nota: 'Sin tipo de cambio: te pedimos el token al continuar.' }) },
+      { n: '15', titulo: 'Operar clásico · Transferencia lista, token', nota: 'Transferencia en la misma divisa: sin TDC ni precio; el token se pide en el mismo lugar.', op: opBase({ tabs: tabsOp('Transferir', { Comprar: go(8), Vender: go(13) }), esCambio: false, esTransfer: true, subtitulo: 'Revisa y confirma', origen: 'Cuenta USD · **** 2024', origenColor: INK, destino: 'Logística Pacífico · Citibanamex **** 0931', destinoColor: INK, montoIzq: '1,000.00', montoIzqColor: INK, disponible: '2,000.00 USD', motivo: 'Pago a proveedores', motivoColor: INK, referencia: 'Flete OCT-02', referenciaColor: INK, cotTitulo: 'Resumen', precioEstado: 'Sin tipo de cambio', precioBg: TAG.neutro[0], precioDot: TAG.neutro[1], cotRadio: '8px', cotIzqLabel: 'Envías', cotIzq: '1,000.00 USD', cotDerLabel: 'Recibe Logística Pacífico', cotDer: '1,000.00 USD', cotColor: INK, conToken: true, sinToken: false, cajas: cajasOp([]), cta: 'Confirmar transferencia', onCta: go(8), onCancelar: go(8) }) },
+      { n: '16', titulo: 'Operar clásico · Mercado cerrado', nota: 'Fuera de horario: aviso con la próxima apertura, formulario editable y CTA deshabilitado. "Programar" queda como Futuro.', op: opBase(Object.assign({ tabs: tabsCompra, cerrado: true, mercado: 'Mercado cerrado', mercadoBg: TAG.warn[0], mercadoDot: TAG.warn[1], tdcTipo: 'Último cierre' }, compraLlena, { splitBorde: IN })) }
+    ].map(x => ({ n: x.n, titulo: x.titulo, nota: x.nota, home: homeOp(x.op), tienePanel: false, panel: sinPanel }));
+    // Onboarding (frames 17–20): recorrido contextual de 4 pasos sobre el home
+    const tourPasos = [
+      { objetivo: 'posicion', lado: 'abajo', titulo: 'Tu posición por divisa, de un vistazo', texto: 'Saldo, pagos futuros y lo que te falta o te sobra en cada moneda, con la proyección de la semana. Si falta, el botón te lleva a comprar justo lo necesario.' },
+      { objetivo: 'movimientos', lado: 'derecha', titulo: 'Paga desde el movimiento', texto: 'Próximos y realizados en una sola lista, separados por Hoy. Pagar abre un panel con destinatario, monto y referencia ya cargados: eliges la cuenta y confirmas.' },
+      { objetivo: 'tdc', lado: 'izquierda', titulo: 'El tipo de cambio, en contexto', texto: 'Solo los pares de tus posiciones, con el precio para comprar y para vender en vivo. Al pedir precio queda fijo dos minutos para que confirmes con tu token.' },
+      { objetivo: 'clasico', lado: 'abajo', titulo: '¿Prefieres operar como siempre?', texto: 'En la pestaña Operar clásico tienes el formulario de siempre: Comprar, Vender y Transferir. Las dos vistas comparten tus cuentas y movimientos.' }
+    ];
+    const framesTour = tourPasos.map((p, i) => { const n = 17 + i; return { n: String(n), titulo: 'Onboarding · Paso ' + (i + 1) + ' de 4 · ' + p.titulo, nota: '', home: homeFalta, tienePanel: false, panel: sinPanel, tour: Object.assign({}, p, { pasoTxt: 'Paso ' + (i + 1) + ' de 4', puntos: [0, 1, 2, 3].map(j => ({ bg: j === i ? '#3D46CC' : '#DCDCDE' })), tieneAtras: i > 0, cta: i === 3 ? 'Empezar' : 'Siguiente', onSiguiente: go(i === 3 ? 1 : n + 1), onAtras: go(n - 1), onCerrar: go(1) }) }; });
+    const TOUR_FALLBACK = { posicion: { x: 272, y: 209, w: 976, h: 360, H: 1050 }, movimientos: { x: 272, y: 700, w: 643, h: 330, H: 1050 }, tdc: { x: 939, y: 593, w: 309, h: 230, H: 1050 }, clasico: { x: 460, y: 140, w: 150, h: 49, H: 1050 } };
+    // Fecha valor (03B, 04B, 06B, 07B): el precio se cierra hoy y el dinero sale hoy o en los próximos tres días hábiles.
+    // Solo con tipo de cambio · por defecto Hoy · "vence" en el día de vencimiento del pago · si no es hoy, la operación queda Pactada.
+    const FECHAS = [['hoy', 'Hoy'], ['mie7', 'mié 7'], ['jue8', 'jue 8'], ['vie9', 'vie 9']], VENCE = 'jue8';
+    const fechaB = proto && this.state.fecha && this.state.fecha !== 'hoy' ? this.state.fecha : 'jue8';
+    const diaB = FECHAS.find(x => x[0] === fechaB)[1];
+    const pickFecha = k => () => { if (this.modo() !== 'prototipo') return; this.setState(k === 'hoy' ? { fecha: 'hoy', actual: 3 } : { fecha: k, actual: 21 }); };
+    const fechasSel = sel => FECHAS.map(([k, dia]) => ({ dia, vence: k === VENCE, sel: k === sel, noSel: k !== sel, pick: pickFecha(k) }));
+    const PACTADA = ['#EDF3FF', '#0086FF'], ordenDia = { 'mié 7': 1, 'jue 8': 2, 'vie 9': 3 };
+    const shenzhenPactada = fila(diaB, 'Shenzhen Parts Co.', '−1,500.00 USD', { tieneDetalle: true, detalle: '27,138.62 MXN a 18.092415', tieneBadge: true, badge: 'Pactada', badgeBg: PACTADA[0], badgeDot: PACTADA[1] });
+    const mxnPactado = pos({ div: 'MXN', nombre: 'Pesos', saldo: '1,180,000.00', pactadasLabel: 'Pactadas por liquidar (1)', pactadas: '−27,138.62', pagosLabel: 'Pagos futuros (7)', pagos: '−80,350.50', resLabel: 'Sobran', res: '1,072,510.88', badge: 'Alcanza', tag: 'ok', linea: 'Incluye los 180,000.00 de Comercial Norte' });
+    const homePactado = (aviso) => Object.assign({ tieneAviso: false, aviso: '', tieneAvisoInfo: !!aviso, avisoInfo: aviso, posiciones: [usdOk, mxnPactado, eur], nuevo, proximos: [shenzhenPactada, logistica, asia].sort((a, b) => ordenDia[a.fecha] - ordenDia[b.fecha]), realizados: pasados, tdc, cuentas: cuentas('1,180,000.00 MXN') }, tabsHome(false, noop, go(8)), { operar });
+    const precioFijoB = { esPrecio: true, tieneSale: true, fechaDia: diaB, primario: 'Confirmar pago', secundario: 'Cancelar', onPrimario: go(23), onSecundario: go(1), precioLabel: 'Precio ejecutable', badge: 'Precio fijo por ' + cuenta + (pausado ? ' · pausa' : ''), badgeBg: porVencer ? TAG.warn[0] : TAG.ok[0], badgeDot: porVencer ? TAG.warn[1] : TAG.ok[1], tdc: '18.092415', pagas: '27,138.62 MXN' };
+    const framesFecha = [
+      { n: '03B', titulo: 'Panel · Revisión con fecha', nota: 'Variante de 03 con ' + diaB + ' elegido: el precio se cierra hoy y el dinero sale ese día.', home: homeFalta, tienePanel: true, panel: panel({ esRevision: true, fechas: fechasSel(fechaB), fechaEsHoy: false, fechaPactada: true, fechaDia: diaB, primario: 'Pedir precio', secundario: 'Volver', onPrimario: go(22), onSecundario: go(2) }) },
+      { n: '04B', titulo: 'Panel · Precio y token con fecha', nota: 'Igual al 04, con el día en que sale el dinero en el resumen.', home: homeFalta, tienePanel: true, panel: panel(precioFijoB) },
+      { n: '06B', titulo: 'Confirmación · Pago pactado', nota: 'La operación queda Pactada hasta que sale el dinero.', home: homePactado(''), tienePanel: true, panel: panel({ esConfirmacionPactada: true, fechaDia: diaB, sub: '1,500.00 USD · Factura 0457', primario: 'Volver al inicio', secundario: 'Descargar comprobante', onPrimario: go(24), onSecundario: noop, onCerrar: go(24) }), ml: 1328 },
+      { n: '07B', titulo: 'Home con el pago pactado', nota: 'USD ya alcanza; el saldo en pesos no cambia hasta el ' + diaB + '.', home: homePactado('Pactaste el pago a Shenzhen Parts Co. El dinero sale el ' + diaB + '.'), tienePanel: false, panel: sinPanel }
+    ];
+    // Hoja de estados de FechaLiquidacion (fuera del escenario)
+    const SEG = { sel: ['#F6FBFF', '#3D46CC', '#3D46CC', 600, 'none'], no: ['transparent', '#5B5B64', 'transparent', 400, 'none'], hover: ['#FFFFFF', '#151522', 'transparent', 400, 'none'], foco: ['transparent', '#5B5B64', 'transparent', 400, '2px solid #0086FF'] };
+    const hojaSeg = (sel, o) => FECHAS.map(([k, dia]) => { const e = SEG[k === sel ? 'sel' : k === o.hover ? 'hover' : k === o.foco ? 'foco' : 'no']; return { dia, vence: !o.sinVence && k === VENCE, bg: e[0], color: e[1], borde: e[2], peso: e[3], outline: e[4] }; });
+    const hojaFechas = [
+      { caso: 'Por defecto: Hoy · el pago vence el jue 8', visible: true, oculto: false, fechas: hojaSeg('hoy', {}) },
+      { caso: 'Otra fecha: jue 8 · la operación queda Pactada', visible: true, oculto: false, fechas: hojaSeg('jue8', {}) },
+      { caso: 'Vence después del vie 9: ninguna opción lleva "vence"', visible: true, oculto: false, fechas: hojaSeg('hoy', { sinVence: true }) },
+      { caso: 'Hover', visible: true, oculto: false, fechas: hojaSeg('hoy', { hover: 'mie7' }) },
+      { caso: 'Foco con teclado · ← → mueven la selección', visible: true, oculto: false, fechas: hojaSeg('hoy', { foco: 'mie7' }) },
+      { caso: 'Transferencia en la misma divisa', visible: false, oculto: true, fechas: [] }
+    ];
+    const frames = [
+      { n: '01', titulo: 'Home con faltante', home: homeFalta, tienePanel: false, panel: sinPanel },
+      { n: '02', titulo: 'Panel · Origen', home: homeFalta, tienePanel: true, panel: panel({ esOrigen: true, primario: 'Continuar', secundario: 'Cancelar', onPrimario: go(3), onSecundario: go(1) }) },
+      { n: '03', titulo: 'Panel · Revisión', home: homeFalta, tienePanel: true, panel: panel({ esRevision: true, fechas: fechasSel('hoy'), primario: 'Pedir precio', secundario: 'Volver', onPrimario: go(4), onSecundario: go(2) }) },
+      { n: '04', titulo: 'Panel · Precio y token', home: homeFalta, tienePanel: true, panel: panel({ esPrecio: true, primario: 'Confirmar pago', secundario: 'Cancelar', onPrimario: go(6), onSecundario: go(1), precioLabel: 'Precio ejecutable', badge: 'Precio fijo por ' + cuenta + (pausado ? ' · pausa' : ''), badgeBg: porVencer ? TAG.warn[0] : TAG.ok[0], badgeDot: porVencer ? TAG.warn[1] : TAG.ok[1], tdc: '18.092415', pagas: '27,138.62 MXN' }) },
+      { n: '05', titulo: 'Panel · Precio vencido', home: homeFalta, tienePanel: true, panel: panel({ esPrecio: true, vencido: true, primario: 'Pedir precio', secundario: 'Cancelar', onPrimario: () => go(this.state.fecha && this.state.fecha !== 'hoy' ? 22 : 4)(), onSecundario: go(1), precioLabel: 'Precio indicativo', badge: 'Vencido', badgeBg: TAG.err[0], badgeDot: TAG.err[1], tdc: '18.091183', pagas: '≈ 27,136.77 MXN', cajas: cajas(false), tokenLabelColor: '#8492A6', precioColor: '#5B5B64' }) },
+      { n: '06', titulo: 'Confirmación', home: homeOk(''), tienePanel: true, panel: panel({ esConfirmacion: true, sub: '1,500.00 USD · Factura 0457', primario: 'Volver al inicio', secundario: 'Descargar comprobante', onPrimario: go(7), onSecundario: noop, onCerrar: go(7), detalle: [{ k: 'Enviaste', v: '1,500.00 USD a Shenzhen Parts Co.' }, { k: 'Pagaste', v: '27,138.62 MXN' }, { k: 'TDC', v: '18.092415' }, { k: 'Referencia', v: 'Factura 0457' }] }) },
+      { n: '07', titulo: 'Home con la posición resuelta', home: homeOk('Pago enviado. Ya te alcanza para los pagos en USD de la semana.'), tienePanel: false, panel: sinPanel }
+    ].concat(framesOperar, framesTour, framesFecha).map(f => Object.assign(f, { etiqueta: f.n + ' · ' + f.titulo, op: f.home.operar, nota: f.nota || '', tieneTour: !!f.tour, tourObjetivo: f.tour ? f.tour.objetivo : '', ml: proto ? 0 : (f.ml || 0) }));
+    frames.forEach(f => {
+      if (!f.tour) return;
+      const r = this.state.rects[f.n] || TOUR_FALLBACK[f.tour.objetivo], pad = 8, W = 320, CH = 232;
+      let cx = r.x, cy = r.y + r.h + 24;
+      if (f.tour.lado === 'derecha') { cx = r.x + r.w + 24; cy = r.y; }
+      if (f.tour.lado === 'izquierda') { cx = r.x - W - 24; cy = r.y; }
+      cx = Math.max(16, Math.min(cx, 1280 - W - 16)); cy = Math.max(16, Math.min(cy, (r.H || 1050) - CH - 16));
+      Object.assign(f.tour, { x: r.x - pad, y: r.y - pad, w: r.w + 2 * pad, h: r.h + 2 * pad, cx, cy });
+    });
+    const filas = proto
+      ? [{ titulo: 'Prototipo · frame ' + frames[actual - 1].n, nota: 'Los botones navegan · ← → cambian de frame · P pausa la cuenta regresiva', frames: [frames[actual - 1]] }]
+      : [{ titulo: 'Flujo principal · Posición consolidada', nota: 'Importadora: faltan dólares → paga a Shenzhen Parts Co. con pesos → posición resuelta', frames: frames.slice(0, 7) }, { titulo: 'Flujo principal · Fecha valor', nota: 'Rama desde 03: el usuario elige jue 8, cierra hoy el precio y el pago queda Pactada · cada variante va debajo del frame que reemplaza', frames: frames.slice(20, 24), tieneHoja: true }, { titulo: 'Pestaña Operar clásico', nota: 'El formulario actual con los patrones corregidos · primera pasada para refinar', frames: frames.slice(7, 16) }, { titulo: 'Onboarding', nota: 'Recorrido contextual de 4 pasos al entrar por primera vez · Atrás / Siguiente y cierre en cualquier momento · "Empezar" o × vuelven al home', frames: frames.slice(16, 20) }];
+    const navDef = [['Inicio', 'uil-estate'], ['Movimientos', 'uil-credit-card'], ['Control de operaciones', 'uil-chart'], ['Destinatarios', 'uil-sign-alt'], ['Monitoreo de divisas', 'uil-chart-line']];
+    const nav = navDef.map(([label, icono], i) => ({ label, icono, bg: i === 0 ? '#F6FBFF' : 'transparent', color: i === 0 ? '#0086FF' : '#151522', peso: i === 0 ? 600 : 500 }));
+    const on = ['#151522', '#fff'], off = ['#fff', '#151522'];
+    const chips = this.orden.map(k => ({ label: frames[k - 1].n, bg: actual === k ? on[0] : off[0], color: actual === k ? on[1] : off[1], pick: go(k) }));
+    return {
+      filas, nav, chips, esPrototipo: proto, hojaFechas,
+      setTablero: () => this.setState({ modo: 'tablero' }), setPrototipo: () => this.setState({ modo: 'prototipo', actual: 17, restante: 119, pausado: false }),
+      tabBg: proto ? off[0] : on[0], tabColor: proto ? off[1] : on[1], protoBg: proto ? on[0] : off[0], protoColor: proto ? on[1] : off[1]
+    };
+  }
+}
+</script>
+</body>
+</html>

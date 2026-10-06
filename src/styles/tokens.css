@@ -1,0 +1,338 @@
+/* =========================================================================
+   src/styles/tokens.css
+   -------------------------------------------------------------------------
+   Capa 1 · Copia literal de design-system/colors_and_type.css (DS oficial).
+   Único cambio: se quita el @import de Google Fonts porque Montserrat se
+   carga con next/font (ver src/app/layout.tsx); el token --font-sans se
+   redirige a esa fuente en la capa 2.
+   Capa 2 · Alias semánticos del challenge (--app-*). Los componentes solo
+   consumen alias; cuando el DS cambie se reemplaza la capa 1 y se ajustan
+   los alias sin tocar componentes (docs/design-system-uso.md, D-16).
+   ========================================================================= */
+
+/* =========================================================================
+   Valiu Design System — Colors & Type
+   =========================================================================
+   Source of truth for all color + typography tokens.
+   Derived from Figma: "Design System" (Valiu) — /Styles/Color-Styles,
+   /Styles/Text-Styles-WebApp and the brand usage across Core-Components +
+   Complex-components.
+
+   Import at top of every HTML file:
+     <link rel="stylesheet" href="./colors_and_type.css">
+
+   Typography: Montserrat (Google Fonts) across all weights.
+   ========================================================================= */
+
+
+:root {
+  /* --------------------------------------------------------------------- */
+  /* BRAND — VALIU MAIN (deep indigo + electric blue)                      */
+  /* Indigo is the signature, used for Primary CTAs and "Valiu" brand ink. */
+  /* Purple and Lilac are NOT part of the system — do not use.             */
+  /* --------------------------------------------------------------------- */
+  --valiu-indigo:          #3D46CC;   /* primary brand — primary buttons     */
+  --valiu-indigo-deep:     #2A32A8;   /* deep indigo — headers, emphasis     */
+  --valiu-blue:            #0086FF;   /* electric blue — links, accents      */
+  --valiu-blue-soft:       #46BDFB;   /* soft sky — illustrations, fills     */
+  --valiu-blue-pale:       #5DB3FD;   /* pale blue — secondary accents       */
+  --valiu-blue-bg:         #F6FBFF;   /* very pale bg — subtle tinted fills  */
+
+  /* State tokens (hover / press / tint derivations from indigo) */
+  --valiu-indigo-hover:    #333BB0;
+  --valiu-indigo-press:    #252D92;
+  --valiu-indigo-100:      #EEF0FB;   /* pale indigo — selected/hover tint   */
+
+  /* --- Back-compat aliases (legacy names point at indigo) --------------- */
+  --valiu-purple:          var(--valiu-indigo);
+  --valiu-purple-deep:     var(--valiu-indigo-deep);
+  --valiu-purple-hover:    var(--valiu-indigo-hover);
+  --valiu-purple-press:    var(--valiu-indigo-press);
+  --valiu-purple-100:      var(--valiu-indigo-100);
+  --valiu-purple-200:      var(--valiu-blue-soft);
+
+  /* --------------------------------------------------------------------- */
+  /* BRAND — VALIU SECONDARY (teal / mint — "Valiu wave")                  */
+  /* Secondary is a refreshing mint used in headers, illustrations, chips. */
+  /* --------------------------------------------------------------------- */
+  --valiu-mint:            #99FFF7;   /* signature mint                      */
+  --valiu-mint-soft:       #BFFFF8;
+  --valiu-mint-pale:       #DFFFFB;
+  --valiu-mint-bg:         #E8F7F9;   /* header strip bg across system       */
+  --valiu-mint-ice:        #EBFFF6;
+
+  /* --------------------------------------------------------------------- */
+  /* INK — text + structural color                                          */
+  /* --------------------------------------------------------------------- */
+  --ink-900:               #151522;   /* primary text / near-black           */
+  --ink-800:               #021734;   /* heavy border / deep ink             */
+  --ink-700:               #262725;   /* alt dark                            */
+  --ink-600:               #1C293B;   /* text alt                            */
+  --ink-500:               #5B5B64;   /* secondary text                      */
+  --ink-400:               #8492A6;   /* placeholder / tertiary              */
+  --ink-300:               #DCDCDE;   /* subtle border / disabled text       */
+  --ink-200:               #F5F5F5;
+  --ink-100:               #F5F7FA;   /* surface / canvas bg                 */
+  --ink-0:                 #FFFFFF;
+
+  /* Semantic aliases */
+  --fg-1:                  var(--ink-900);   /* primary text                 */
+  --fg-2:                  var(--ink-500);   /* secondary text               */
+  --fg-3:                  var(--ink-400);   /* tertiary / placeholder       */
+  --fg-on-brand:           var(--ink-0);     /* text on purple/blue fills    */
+  --bg-canvas:             var(--ink-100);   /* app canvas                   */
+  --bg-surface:            var(--ink-0);     /* cards                        */
+  --bg-subtle:             var(--ink-200);
+  --bg-header:             var(--valiu-mint-bg);
+  --border-subtle:         var(--ink-300);
+  --border-default:        var(--ink-800);   /* input borders at rest        */
+  --border-strong:         var(--ink-900);
+
+  /* --------------------------------------------------------------------- */
+  /* FEEDBACK — success / warning / danger / error                         */
+  /* --------------------------------------------------------------------- */
+  --success:               #44C857;
+  --success-strong:        #177B4B;
+  --success-bg:            #D9FCDE;
+  --success-pale:          #EBFFF6;
+
+  --warning:               #EEAE09;
+  --warning-bg:            #FFF2CC;
+
+  --danger:                #B40909;
+  --danger-strong:         #8A0404;
+  --danger-soft:           #C56B6B;
+  --danger-pale:           #FCE8E8;
+
+  --info:                  var(--valiu-blue);
+  --info-bg:               var(--valiu-blue-bg);
+
+  /* --------------------------------------------------------------------- */
+  /* RADII  (Valiu uses 4 / 8 / 24 / 40 primarily)                         */
+  /* --------------------------------------------------------------------- */
+  --radius-xs:   4px;   /* buttons, small chips                              */
+  --radius-sm:   8px;   /* inputs, cards content                             */
+  --radius-md:   12px;
+  --radius-lg:   16px;
+  --radius-xl:   24px;  /* pill buttons                                      */
+  --radius-2xl:  40px;  /* section cards / panels                            */
+  --radius-full: 999px;
+
+  /* --------------------------------------------------------------------- */
+  /* SHADOWS (lifted from Figma token usage)                               */
+  /* --------------------------------------------------------------------- */
+  --shadow-xs:  0 3px 6px 0 rgba(0, 0, 0, 0.075);   /* icon chips           */
+  --shadow-sm:  0 3px 6px 0 rgba(0, 0, 0, 0.15);    /* cards / panels       */
+  --shadow-md:  0 6px 16px -2px rgba(0, 0, 0, 0.12);
+  --shadow-lg:  0 18px 40px -12px rgba(21, 21, 34, 0.22);
+
+  /* --------------------------------------------------------------------- */
+  /* SPACING                                                                */
+  /* --------------------------------------------------------------------- */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  24px;
+  --space-6:  32px;
+  --space-7:  40px;
+  --space-8:  64px;
+
+  /* --------------------------------------------------------------------- */
+  /* TYPOGRAPHY — Base                                                     */
+  /* --------------------------------------------------------------------- */
+  --font-sans: "Montserrat", "Helvetica Neue", Arial, sans-serif;
+
+  /* Font weights — 300 hero display, 600 "SemiBold" labels, 700 titles + CTAs, 900 marketing hero only */
+  --font-weight-light:    300;
+  --font-weight-regular:  400;
+  --font-weight-medium:   500;
+  --font-weight-semi:     600;
+  --font-weight-bold:     700;
+  --font-weight-black:    900;
+
+  /* Back-compat aliases */
+  --fw-light:    var(--font-weight-light);
+  --fw-regular:  var(--font-weight-regular);
+  --fw-medium:   var(--font-weight-medium);
+  --fw-semi:     var(--font-weight-semi);
+  --fw-bold:     var(--font-weight-bold);
+  --fw-black:    var(--font-weight-black);
+
+  /* Semantic scale — matches Figma "Text Styles WebApp"
+     HeadlineXXXL 49  / XXL 40 / XL 32 / L 24 / Body1 16 / Body2 14 /
+     Caption 12 / Overline 10                                                 */
+  --type-display-xxxl: 900 49px/1.05 var(--font-sans);
+  --type-display-xxl:  700 40px/1.1  var(--font-sans);
+  --type-display-xl:   700 32px/1.15 var(--font-sans);
+  --type-h1:           700 24px/1.2  var(--font-sans);
+  --type-h2:           700 20px/1.25 var(--font-sans);
+  --type-h3:           700 16px/1.4  var(--font-sans);
+  --type-body-1:       400 16px/1.5  var(--font-sans);
+  --type-body-2:       400 14px/1.5  var(--font-sans);
+  --type-label:        700 14px/1.3  var(--font-sans);   /* field labels / titulo */
+  --type-cta:          700 14px/1.4  var(--font-sans);
+  --type-caption:      400 12px/1.4  var(--font-sans);
+  --type-overline:     700 10px/1.4  var(--font-sans);
+}
+
+/* -------------------------------------------------------------------------
+   Semantic helpers — use these as direct class hooks if you don't want
+   to wire up tokens yourself.
+   ------------------------------------------------------------------------- */
+.v-display-xxxl { font: var(--type-display-xxxl); color: var(--fg-1); }
+.v-display-xxl  { font: var(--type-display-xxl);  color: var(--fg-1); }
+.v-display-xl   { font: var(--type-display-xl);   color: var(--fg-1); }
+.v-h1           { font: var(--type-h1);           color: var(--fg-1); }
+.v-h2           { font: var(--type-h2);           color: var(--fg-1); }
+.v-h3           { font: var(--type-h3);           color: var(--fg-1); }
+.v-body-1       { font: var(--type-body-1);       color: var(--fg-1); }
+.v-body-2       { font: var(--type-body-2);       color: var(--fg-1); }
+.v-label        { font: var(--type-label);        color: var(--ink-600); }
+.v-caption      { font: var(--type-caption);      color: var(--fg-2); }
+.v-overline     { font: var(--type-overline);     color: var(--fg-2);
+                  letter-spacing: 0.08em; text-transform: uppercase; }
+
+html, body { font-family: var(--font-sans); color: var(--fg-1); }
+* { box-sizing: border-box; }
+
+/* =========================================================================
+   Capa 2 · Alias del challenge (--app-*)
+   Valores de componente verificados en Figma (design-system/tokens-figma.md)
+   con la precedencia de docs/design-system-uso.md §8.
+   ========================================================================= */
+:root {
+  /* Fuente: Montserrat vía next/font (variable --font-montserrat). */
+  --font-sans: var(--font-montserrat, "Montserrat"), "Helvetica Neue", Arial, sans-serif;
+
+  /* --- Tintas de marca: indigo = acción · core light = foco/activo/ON --- */
+  --app-primary:         var(--valiu-indigo);        /* #3D46CC botón primario, borde secundario, seleccionado */
+  --app-primary-hover:   var(--valiu-blue);          /* #0086FF hover del primario (Figma) */
+  --app-primary-press:   var(--valiu-indigo-press);  /* #252D92 */
+  --app-accent:          var(--valiu-blue);          /* #0086FF foco, nav activo, subrayado de tab, links */
+  --app-accent-bg:       var(--valiu-blue-bg);       /* #F6FBFF nav activo, tab activa, hover de fila */
+  --app-hover-soft:      #EDF3FF;                    /* Main/V40 */
+  --app-info-dot:        #8BCAFB;                    /* Main/V60 · punto del tag Descriptive */
+  --app-chart-accent:    #4D9EF7;                    /* Main/V80 · gráficas */
+  --app-selected-bg:     #F0F1FD;                    /* Selected bg · ítem/opción seleccionada */
+
+  /* --- Texto y estructura --- */
+  --app-ink:             var(--ink-900);   /* #151522 texto principal */
+  --app-ink-label:       var(--ink-600);   /* #1C293B label de inputs */
+  --app-ink-2:           var(--ink-500);   /* #5B5B64 texto secundario (D-18) */
+  --app-ink-3:           var(--ink-400);   /* #8492A6 placeholder, deshabilitado */
+  --app-ink-disabled:    var(--ink-300);   /* #DCDCDE borde/texto inactivo */
+  --app-border-input:    var(--ink-800);   /* #021734 borde de input en reposo (0.5 px) */
+  --app-divider:         #E2E4E9;          /* separadores, filas, borde del sidebar */
+  --app-currency:        #7A7A92;          /* código de divisa dentro de inputs */
+  --app-canvas:          var(--bg-canvas); /* #F5F7FA fondo de app */
+  --app-surface:         var(--bg-surface);/* #FFFFFF tarjetas, panel, inputs */
+  --app-on-primary:      var(--fg-on-brand);
+
+  /* --- Feedback: signo de montos, faltantes --- */
+  --app-success-strong:  var(--success-strong); /* #177B4B montos positivos */
+  --app-danger:          var(--danger);         /* #B40909 faltantes, error de campo */
+
+  /* --- Tags (bg / punto) · valores Figma --- */
+  --app-tag-success-bg:  #EBFFF6;  --app-tag-success-dot: #82DAB5;
+  --app-tag-warning-bg:  #FCEFCE;  --app-tag-warning-dot: #F5CE6C;
+  --app-tag-error-bg:    #FFF1F1;  --app-tag-error-dot:   #D26B6B;
+  --app-tag-neutral-bg:  #F5F7FA;  --app-tag-neutral-dot: #8492A6;
+  --app-tag-pactada-bg:  #EDF3FF;  --app-tag-pactada-dot: var(--valiu-blue); /* D-29, sin mint */
+  --app-tag-info-bg:     var(--valiu-blue-bg); --app-tag-info-dot: var(--app-info-dot);
+
+  /* --- Alerts (bg / borde) · valores Figma --- */
+  --app-alert-success-bg: #D5F3E6; --app-alert-success-border: #17714B;
+  --app-alert-warning-bg: #FCEFCE; --app-alert-warning-border: #C78F00;
+  --app-alert-error-bg:   #F0CECE; --app-alert-error-border:   #770505;
+  --app-alert-info-bg:    var(--valiu-blue-bg); --app-alert-info-border: var(--valiu-indigo);
+
+  /* --- Overlays --- */
+  --app-overlay:         rgba(21, 21, 34, 0.4);
+  --app-overlay-tour:    rgba(21, 21, 34, 0.55);
+
+  /* --- Elevación --- */
+  --app-shadow-mid:      0 3px 6px rgba(0, 0, 0, 0.08);   /* tarjetas, chip de divisa */
+  --app-shadow-high:     0 3px 6px rgba(0, 0, 0, 0.15);   /* botón flotante */
+  --app-shadow-md:       var(--shadow-md);                /* popovers */
+  --app-shadow-lg:       var(--shadow-lg);                /* panel lateral, tarjeta del onboarding */
+
+  /* --- Radios (solo 4 / 8 / 16 / 40 del DS + 12 del recorte del tour) --- */
+  --app-radius-xs:   var(--radius-xs);   /* 4  botones, chip de divisa */
+  --app-radius-sm:   var(--radius-sm);   /* 8  inputs, tarjetas, alerts, ítem de nav */
+  --app-radius-md:   var(--radius-md);   /* 12 recorte del onboarding */
+  --app-radius-lg:   var(--radius-lg);   /* 16 tags, panel */
+  --app-radius-2xl:  var(--radius-2xl);  /* 40 botón flotante */
+  --app-radius-full: var(--radius-full);
+
+  /* --- Bordes --- */
+  --app-border-hairline: 0.5px;  /* input en reposo, sidebar, header */
+  --app-border-thin:     1px;
+  --app-border-split:    1.5px;  /* lado activo del CampoMontoDoble */
+  --app-border-strong:   2px;    /* CajaTdcValiu, subrayado de tab, outline de foco */
+  --app-focus-ring:      var(--app-border-strong) solid var(--app-accent);
+  --app-focus-offset:    2px;
+
+  /* --- Medidas de layout y controles --- */
+  --app-sidebar-w:       240px;
+  --app-sidebar-w-min:   64px;
+  --app-nav-item-h:      40px;
+  --app-nav-item-w-min:  48px;
+  --app-logo-h:          22px;
+  --app-header-h:        48px;
+  --app-footer-h:        40px;
+  --app-panel-w:         480px;
+  --app-input-h:         48px;
+  --app-row-h:           44px;
+  --app-button-h-mid:    32px;
+  --app-button-h-large:  36px;
+  --app-button-h-xl:     40px;
+  --app-token-box:       48px;
+  --app-token-box-w-op:  44px;
+  --app-tour-card-w:     320px;
+  --app-tour-card-h:     232px;
+  --app-tour-gap:        24px;
+  --app-resultado-h:     52px;
+  --app-close-btn:       32px;
+  --app-close-btn-sm:    28px;
+  --app-logo-row-h:      32px;
+  --app-shell-md:        900px;
+  --app-shell-lg:        1100px;
+  --app-tour-pad:        8px;
+  --app-radio:           20px;
+  --app-dot:             8px;
+  --app-icon-xs:         14px;
+  --app-icon-sm:         16px;
+  --app-icon-md:         18px;
+  --app-icon-lg:         20px;
+  --app-icon-xl:         22px;
+  --app-icon-2xl:        24px;
+  --app-icon-hero:       48px;
+  --app-frame-w:         1280px;
+  --app-spark-h:         48px;
+  --app-trend-h:         36px;
+  --app-selector-par-w:  300px;
+  --app-tdc-box-w:       170px;
+  --app-par-col-w:       200px;
+  --app-col-fecha:       56px;
+  --app-col-monto:       160px;
+  --app-col-accion:      120px;
+
+  /* --- Tipografía (tamaño / interlínea); el peso va aparte --- */
+  --app-fs-display:  32px; --app-lh-display:  36px;
+  --app-fs-h1:       24px; --app-lh-h1:       28px;
+  --app-fs-h2:       20px; --app-lh-h2:       24px;
+  --app-fs-h3:       16px; --app-lh-h3:       24px;
+  --app-fs-body-lg:  16px; --app-lh-body-lg:  20px;
+  --app-fs-body:     14px; --app-lh-body:     20px; --app-lh-body-tall: 24px;
+  --app-fs-caption:  12px; --app-lh-caption:  16px;
+  --app-fs-tiny:     11px; --app-lh-tiny:     14px;
+  --app-fs-micro:    10px; --app-lh-micro:    14px;
+  --app-fs-overline: 10px; --app-lh-overline: 12px; --app-ls-overline: 1.5px;
+  --app-fs-amount:   24px; --app-lh-amount:   32px;
+  --app-fs-tdc:      18px; --app-lh-tdc:      24px;
+  --app-fs-cta-xl:   16px; --app-lh-cta-xl:   24px;
+  --app-fs-tab:      16px; --app-lh-tab:      20px;
+  --app-fs-token:    18px; --app-lh-token:    24px;
+  --app-fs-spark:    10px;
+}

@@ -1,0 +1,145 @@
+@import "tailwindcss";
+@import "../styles/tokens.css";
+
+/* Tailwind mapeado a los alias --app-* (ningún hex ni medida suelta en componentes). */
+@theme inline {
+  --*: initial;
+
+  --spacing: 4px;
+
+  --font-sans: var(--font-sans);
+
+  --color-app-primary: var(--app-primary);
+  --color-app-primary-hover: var(--app-primary-hover);
+  --color-app-primary-press: var(--app-primary-press);
+  --color-app-accent: var(--app-accent);
+  --color-app-accent-bg: var(--app-accent-bg);
+  --color-app-hover-soft: var(--app-hover-soft);
+  --color-app-info-dot: var(--app-info-dot);
+  --color-app-chart: var(--app-chart-accent);
+  --color-app-selected: var(--app-selected-bg);
+  --color-app-ink: var(--app-ink);
+  --color-app-ink-label: var(--app-ink-label);
+  --color-app-ink-2: var(--app-ink-2);
+  --color-app-ink-3: var(--app-ink-3);
+  --color-app-ink-disabled: var(--app-ink-disabled);
+  --color-app-border-input: var(--app-border-input);
+  --color-app-divider: var(--app-divider);
+  --color-app-currency: var(--app-currency);
+  --color-app-canvas: var(--app-canvas);
+  --color-app-surface: var(--app-surface);
+  --color-app-on-primary: var(--app-on-primary);
+  --color-app-success: var(--app-success-strong);
+  --color-app-danger: var(--app-danger);
+  --color-app-tag-success-bg: var(--app-tag-success-bg);
+  --color-app-tag-success-dot: var(--app-tag-success-dot);
+  --color-app-tag-warning-bg: var(--app-tag-warning-bg);
+  --color-app-tag-warning-dot: var(--app-tag-warning-dot);
+  --color-app-tag-error-bg: var(--app-tag-error-bg);
+  --color-app-tag-error-dot: var(--app-tag-error-dot);
+  --color-app-tag-neutral-bg: var(--app-tag-neutral-bg);
+  --color-app-tag-neutral-dot: var(--app-tag-neutral-dot);
+  --color-app-tag-pactada-bg: var(--app-tag-pactada-bg);
+  --color-app-tag-pactada-dot: var(--app-tag-pactada-dot);
+  --color-app-tag-info-bg: var(--app-tag-info-bg);
+  --color-app-tag-info-dot: var(--app-tag-info-dot);
+  --color-app-alert-success-bg: var(--app-alert-success-bg);
+  --color-app-alert-success-border: var(--app-alert-success-border);
+  --color-app-alert-warning-bg: var(--app-alert-warning-bg);
+  --color-app-alert-warning-border: var(--app-alert-warning-border);
+  --color-app-alert-error-bg: var(--app-alert-error-bg);
+  --color-app-alert-error-border: var(--app-alert-error-border);
+  --color-app-alert-info-bg: var(--app-alert-info-bg);
+  --color-app-alert-info-border: var(--app-alert-info-border);
+  --color-app-overlay: var(--app-overlay);
+  --color-app-overlay-tour: var(--app-overlay-tour);
+
+  --radius-xs: var(--app-radius-xs);
+  --radius-sm: var(--app-radius-sm);
+  --radius-md: var(--app-radius-md);
+  --radius-lg: var(--app-radius-lg);
+  --radius-2xl: var(--app-radius-2xl);
+  --radius-full: var(--app-radius-full);
+
+  --shadow-mid: var(--app-shadow-mid);
+  --shadow-high: var(--app-shadow-high);
+  --shadow-md: var(--app-shadow-md);
+  --shadow-lg: var(--app-shadow-lg);
+
+  --text-display: var(--app-fs-display);
+  --text-display--line-height: var(--app-lh-display);
+  --text-h1: var(--app-fs-h1);
+  --text-h1--line-height: var(--app-lh-h1);
+  --text-h2: var(--app-fs-h2);
+  --text-h2--line-height: var(--app-lh-h2);
+  --text-h3: var(--app-fs-h3);
+  --text-h3--line-height: var(--app-lh-h3);
+  --text-body-lg: var(--app-fs-body-lg);
+  --text-body-lg--line-height: var(--app-lh-body-lg);
+  --text-body: var(--app-fs-body);
+  --text-body--line-height: var(--app-lh-body);
+  --text-body-tall: var(--app-fs-body);
+  --text-body-tall--line-height: var(--app-lh-body-tall);
+  --text-caption: var(--app-fs-caption);
+  --text-caption--line-height: var(--app-lh-caption);
+  --text-tiny: var(--app-fs-tiny);
+  --text-tiny--line-height: var(--app-lh-tiny);
+  --text-micro: var(--app-fs-micro);
+  --text-micro--line-height: var(--app-lh-micro);
+  --text-overline: var(--app-fs-overline);
+  --text-overline--line-height: var(--app-lh-overline);
+  --text-overline--letter-spacing: var(--app-ls-overline);
+  --text-amount: var(--app-fs-amount);
+  --text-amount--line-height: var(--app-lh-amount);
+  --text-tdc: var(--app-fs-tdc);
+  --text-tdc--line-height: var(--app-lh-tdc);
+  --text-cta-xl: var(--app-fs-cta-xl);
+  --text-cta-xl--line-height: var(--app-lh-cta-xl);
+  --text-tab: var(--app-fs-tab);
+  --text-tab--line-height: var(--app-lh-tab);
+  --text-token: var(--app-fs-token);
+  --text-token--line-height: var(--app-lh-token);
+
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  --tracking-overline: var(--app-ls-overline);
+  --tracking-wide-caps: 0.06em;
+
+  --breakpoint-md: 900px;
+  --breakpoint-lg: 1100px;
+  --breakpoint-xl: 1280px;
+  --container-md: 900px;
+  --container-lg: 1100px;
+
+  --default-transition-duration: 150ms;
+  --default-transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    color: var(--app-ink);
+    background: var(--app-canvas);
+    -webkit-font-smoothing: antialiased;
+  }
+  body {
+    margin: 0;
+    font-size: var(--app-fs-body);
+    line-height: var(--app-lh-body);
+  }
+  h1, h2, h3, p { margin: 0; }
+  button { font: inherit; color: inherit; }
+  :where(button, a, input, [role="radio"], [tabindex]):focus-visible {
+    outline: var(--app-focus-ring);
+    outline-offset: var(--app-focus-offset);
+  }
+}
+
+@utility hairline { border-width: var(--app-border-hairline); }
+@utility hairline-r { border-right-width: var(--app-border-hairline); }
+@utility hairline-b { border-bottom-width: var(--app-border-hairline); }
+@utility hairline-t { border-top-width: var(--app-border-hairline); }
+@utility focus-ring { outline: var(--app-focus-ring); outline-offset: var(--app-focus-offset); }
