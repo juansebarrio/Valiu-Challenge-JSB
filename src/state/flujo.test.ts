@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { aplicar, estadoInicial, pagoPorId, type Accion } from './estado';
-import { destinoDeCuenta, destinoDeDestinatario, notificaciones, ordenDePago } from './derivados';
+import { cuentasActuales, destinoDeCuenta, destinoDeDestinatario, notificaciones, ordenDePago } from './derivados';
+import { ARQUETIPO_IDS } from '@/data/arquetipos';
 import { estadoDeEscenario } from './escenarios';
 import { vistaControl, vistaDestinatarios, vistaHome, vistaMonitoreo, vistaPanel, vistaOperar } from './vistas';
 import { centavos } from '@/lib/dinero';
@@ -35,10 +36,10 @@ describe('frame 01 · inicio con faltante', () => {
   it('EUR nada pendiente', () => {
     expect(pos(base, 'EUR').resultado.tipo).toBe('nada');
   });
-  it('próximos de la semana y "Ver los 10 pagos futuros"', () => {
+  it('próximos de la semana en el inicio; los 10 pagos futuros solo en la sección Movimientos', () => {
     expect(h.proximos.map((p) => p.nombre)).toEqual(['Shenzhen Parts Co.', 'Logística Pacífico', 'Asia Packaging']);
     expect(h.totalProximos).toBe(10);
-    expect(vistaHome(aplicar([{ tipo: 'verTodosLosPagos', valor: true }], base)).proximos).toHaveLength(10);
+    expect(h.proximosTodos).toHaveLength(10);
     expect(h.realizados.map((r) => r.fecha)).toEqual(['Hoy', '4 oct', '1 oct']);
   });
   it('tipo de cambio con EUR/MXN debajo', () => {
@@ -115,7 +116,7 @@ describe('flujo principal 02 → 07', () => {
     expect(c.detalle).toEqual([
       { k: 'Enviaste', v: '1,500.00 USD a Shenzhen Parts Co.' },
       { k: 'Pagaste', v: '27,138.62 MXN' },
-      { k: 'TDC', v: '18.092415' },
+      { k: 'TDC', v: '18.092415 MXN por USD' },
       { k: 'Concepto', v: 'Pago a proveedores' },
       { k: 'Referencia', v: 'Factura 0457' },
     ]);
@@ -407,7 +408,7 @@ describe('detalle de movimiento en el panel', () => {
     const p = vistaPanel(aplicar([{ tipo: 'abrirDetalle', id: 'op1' }], estadoDeEscenario('resuelta')))!;
     expect(p.titulo).toBe('Shenzhen Parts Co.');
     expect(p.detalle).toMatchObject({ clase: 'proceso', titulo: 'Pago en proceso', monto: centavos(-27_138.62), divisa: 'MXN' });
-    expect(p.detalle?.filas).toContainEqual({ k: 'TDC', v: '18.092415' });
+    expect(p.detalle?.filas).toContainEqual({ k: 'TDC', v: '18.092415 MXN por USD' });
   });
   it('Esc / Cerrar vuelve al inicio sin tocar nada', () => {
     const e = aplicar([{ tipo: 'abrirDetalle', id: 'p1' }, { tipo: 'cerrarPanel' }], base);
@@ -416,62 +417,38 @@ describe('detalle de movimiento en el panel', () => {
   });
 });
 
-describe('cancelar un pago pactado', () => {
+describe('detalle de un pago pactado', () => {
   const pactada = estadoDeEscenario('pactada');
   const detalle = aplicar([{ tipo: 'abrirDetalle', id: 'p1' }], pactada);
-  it('el detalle de la pactada ofrece "Cancelar pacto" y muestra el fondeo', () => {
+  it('muestra el fondeo y la nota de que cancelar se pide por WhatsApp; no hay acción de cancelar', () => {
     const p = vistaPanel(detalle)!;
     expect(p.sub).toBe('27,138.62 MXN · sale el jue 8 · Factura 0457');
     expect(p.detalle).toMatchObject({ clase: 'pactada', titulo: 'Pago pactado', badge: { texto: 'Pactada', tono: 'pactada' } });
     expect(p.detalle?.fondeo).toBe('Ten 27,138.62 MXN en tu Cuenta Principal MXN el jue 8 para que el pago salga.');
-    expect(p.secundario).toEqual({ label: 'Cancelar pacto', accion: 'cancelarPactada' });
+    expect(p.detalle?.nota).toBe('Ya cerraste el precio de esta operación. Si necesitas cancelarla, escríbenos por WhatsApp desde Contáctanos.');
+    expect(p.primario).toEqual({ label: 'Cerrar', habilitado: true, accion: 'cerrar' });
+    expect(p.secundario).toBeNull();
   });
-  it('pregunta antes de cancelar y "Cancelando…" mientras confirma', () => {
-    const q = aplicar([{ tipo: 'cancelarPactada' }], detalle);
-    const p = vistaPanel(q)!;
-    expect(p.paso).toBe('cancelar');
-    expect(p.detalle?.pregunta).toEqual({ titulo: '¿Cancelar el pago pactado?', texto: 'Se libera el precio de 18.092415 que cerraste hoy. El pago a Shenzhen Parts Co. vuelve a Próximos como pendiente y no sale dinero de tu Cuenta Principal MXN el jue 8.' });
-    expect(p.primario).toEqual({ label: 'Sí, cancelar', habilitado: true, accion: 'confirmarCancelacion' });
-    expect(vistaPanel(aplicar([{ tipo: 'confirmarCancelacion' }], q))!.primario).toEqual({ label: 'Cancelando…', habilitado: false, accion: 'confirmarCancelacion' });
-    expect(vistaPanel(aplicar([{ tipo: 'irPaso', paso: 'origen' }], q))!.paso).toBe('origen');
-  });
-  it('al cancelar, el pago vuelve a Próximos, MXN deja de tener pactadas y queda el aviso', () => {
-    const e = aplicar([{ tipo: 'cancelarPactada' }, { tipo: 'confirmarCancelacion' }, { tipo: 'pactadaCancelada', hora: '10:44' }], detalle);
-    expect(e.panel.abierto).toBe(false);
-    expect(e.aviso).toEqual({ tipo: 'info', texto: 'Cancelaste el pago pactado a Shenzhen Parts Co. Vuelve a Próximos como pendiente.' });
-    const h = vistaHome(e);
-    expect(h.proximos[0].nombre).toBe('Shenzhen Parts Co.');
-    expect(h.proximos[0].badge).toBeUndefined();
-    expect(h.proximos[0].orden?.pagoId).toBe('p1');
-    expect(pos(e, 'USD').resultado).toEqual({ tipo: 'faltan', monto: centavos(1000) });
-    expect(pos(e, 'MXN').pactadasLiquidar).toBeNull();
-    expect(pos(e, 'MXN').saldo).toBe(centavos(1_180_000));
-    expect(h.realizados[0]).toMatchObject({ nombre: 'Shenzhen Parts Co.', badge: { texto: 'Cancelada', tono: 'neutral' } });
-    const d = vistaPanel(aplicar([{ tipo: 'abrirDetalle', id: 'op1' }], e))!;
-    expect(d.detalle).toMatchObject({ clase: 'cancelada', titulo: 'Pago cancelado' });
-    expect(d.detalle?.filas).toContainEqual({ k: 'Cancelada', v: 'Hoy 10:44' });
-  });
-  it('no se puede cancelar lo que no está pactado', () => {
-    const e = aplicar([{ tipo: 'abrirDetalle', id: 'p1' }, { tipo: 'cancelarPactada' }], base);
-    expect(e.panel.paso).toBe('origen');
-    expect(aplicar([{ tipo: 'confirmarCancelacion' }, { tipo: 'pactadaCancelada', hora: '10:44' }], e).operaciones).toEqual([]);
+  it('los pendientes y realizados no llevan la nota', () => {
+    expect(vistaPanel(aplicar([{ tipo: 'abrirDetalle', id: 'p1' }], base))!.detalle?.nota).toBeNull();
+    expect(vistaPanel(aplicar([{ tipo: 'abrirDetalle', id: 'r1' }], base))!.detalle?.nota).toBeNull();
   });
 });
 
-describe('agendar un pago desde el "+" de Movimientos', () => {
+describe('cargar un pago desde el "+" de Movimientos', () => {
   const asia = destinoDeDestinatario(base.datos.destinatarios.find((d) => d.id === 'ap')!);
   const VIE9 = new Date(2026, 9, 9);
   const abierto = aplicar([{ tipo: 'abrirAgendar' }], base);
   it('empieza en el selector de destino, solo con destinatarios', () => {
     const p = vistaPanel(abierto)!;
-    expect(p).toMatchObject({ tipo: 'agendar', paso: 'destino', titulo: 'Agendar un pago' });
+    expect(p).toMatchObject({ tipo: 'agendar', paso: 'destino', titulo: 'Cargar un pago' });
     expect(p.destino?.grupos.map((g) => g.titulo)).toEqual(['Destinatarios']);
     expect(p.primario.habilitado).toBe(false);
   });
-  it('"Agendar" se habilita solo con monto y fecha hábil (concepto y referencia son opcionales)', () => {
+  it('"Cargar" se habilita solo con monto y fecha hábil (concepto y referencia son opcionales)', () => {
     const conDestino = aplicar([{ tipo: 'agendaDestino', destino: asia }], abierto);
     expect(vistaPanel(conDestino)!.agenda).toMatchObject({ destinatario: 'Asia Packaging', divisa: 'USD', concepto: '', fechaMin: '2026-10-06', fechaMax: '2027-01-04' });
-    expect(vistaPanel(conDestino)!.primario).toEqual({ label: 'Agendar', habilitado: false, accion: 'agendar' });
+    expect(vistaPanel(conDestino)!.primario).toEqual({ label: 'Cargar', habilitado: false, accion: 'agendar' });
     const sabado = aplicar([{ tipo: 'agendaMonto', texto: '250' }, { tipo: 'agendaFecha', fecha: new Date(2026, 9, 10) }], conDestino);
     expect(vistaPanel(sabado)!.agenda?.fechaError).toBe('Elige un día hábil.');
     expect(vistaPanel(sabado)!.primario.habilitado).toBe(false);
@@ -485,16 +462,16 @@ describe('agendar un pago desde el "+" de Movimientos', () => {
     expect(aplicar([{ tipo: 'agendar' }], cero).datos.pagosFuturos).toHaveLength(10);
   });
   const lleno = aplicar([{ tipo: 'agendaDestino', destino: asia }, { tipo: 'agendaMonto', texto: '250' }, { tipo: 'agendaFecha', fecha: VIE9 }, { tipo: 'agendaReferencia', referencia: 'Pedido AP-121' }], abierto);
-  it('al agendar, el pago entra a Próximos, mueve la posición y la confirmación ofrece "Pagar ahora"', () => {
+  it('al cargar, el pago entra a Próximos, mueve la posición y la confirmación ofrece "Pagar ahora"', () => {
     const e = aplicar([{ tipo: 'agendar' }], lleno);
     const p = vistaPanel(e)!;
     expect(p).toMatchObject({ tipo: 'agendar', paso: 'confirmacion', sub: '250.00 USD · vence vie 9 · Pedido AP-121' });
-    expect(p.detalle).toMatchObject({ clase: 'agendado', titulo: 'Pago agendado', badge: { texto: 'Pendiente', tono: 'neutral' } });
+    expect(p.detalle).toMatchObject({ clase: 'agendado', titulo: 'Pago cargado', badge: { texto: 'Pendiente', tono: 'neutral' }, texto: 'Queda en Próximos para que lo pagues cuando quieras.' });
     expect(p.primario).toEqual({ label: 'Volver al inicio', habilitado: true, accion: 'volverInicio' });
     expect(p.secundario).toEqual({ label: 'Pagar ahora', accion: 'pagar' });
     expect(p.detalle?.orden).toMatchObject({ pagoId: 'a1', monto: centavos(250), conFactura: true });
     const inicio = aplicar([{ tipo: 'volverInicio' }], e);
-    expect(inicio.aviso).toEqual({ tipo: 'info', texto: 'Agendaste el pago a Asia Packaging por 250.00 USD para el vie 9.' });
+    expect(inicio.aviso).toEqual({ tipo: 'info', texto: 'Cargaste el pago a Asia Packaging por 250.00 USD. Vence el vie 9.' });
     const h = vistaHome(inicio);
     expect(h.proximos.map((f) => f.nombre)).toEqual(['Shenzhen Parts Co.', 'Logística Pacífico', 'Asia Packaging', 'Asia Packaging']);
     expect(h.totalProximos).toBe(11);
@@ -503,13 +480,13 @@ describe('agendar un pago desde el "+" de Movimientos', () => {
     const pagoAhora = aplicar([{ tipo: 'abrirPanel', orden: p.detalle!.orden! }], e);
     expect(vistaPanel(pagoAhora)).toMatchObject({ tipo: 'pago', paso: 'origen', titulo: 'Pagar a Asia Packaging', sub: '250.00 USD · vence vie 9 · Pedido AP-121' });
   });
-  it('un vencimiento fuera de la semana despliega "Ver los N pagos futuros" y se abre desde su fila', () => {
+  it('un vencimiento fuera de la semana no entra al bloque del inicio pero sí a la sección Movimientos, y se abre desde su fila', () => {
     const e = aplicar([{ tipo: 'agendaFecha', fecha: new Date(2026, 9, 21) }, { tipo: 'agendar' }, { tipo: 'volverInicio' }], lleno);
-    expect(e.verTodosLosPagos).toBe(true);
     const h = vistaHome(e);
-    expect(h.proximos.at(-1)).toMatchObject({ id: 'a1', nombre: 'Asia Packaging', fecha: 'mié 21' });
+    expect(h.proximos.some((f) => f.id === 'a1')).toBe(false);
+    expect(h.proximosTodos.at(-1)).toMatchObject({ id: 'a1', nombre: 'Asia Packaging', fecha: 'mié 21' });
     expect(pos(e, 'USD').pagosFuturos).toEqual({ cantidad: 4, total: centavos(3250) });
-    expect(vistaPanel(aplicar([{ tipo: 'abrirDetalle', id: 'a1' }], e))!.detalle).toMatchObject({ clase: 'agendado', titulo: 'Pago agendado' });
+    expect(vistaPanel(aplicar([{ tipo: 'abrirDetalle', id: 'a1' }], e))!.detalle).toMatchObject({ clase: 'agendado', titulo: 'Pago cargado' });
   });
   it('el "+" cierra el onboarding y Cancelar no deja rastro', () => {
     const conRecorrido = aplicar([{ tipo: 'onboardingIniciar' }, { tipo: 'abrirAgendar' }], base);
@@ -564,13 +541,19 @@ describe('flujo secundario · turismo (S01–S02)', () => {
     expect(e.panel).toMatchObject({ cobroId: 't-r1', pagoElegidoId: 't-p1', origenId: 'mxn' });
     expect(e.panel.orden).toMatchObject({ pagoId: 't-p1', monto: centavos(4200), conFactura: true, referencia: 'Reserva 88213' });
   });
-  it('?cobro=<id> y "Cancelar" cierran el ciclo; la importadora sigue entrando a Destino', () => {
+  it('?cobro=<id> y "Cancelar" cierran el ciclo; la importadora entra al mismo paso "¿Qué pagas con este cobro?"', () => {
     const cerrado = aplicar([{ tipo: 'abrirCobro', cobroId: 't-r1' }, { tipo: 'cerrarPanel' }], t);
     expect(cerrado.panel.abierto).toBe(false);
     expect(aplicar([{ tipo: 'abrirCobro', cobroId: 'otro' }], t).panel.abierto).toBe(false);
     const imp = aplicar([{ tipo: 'abrirCobro', cobroId: 'r1' }], base);
-    expect(vistaPanel(imp)).toMatchObject({ tipo: 'pago', paso: 'destino', titulo: 'Pagar' });
-    expect(imp.panel).toMatchObject({ origenId: 'mxn', cobroId: null });
+    const p = vistaPanel(imp)!;
+    expect(p).toMatchObject({ tipo: 'pago', paso: 'pago' });
+    expect(imp.panel).toMatchObject({ cobroId: 'r1', pagoElegidoId: 'p1' });
+    expect(p.pago?.opciones.map((o) => [o.destinatario, o.seleccionada])).toEqual([['Shenzhen Parts Co.', true], ['Logística Pacífico', false], ['Asia Packaging', false], ['Papelería Industrial del Norte', false], ['Transportes del Golfo', false], ['Empaques Monterrey', false], ['Servicios Eléctricos del Bajío', false], ['Aduanas Nogales', false], ['Telecom Empresarial', false], ['Limpieza Corporativa Azteca', false]]);
+    expect(p.pago?.otro.label).toBe('Pagar a otro destinatario');
+    const origen = aplicar([{ tipo: 'continuarPago' }], imp);
+    expect(vistaPanel(origen)).toMatchObject({ paso: 'origen', titulo: 'Pagar a Shenzhen Parts Co.' });
+    expect(origen.panel.origenId).toBe('mxn');
   });
 });
 
@@ -740,8 +723,8 @@ describe('pendientes: destinatario nuevo, secciones del menú, notificaciones y 
   });
   it('Control de operaciones agrupa por estado y Monitoreo lista los pares con su ejecutable', () => {
     const c = vistaControl(estadoDeEscenario('pactada'));
-    expect(c.resumen).toBe('1 operación hoy · 0 en proceso · 1 pactada · 0 canceladas');
-    expect(c.grupos.map((g) => [g.titulo, g.filas.length])).toEqual([['Pactadas (1)', 1], ['En proceso (0)', 0], ['Canceladas (0)', 0], ['Realizadas (3)', 3]]);
+    expect(c.resumen).toBe('1 operación hoy · 0 en proceso · 1 pactada');
+    expect(c.grupos.map((g) => [g.titulo, g.filas.length])).toEqual([['Pactadas (1)', 1], ['En proceso (0)', 0], ['Realizadas (3)', 3]]);
     expect(c.grupos[0].filas[0]).toMatchObject({ nombre: 'Shenzhen Parts Co.', badge: { texto: 'Pactada', tono: 'pactada' }, detalle: '1,500.00 USD a 18.092415' });
     const m = vistaMonitoreo(base);
     expect(m.pares.map((p) => p.par)).toEqual(['USD/MXN', 'EUR/MXN', 'EUR/USD']);
@@ -779,5 +762,101 @@ describe('pendientes: destinatario nuevo, secciones del menú, notificaciones y 
     const p = vistaPanel(aplicar([{ tipo: 'abrirCuentas' }], base))!;
     expect(p.cuentas?.map((c) => [c.nombre, c.saldo, c.clabe])).toEqual([['Cuenta Principal MXN', '1,180,000.00 MXN', '012180000010250014'], ['Cuenta USD', '2,000.00 USD', null], ['Cuenta EUR', '50,000.00 EUR', null]]);
     expect(aplicar([{ tipo: 'seccion', seccion: 'monitoreo' }], base).seccion).toBe('monitoreo');
+  });
+});
+
+describe('ningún recorrido deja saldo negativo (C-37)', () => {
+  type Estado = ReturnType<typeof estadoInicial>;
+  const TOKEN_CLASICO: Accion[] = [{ tipo: 'opToken', token: '123456' }, { tipo: 'opConfirmar' }, { tipo: 'opConfirmado', hora: '10:43' }];
+  const saldos = (e: Estado) => Object.fromEntries(cuentasActuales(e).map((c) => [c.id, c.saldo]));
+  const sinNegativos = (e: Estado, paso: string) => {
+    for (const c of cuentasActuales(e)) expect(c.saldo, `${e.arquetipo} · ${paso} · ${c.nombre}`).toBeGreaterThanOrEqual(0);
+  };
+  /** Paga un pago cargado desde una cuenta por el panel, forzando cada acción aunque la vista la muestre deshabilitada: el reducer tiene que resistir. */
+  const pagarPorPanel = (e: Estado, pagoId: string, cuentaId: 'mxn' | 'usd' | 'eur'): Estado => {
+    const pago = pagoPorId(e, pagoId);
+    if (!pago) return e;
+    const pasos: Accion[][] = [
+      [{ tipo: 'abrirPanel', orden: ordenDePago(pago) }],
+      [{ tipo: 'elegirOrigen', origenId: cuentaId }],
+      [{ tipo: 'irPaso', paso: 'revision' }],
+      [{ tipo: 'fechaValor', fecha: new Date(2026, 9, 6) }],
+      [{ tipo: 'pedirPrecio' }],
+      TOKEN,
+      [{ tipo: 'volverInicio' }],
+    ];
+    let s = e;
+    for (const acciones of pasos) {
+      s = aplicar(acciones, s);
+      sinNegativos(s, `${pago.destinatario} desde ${cuentaId} · ${acciones[0].tipo}`);
+    }
+    return s;
+  };
+  /** Transferencia, compra o venta por el clásico, también forzada. */
+  const operarClasico = (e: Estado, tipo: 'transferir' | 'comprar' | 'vender', origenId: 'mxn' | 'usd' | 'eur', destinoId: string, monto: string, par?: string): Estado => {
+    const pasos: Accion[][] = [
+      [{ tipo: 'opTipo', valor: tipo }, ...(par ? [{ tipo: 'opPar' as const, par }] : [])],
+      [{ tipo: 'opMonto', lado: 'izq', valor: monto }, { tipo: 'opMontoEditando', lado: null }],
+      [{ tipo: 'opOrigen', origenId }],
+      [{ tipo: 'opDestino', destinoId }],
+      [{ tipo: 'opMotivo', motivo: 'Pago a proveedores' }],
+      [tipo === 'transferir' ? { tipo: 'opContinuar' } : { tipo: 'opPedirPrecio' }],
+      TOKEN_CLASICO,
+      [{ tipo: 'opNueva' }],
+    ];
+    let s = e;
+    for (const acciones of pasos) {
+      s = aplicar(acciones, s);
+      sinNegativos(s, `clásico ${tipo} ${monto} desde ${origenId} a ${destinoId} · ${acciones[0].tipo}`);
+    }
+    return s;
+  };
+
+  for (const arquetipo of ARQUETIPO_IDS) {
+    const inicio = estadoInicial('faltante', {}, arquetipo);
+    const cuentas = inicio.datos.cuentas.map((c) => c.id);
+    it(`${arquetipo}: cada pago cargado desde cada cuenta, uno por uno y encadenados, por el panel`, () => {
+      for (const c of cuentas) {
+        let encadenado = inicio;
+        for (const p of inicio.datos.pagosFuturos) {
+          pagarPorPanel(inicio, p.id, c);
+          encadenado = pagarPorPanel(encadenado, p.id, c);
+        }
+      }
+    });
+    it(`${arquetipo}: transferencias, compras y ventas por el clásico con montos que superan el saldo`, () => {
+      for (const c of inicio.datos.cuentas) {
+        for (const d of inicio.datos.destinatarios.filter((x) => x.divisa === c.divisa)) {
+          operarClasico(inicio, 'transferir', c.id, d.id, String(c.saldo / 100 + 1));
+          operarClasico(inicio, 'transferir', c.id, d.id, String(Math.max(c.saldo / 100, 1)));
+        }
+      }
+      let s = operarClasico(inicio, 'comprar', 'mxn', 'usd', '1000000', 'USD/MXN');
+      s = operarClasico(s, 'comprar', 'mxn', 'usd', '1000', 'USD/MXN');
+      s = operarClasico(s, 'vender', 'usd', 'mxn', '1000000', 'USD/MXN');
+      operarClasico(s, 'comprar', 'usd', 'eur', '100000', 'EUR/USD');
+    });
+  }
+
+  it('importadora: Shenzhen desde Cuenta USD deja 500.00 y Logística Pacífico desde la misma cuenta no se puede pagar', () => {
+    const unoPagado = pagarPorPanel(base, 'p1', 'usd');
+    expect(saldos(unoPagado).usd).toBe(centavos(500));
+    expect(unoPagado.operaciones).toHaveLength(1);
+    const abierto = aplicar([{ tipo: 'abrirPanel', orden: ordenDePago(pagoPorId(unoPagado, 'p2')!) }], unoPagado);
+    const usd = vistaPanel(abierto)!.origenes.find((o) => o.nombre === 'Cuenta USD')!;
+    expect(usd).toMatchObject({ saldo: 'Saldo 500.00 USD', deshabilitada: true, consecuencia: { texto: 'No alcanza el saldo', tono: 'neutral' } });
+    expect(aplicar([{ tipo: 'elegirOrigen', origenId: 'usd' }], abierto).panel.origenId).toBe('mxn');
+    // Forzando el recorrido, el pago sale de la cuenta en pesos (el origen por defecto); la Cuenta USD no se toca.
+    const dosPagados = pagarPorPanel(unoPagado, 'p2', 'usd');
+    expect(saldos(dosPagados).usd).toBe(centavos(500));
+    expect(dosPagados.operaciones.map((o) => o.origenId)).toEqual(['mxn', 'usd']);
+  });
+  it('clásico · Transferir: la cuenta sin saldo para el monto queda deshabilitada con su motivo y el reducer la rechaza', () => {
+    const e = aplicar([{ tipo: 'opTipo', valor: 'transferir' }, { tipo: 'opMonto', lado: 'izq', valor: '2500' }, { tipo: 'opMontoEditando', lado: null }], base);
+    const v = vistaOperar(e);
+    expect(v.origen.opciones.map((o) => [o.nombre, o.deshabilitado, o.motivo])).toEqual([['Cuenta Principal MXN', false, null], ['Cuenta USD', true, 'No alcanza el saldo'], ['Cuenta EUR', false, null]]);
+    expect(aplicar([{ tipo: 'opOrigen', origenId: 'usd' }], e).operar.origenId).toBeNull();
+    const t = estadoInicial('faltante', {}, 'turismo');
+    expect(vistaOperar(aplicar([{ tipo: 'opTipo', valor: 'transferir' }], t)).origen.opciones.find((o) => o.id === 'eur')).toMatchObject({ deshabilitado: true, motivo: 'Sin saldo' });
   });
 });

@@ -123,8 +123,8 @@ export const FormularioOperar: FC<FormularioOperarProps> = ({ vista: v, dispatch
         <div className="grid grid-cols-2 gap-4">
           <CampoSelector etiqueta="Origen" valor={v.origen.valor} placeholder="Elige una cuenta" abierto={v.origen.abierto} onAbrir={(ab) => dispatch({ tipo: 'opOrigenAbierto', abierto: ab })}>
             {v.origen.opciones.length ? v.origen.opciones.map((o) => (
-              <OpcionLista key={o.id} alta seleccionada={o.seleccionado} onElegir={() => dispatch({ tipo: 'opOrigen', origenId: o.id })}>
-                <span className="flex min-w-0 flex-1 flex-col"><span className="truncate text-body font-semibold">{o.nombre}</span><span className="text-caption text-app-ink-2 tabular-nums">{o.sub}</span></span>
+              <OpcionLista key={o.id} alta seleccionada={o.seleccionado} deshabilitada={o.deshabilitado} onElegir={() => dispatch({ tipo: 'opOrigen', origenId: o.id })}>
+                <span className="flex min-w-0 flex-1 flex-col"><span className="truncate text-body font-semibold">{o.nombre}</span><span className="text-caption text-app-ink-2 tabular-nums">{o.sub}{o.motivo ? ` · ${o.motivo}` : ''}</span></span>
               </OpcionLista>
             )) : <span className="px-2 py-2 text-caption text-app-ink-2">No tienes cuentas en esta divisa.</span>}
           </CampoSelector>
@@ -182,7 +182,7 @@ export const FormularioOperar: FC<FormularioOperarProps> = ({ vista: v, dispatch
                 <span className={['text-body-lg font-semibold', v.cotizacion.vacio ? 'text-app-ink-3' : v.vencido ? 'text-app-ink-2' : 'text-app-ink'].join(' ')}>{v.cotizacion.der}</span>
               </div>
             </div>
-            {v.cotizacion.tdc ? <CajaTdcValiu pegada tdc={v.cotizacion.tdc.valor} tipo={v.cotizacion.tdc.tipo} apagada={v.cotizacion.tdc.apagado} /> : null}
+            {v.cotizacion.tdc ? <CajaTdcValiu pegada tdc={v.cotizacion.tdc.valor} unidad={v.cotizacion.tdc.unidad} tipo={v.cotizacion.tdc.tipo} apagada={v.cotizacion.tdc.apagado} /> : null}
           </div>
           {v.cotizacion.notaTransfer ? <span className="text-caption text-app-ink-2">Misma divisa en origen y destino: no hay tipo de cambio ni precio que fijar.</span> : null}
         </div>

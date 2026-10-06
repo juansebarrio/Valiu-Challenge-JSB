@@ -7,12 +7,12 @@ import { neto } from '@/lib/posicion';
 import * as fmt from '@/lib/format';
 import { AGENDAR_DIAS, HOY, DURACION_PRECIO_S, TOKEN_INCORRECTO, datosEscenario, type ArquetipoId, type CuentaId, type Datos, type EscenarioNombre, type PagoFuturo } from '@/data/escenario';
 import { arquetipoDe } from '@/data/arquetipos';
-import { claseDe, cuentaPorId, cuentasActuales, destinoDeDestinatario, finDeSemana, motivoPorDefecto, movimientoDe, opcionesDelCobro, ordenADestinatario, ordenDePago, pagoPorDefectoDelCobro, posicionesPorDivisa } from './derivados';
+import { claseDe, cuentaPorId, cuentasActuales, destinoDeDestinatario, motivoPorDefecto, opcionesDelCobro, ordenADestinatario, ordenDePago, pagoPorDefectoDelCobro, posicionesPorDivisa } from './derivados';
 
 export type Pestana = 'posicion' | 'operar';
 /** Sección del menú lateral: Inicio o Movimientos (la lista completa). */
 export type Seccion = 'inicio' | 'movimientos' | 'control' | 'destinatarios' | 'monitoreo';
-export type PasoPanel = 'pago' | 'destino' | 'origen' | 'revision' | 'precio' | 'confirmacion' | 'cancelar';
+export type PasoPanel = 'pago' | 'destino' | 'origen' | 'revision' | 'precio' | 'confirmacion';
 export type Precio = { estado: 'indicativo' } | { estado: 'fijo'; tdc: TdcMicro; venceEn: number } | { estado: 'vencido'; tdc: TdcMicro };
 
 export interface Destino {
@@ -38,7 +38,7 @@ export interface Orden {
   referencia: string;
 }
 
-/** Pago que se agenda desde el "+" de Movimientos: destino → datos → confirmación. */
+/** Pago que se carga desde el "+" de Movimientos: destino → datos → confirmación. */
 export interface Agenda {
   destino: Destino | null;
   montoTexto: string;
@@ -64,8 +64,6 @@ export interface Panel {
   paso: PasoPanel;
   /** Fila de Movimientos abierta en el detalle (id del pago cargado, de la operación o del realizado). */
   movimientoId: string | null;
-  /** Cancelación de una pactada en curso ("Cancelando…"). */
-  cancelando: boolean;
   agenda: Agenda;
   /** Cobro de hoy desde el que se entró ("Usar para pagar"): el origen preseleccionado es la cuenta donde entró. */
   cobroId: string | null;
@@ -100,12 +98,10 @@ export interface OperacionHecha {
   recibe: Centavos;
   tdc: TdcMicro | null;
   fechaValor: Date;
-  estado: 'En proceso' | 'Pactada' | 'Cancelada';
+  estado: 'En proceso' | 'Pactada';
   motivo: string | null;
   referencia: string;
   hora: string;
-  /** Hora en que se canceló la pactada. */
-  cancelada?: string;
 }
 
 export type TipoOperar = 'comprar' | 'vender' | 'transferir';
@@ -158,11 +154,10 @@ export interface EstadoApp {
   /** Valores base del arquetipo alrededor de los que oscila el indicativo. */
   tdcBase: TablaPares;
   congelado: boolean;
-  /** Tecla P: pausa el indicativo en vivo y la cuenta regresiva (demo). */
+  /** Tecla P: pausa el indicativo en vivo y la cuenta regresiva. Solo puede ser true con `demo` (?demo=1). */
   pausado: boolean;
   demo: boolean;
   toast: { id: number; texto: string } | null;
-  verTodosLosPagos: boolean;
 }
 
 export const ONBOARDING_PASOS = 4;
@@ -170,7 +165,7 @@ export const VENCE_EN_DEMO = 5;
 
 const AGENDA_VACIA: Agenda = { destino: null, montoTexto: '', fecha: null, motivo: null, referencia: '', creado: null };
 const DESTINATARIO_VACIO: DestinatarioNuevo = { nombre: '', divisa: 'MXN', banco: '', cuenta: '' };
-const PANEL_CERRADO: Panel = { abierto: false, tipo: 'pago', paso: 'origen', movimientoId: null, cancelando: false, agenda: AGENDA_VACIA, cobroId: null, pagoElegidoId: null, destinatarioNuevo: DESTINATARIO_VACIO, volverA: null, orden: null, origenId: null, fechaValor: HOY, precio: { estado: 'indicativo' }, token: '', tokenError: null, confirmando: false, busquedaDestino: '' };
+const PANEL_CERRADO: Panel = { abierto: false, tipo: 'pago', paso: 'origen', movimientoId: null, agenda: AGENDA_VACIA, cobroId: null, pagoElegidoId: null, destinatarioNuevo: DESTINATARIO_VACIO, volverA: null, orden: null, origenId: null, fechaValor: HOY, precio: { estado: 'indicativo' }, token: '', tokenError: null, confirmando: false, busquedaDestino: '' };
 
 export const OPERAR_INICIAL: Operar = {
   tipo: 'comprar', par: 'USD/MXN', parAbierto: false, montoIzq: '', montoDer: '', ladoActivo: null, editando: null,
@@ -206,7 +201,6 @@ export function estadoInicial(escenario: EscenarioNombre = 'faltante', opciones:
     pausado: false,
     demo: !!opciones.demo,
     toast: null,
-    verTodosLosPagos: false,
   };
 }
 
@@ -221,7 +215,6 @@ export type Accion =
   | { tipo: 'cerrarAvisoOperar' }
   | { tipo: 'toast'; texto: string }
   | { tipo: 'cerrarToast' }
-  | { tipo: 'verTodosLosPagos'; valor: boolean }
   | { tipo: 'tdcVivo'; pares: TablaPares }
   | { tipo: 'pausar'; valor: boolean }
   | { tipo: 'alternarPausa' }
@@ -255,12 +248,9 @@ export type Accion =
   | { tipo: 'confirmar' }
   | { tipo: 'confirmado'; hora: string }
   | { tipo: 'volverInicio' }
-  // Detalle de movimiento y cancelación de pactadas
+  // Detalle de movimiento
   | { tipo: 'abrirDetalle'; id: string }
-  | { tipo: 'cancelarPactada' }
-  | { tipo: 'confirmarCancelacion' }
-  | { tipo: 'pactadaCancelada'; hora: string }
-  // Agendar un pago
+  // Cargar un pago
   | { tipo: 'abrirAgendar' }
   | { tipo: 'agendaDestino'; destino: Destino }
   | { tipo: 'agendaMonto'; texto: string }
@@ -348,13 +338,19 @@ function origenPorDefecto(e: Pick<EstadoApp, 'datos' | 'operaciones' | 'tdcVivo'
   return cot.pagas <= mxn.saldo && despues >= 0 ? mxn.id : null;
 }
 
-/** Hoy queda deshabilitado cuando el saldo de hoy no alcanza: la fecha pasa al vencimiento o al primer día hábil siguiente. */
-function ajustarFecha(e: Pick<EstadoApp, 'datos' | 'tdcVivo'>, panel: Panel): Panel {
-  const origen = cuentaPorId(e, panel.origenId);
+/** Saldo de hoy de una cuenta (después de lo que salió en la sesión), o null si no existe. */
+const saldoActual = (e: Pick<EstadoApp, 'datos' | 'operaciones'>, id: CuentaId | null) => cuentasActuales(e).find((c) => c.id === id)?.saldo ?? null;
+
+/** Lo que saldría de la cuenta de origen supera su saldo de hoy. Ningún recorrido deja saldo negativo (C-37). */
+function saleMasDelSaldo(e: Pick<EstadoApp, 'datos' | 'operaciones' | 'tdcVivo'>, panel: Panel): boolean {
   const cot = cotizacionPanel(e, panel);
-  if (!origen || !cot || !panel.orden) return panel;
-  const hoyNoAlcanza = cot.pagas > origen.saldo;
-  if (!hoyNoAlcanza) return panel;
+  const saldo = saldoActual(e, panel.origenId);
+  return !!cot && saldo != null && cot.pagas > saldo;
+}
+
+/** Hoy queda deshabilitado cuando el saldo de hoy no alcanza: la fecha pasa al vencimiento o al primer día hábil siguiente. */
+function ajustarFecha(e: Pick<EstadoApp, 'datos' | 'operaciones' | 'tdcVivo'>, panel: Panel): Panel {
+  if (!panel.orden || !saleMasDelSaldo(e, panel)) return panel;
   if (!mismoDia(panel.fechaValor, HOY)) return panel;
   const opciones = fechasLiquidacion(HOY, panel.orden.vence);
   const vence = panel.orden.vence && opciones.find((o) => o.vence);
@@ -386,21 +382,26 @@ export function avisoDe(e: EstadoApp, op: OperacionHecha): Aviso {
   return { tipo: 'success', texto: `Pasaste ${recibe} a tu ${op.destino.nombre}.${alcanza}` };
 }
 
-/** Aviso del inicio al cancelar una pactada: el pago cargado vuelve a Próximos; una operación a cuenta propia simplemente no sale. */
-function avisoCancelacion(e: EstadoApp, op: OperacionHecha): Aviso {
-  const recibe = fmt.monto(op.recibe, op.destino.divisa);
-  if (op.pagoId) return { tipo: 'info', texto: `${fmt.oracion(`Cancelaste el pago pactado a ${op.destino.nombre}`)} Vuelve a Próximos como pendiente.` };
-  if (op.clase === 'compra') return { tipo: 'info', texto: `Cancelaste la compra pactada de ${recibe}. No sale dinero de tu ${cuentaPorId(e, op.origenId)!.nombre}.` };
-  if (op.clase === 'venta') return { tipo: 'info', texto: `Cancelaste la venta pactada de ${fmt.monto(op.pagas, cuentaPorId(e, op.origenId)!.divisa)}. No sale dinero de tu ${cuentaPorId(e, op.origenId)!.nombre}.` };
-  return { tipo: 'info', texto: `Cancelaste el paso pactado de ${recibe} a tu ${op.destino.nombre}. No sale dinero de tu ${cuentaPorId(e, op.origenId)!.nombre}.` };
-}
-
 /**
  * Una cuenta en la divisa del pago sin saldo suficiente no se puede elegir: sería una transferencia sin fondos, sin precio que cerrar
  * ni fecha para fondear (D-31). Con monto 0 (todavía no elegido) la cuenta sigue elegible.
  */
 export const origenDeshabilitado = (cuenta: { divisa: Divisa; saldo: Centavos }, orden: Orden | null) =>
   !!orden && cuenta.divisa === orden.destino.divisa && orden.destino.tipo === 'tercero' && (cuenta.saldo <= 0 || (orden.monto > 0 && cuenta.saldo < orden.monto));
+
+/** Misma regla en Transferir del clásico: la cuenta de origen no se puede elegir si su saldo no cubre el monto escrito (o es cero). */
+export const origenClasicoDeshabilitado = (cuenta: { saldo: Centavos }, op: Pick<Operar, 'tipo' | 'montoIzq'>) => {
+  if (op.tipo !== 'transferir') return false;
+  const monto = leerCentavos(op.montoIzq) ?? 0;
+  return cuenta.saldo <= 0 || (monto > 0 && cuenta.saldo < monto);
+};
+
+/** Lo que sale hoy en el clásico (sin fecha valor) supera el saldo actual de la cuenta de origen. */
+function saleMasDelSaldoClasico(e: Pick<EstadoApp, 'datos' | 'operaciones'>, op: Operar): boolean {
+  const sale = (op.tipo === 'comprar' ? leerCentavos(op.montoDer) : leerCentavos(op.montoIzq)) ?? 0;
+  const saldo = saldoActual(e, op.origenId);
+  return saldo == null || sale <= 0 || sale > saldo;
+}
 
 /** Errores del alta de destinatario por campo (vacío = válido). */
 export function erroresDestinatario(d: DestinatarioNuevo): Partial<Record<keyof DestinatarioNuevo, string>> {
@@ -414,7 +415,7 @@ export function erroresDestinatario(d: DestinatarioNuevo): Partial<Record<keyof 
 
 const inicioDelDia = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
 
-/** Última fecha de vencimiento que acepta "Agendar un pago". */
+/** Última fecha de vencimiento que acepta "Cargar un pago". */
 export const fechaMaximaAgendable = () => { const d = inicioDelDia(HOY); d.setDate(d.getDate() + AGENDAR_DIAS); return d; };
 
 /** Un vencimiento se puede agendar si es un día hábil entre hoy y AGENDAR_DIAS días después. */
@@ -424,7 +425,7 @@ export function fechaAgendable(f: Date): 'ok' | 'fin-de-semana' | 'fuera-de-rang
   return esFinDeSemana(f) ? 'fin-de-semana' : 'ok';
 }
 
-/** El pago que crearía "Agendar" con lo cargado, o null si falta algo. */
+/** El pago que crearía "Cargar" con lo cargado, o null si falta algo. */
 export function pagoAgendado(e: Pick<EstadoApp, 'datos' | 'panel'>): PagoFuturo | null {
   const { destino, montoTexto, fecha, motivo, referencia } = e.panel.agenda;
   const monto = leerCentavos(montoTexto);
@@ -454,12 +455,10 @@ export function reducer(e: EstadoApp, a: Accion): EstadoApp {
       return { ...e, toast: { id: (e.toast?.id ?? 0) + 1, texto: a.texto } };
     case 'cerrarToast':
       return { ...e, toast: null };
-    case 'verTodosLosPagos':
-      return { ...e, verTodosLosPagos: a.valor };
     case 'pausar':
-      return { ...e, pausado: a.valor };
+      return { ...e, pausado: e.demo && a.valor };
     case 'alternarPausa':
-      return { ...e, pausado: !e.pausado };
+      return e.demo ? { ...e, pausado: !e.pausado } : e;
     case 'tdcVivo': {
       if (e.congelado || e.pausado) return e;
       const s = { ...e, tdcVivo: a.pares };
@@ -503,11 +502,7 @@ export function reducer(e: EstadoApp, a: Accion): EstadoApp {
     case 'abrirCobro': {
       const cobro = e.datos.loNuevo;
       if (!cobro || cobro.id !== a.cobroId) return e;
-      if (arquetipoDe(e.arquetipo).entradaCobro === 'destino') {
-        // La importadora entra al paso Destino con la cuenta del cobro preseleccionada, exactamente como quedó en el código.
-        return reducer(e, { tipo: 'abrirPanel', orden: null, origenId: cobro.cuentaId });
-      }
-      // Paso "¿Qué pagas con este cobro?" (D-30): el único faltante viene seleccionado.
+      // Paso "¿Qué pagas con este cobro?" (D-30) en los dos arquetipos (C-38): el primer pago que cubre un faltante viene seleccionado.
       return {
         ...e,
         pestana: 'posicion',
@@ -593,6 +588,8 @@ export function reducer(e: EstadoApp, a: Accion): EstadoApp {
       return { ...e, panel };
     }
     case 'fechaValor':
+      // Hoy no se puede elegir si hoy no alcanza el saldo (la vista lo muestra deshabilitado).
+      if (mismoDia(a.fecha, HOY) && saleMasDelSaldo(e, e.panel)) return e;
       return { ...e, panel: sinPrecio({ ...e.panel, fechaValor: a.fecha }) };
     case 'monto': {
       if (!e.panel.orden || e.panel.orden.conFactura) return e;
@@ -608,6 +605,7 @@ export function reducer(e: EstadoApp, a: Accion): EstadoApp {
       if (!orden || !origen || e.datos.mercado === 'cerrado') return e;
       const op = deducir(origen.divisa, orden.destino.divisa);
       if (!op) return e;
+      if (mismoDia(e.panel.fechaValor, HOY) && saleMasDelSaldo(e, e.panel)) return e;
       const indicativo = tdcDe(op, e.tdcVivo);
       const precio: Precio = indicativo == null || !op.lado ? { estado: 'indicativo' } : { estado: 'fijo', tdc: ejecutable(indicativo, op.lado), venceEn: DURACION_PRECIO_S };
       return { ...e, panel: { ...e.panel, paso: 'precio', precio, token: '', tokenError: null, confirmando: false } };
@@ -624,13 +622,14 @@ export function reducer(e: EstadoApp, a: Accion): EstadoApp {
       const cot = cotizacionPanel(e, e.panel);
       if (!cot) return { ...e, panel: { ...e.panel, confirmando: false } };
       if (cot.tipo !== 'transferencia' && precio.estado !== 'fijo') return { ...e, panel: { ...e.panel, confirmando: false } };
+      if (mismoDia(fechaValor, HOY) && cot.pagas > (saldoActual(e, origen.id) ?? 0)) return { ...e, panel: { ...e.panel, confirmando: false } };
       const hecha = nuevaOperacion(e, { via: 'panel', destino: orden.destino, pagoId: orden.pagoId, origenId: origen.id, pagas: cot.pagas, recibe: cot.recibe, tdc: cot.tdc, fechaValor, motivo: orden.motivo, referencia: orden.referencia, hora: a.hora });
       return { ...e, operaciones: [hecha, ...e.operaciones], panel: { ...e.panel, paso: 'confirmacion', precio: { estado: 'indicativo' }, token: '', tokenError: null, confirmando: false } };
     }
     case 'volverInicio': {
       if (e.panel.tipo === 'agendar') {
         const pago = e.panel.agenda.creado ? pagoPorId(e, e.panel.agenda.creado) : null;
-        const aviso: Aviso | null = pago ? { tipo: 'info', texto: `Agendaste el pago a ${pago.destinatario} por ${fmt.monto(pago.monto, pago.divisa)} para el ${fmt.diaCorto(pago.fecha)}.` } : e.aviso;
+        const aviso: Aviso | null = pago ? { tipo: 'info', texto: `Cargaste el pago a ${pago.destinatario} por ${fmt.monto(pago.monto, pago.divisa)}. Vence el ${fmt.diaCorto(pago.fecha)}.` } : e.aviso;
         return { ...e, panel: PANEL_CERRADO, aviso, pestana: 'posicion' };
       }
       if (e.panel.tipo !== 'pago') return { ...e, panel: PANEL_CERRADO, pestana: 'posicion' };
@@ -639,23 +638,11 @@ export function reducer(e: EstadoApp, a: Accion): EstadoApp {
       return { ...e, panel: PANEL_CERRADO, aviso, pestana: 'posicion' };
     }
 
-    // ------------------------------------- Detalle de movimiento y cancelación
+    // ------------------------------------- Detalle de movimiento
     case 'abrirDetalle':
       return { ...e, onboarding: { ...e.onboarding, activo: false }, operar: cerrarSelectores(e.operar), panel: { ...PANEL_CERRADO, abierto: true, tipo: 'detalle', paso: 'origen', movimientoId: a.id } };
-    case 'cancelarPactada': {
-      const mov = e.panel.tipo === 'detalle' && e.panel.movimientoId ? movimientoDe(e, e.panel.movimientoId) : null;
-      return mov?.tipo === 'operacion' && mov.op.estado === 'Pactada' ? { ...e, panel: { ...e.panel, paso: 'cancelar', cancelando: false } } : e;
-    }
-    case 'confirmarCancelacion':
-      return e.panel.tipo === 'detalle' && e.panel.paso === 'cancelar' && !e.panel.cancelando ? { ...e, panel: { ...e.panel, cancelando: true } } : e;
-    case 'pactadaCancelada': {
-      const mov = e.panel.cancelando && e.panel.movimientoId ? movimientoDe(e, e.panel.movimientoId) : null;
-      if (mov?.tipo !== 'operacion' || mov.op.estado !== 'Pactada') return { ...e, panel: { ...e.panel, cancelando: false } };
-      const operaciones = e.operaciones.map((o) => (o.id === mov.op.id ? { ...o, estado: 'Cancelada' as const, cancelada: a.hora } : o));
-      return { ...e, operaciones, panel: PANEL_CERRADO, aviso: avisoCancelacion(e, mov.op), pestana: 'posicion' };
-    }
 
-    // ------------------------------------------------------ Agendar un pago
+    // ------------------------------------------------------ Cargar un pago
     case 'abrirAgendar':
       return { ...e, onboarding: { ...e.onboarding, activo: false }, operar: cerrarSelectores(e.operar), pestana: 'posicion', panel: { ...PANEL_CERRADO, abierto: true, tipo: 'agendar', paso: 'destino' } };
     case 'agendaDestino':
@@ -671,11 +658,9 @@ export function reducer(e: EstadoApp, a: Accion): EstadoApp {
     case 'agendar': {
       const pago = e.panel.tipo === 'agendar' ? pagoAgendado(e) : null;
       if (!pago) return e;
-      const fueraDeLaSemana = pago.fecha.getTime() > finDeSemana(HOY).getTime();
       return {
         ...e,
         datos: { ...e.datos, pagosFuturos: [...e.datos.pagosFuturos, pago] },
-        verTodosLosPagos: e.verTodosLosPagos || fueraDeLaSemana,
         panel: { ...e.panel, paso: 'confirmacion', agenda: { ...e.panel.agenda, creado: pago.id } },
       };
     }
@@ -712,6 +697,8 @@ export function reducer(e: EstadoApp, a: Accion): EstadoApp {
     case 'opOrigenAbierto':
       return { ...e, operar: { ...cerrarSelectores(e.operar), origenAbierto: a.abierto } };
     case 'opOrigen': {
+      const cuenta = cuentasActuales(e).find((c) => c.id === a.origenId);
+      if (!cuenta || origenClasicoDeshabilitado(cuenta, e.operar)) return e;
       const op: Operar = { ...cerrarSelectores(e.operar), origenId: a.origenId, precio: { estado: 'indicativo' }, conToken: false, token: '', tokenError: null };
       if (op.tipo === 'transferir') op.destinoId = null;
       return { ...e, operar: recalcular(e, op) };
@@ -735,11 +722,12 @@ export function reducer(e: EstadoApp, a: Accion): EstadoApp {
       const deducida = deducir(d.origen, d.destino);
       const indicativo = deducida ? tdcDe(deducida, e.tdcVivo) : null;
       if (!deducida || !deducida.lado || indicativo == null) return e;
+      if (saleMasDelSaldoClasico(e, op)) return e;
       const conPrecio: Operar = { ...cerrarSelectores(op), precio: { estado: 'fijo', tdc: ejecutable(indicativo, deducida.lado), venceEn: DURACION_PRECIO_S }, conToken: true, token: '', tokenError: null, ladoActivo: op.ladoActivo ?? 'izq' };
       return { ...e, operar: recalcular(e, conPrecio) };
     }
     case 'opContinuar':
-      return e.operar.tipo === 'transferir' ? { ...e, operar: { ...cerrarSelectores(e.operar), conToken: true, token: '', tokenError: null } } : e;
+      return e.operar.tipo === 'transferir' && !saleMasDelSaldoClasico(e, e.operar) ? { ...e, operar: { ...cerrarSelectores(e.operar), conToken: true, token: '', tokenError: null } } : e;
     case 'opToken':
       return { ...e, operar: { ...e.operar, token: a.token.replace(/\D/g, '').slice(0, 6), tokenError: null } };
     case 'opCancelar':
@@ -754,6 +742,7 @@ export function reducer(e: EstadoApp, a: Accion): EstadoApp {
       const d = divisasOperar(e, op);
       const tdc = op.precio.estado === 'fijo' ? op.precio.tdc : null;
       if (op.tipo !== 'transferir' && tdc == null) return { ...e, operar: { ...op, confirmando: false } };
+      if (saleMasDelSaldoClasico(e, op)) return { ...e, operar: { ...op, confirmando: false } };
       const propia = e.datos.cuentas.find((c) => c.id === op.destinoId);
       const tercero = e.datos.destinatarios.find((x) => x.id === op.destinoId);
       const destino: Destino = propia

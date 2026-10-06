@@ -102,13 +102,13 @@ export const HomeVista: FC<HomeVistaProps> = ({ estado, dispatch, modo = 'app', 
                 <span className="text-body text-app-ink-2">{home.empresa} · {fmt.fechaLarga(HOY)}</span>
               </div>
               <div className="flex gap-3">
-                <Boton variante="secondary" tamano="large" onClick={() => dispatch({ tipo: 'abrirAgendar' })}>Agendar un pago</Boton>
+                <Boton variante="secondary" tamano="large" onClick={() => dispatch({ tipo: 'abrirAgendar' })}>Cargar un pago</Boton>
                 <Boton variante="secondary" tamano="large" onClick={() => dispatch({ tipo: 'abrirPanel', orden: null })}>Pagar</Boton>
               </div>
             </div>
             <div className="grid grid-cols-3 items-start gap-6">
               <div className="col-span-2 flex min-w-0 flex-col gap-5">
-                <ListaMovimientos modo="completa" resumen={home.resumenProximos} totalProximos={home.totalProximos} verTodos proximos={home.proximosTodos.map(fila)} realizados={home.realizados.map(fila)} />
+                <ListaMovimientos modo="completa" resumen={home.resumenProximos} proximos={home.proximosTodos.map(fila)} realizados={home.realizados.map(fila)} />
               </div>
               <div className="flex min-w-0 flex-col gap-5">
                 <TarjetaTipoDeCambio {...home.tdc} />
@@ -175,11 +175,8 @@ export const HomeVista: FC<HomeVistaProps> = ({ estado, dispatch, modo = 'app', 
                 ) : null}
                 <ListaMovimientos
                   tour="movimientos"
-                  totalProximos={home.totalProximos}
-                  verTodos={home.verTodos}
-                  onVerTodos={(valor) => dispatch({ tipo: 'verTodosLosPagos', valor })}
                   onAgendar={() => dispatch({ tipo: 'abrirAgendar' })}
-                  onVerMas={() => dispatch({ tipo: 'seccion', seccion: 'movimientos' })}
+                  onVerTodos={() => dispatch({ tipo: 'seccion', seccion: 'movimientos' })}
                   proximos={home.proximos.map(fila)}
                   realizados={home.realizados.map(fila)}
                 />
@@ -238,7 +235,6 @@ const PanelContenido: FC<{ vista: VistaPanel; estado: EstadoApp; dispatch: (a: A
       case 'cerrar': dispatch({ tipo: 'cerrarPanel' }); break;
       case 'pagar': pagar(); break;
       case 'agendar': dispatch({ tipo: 'agendar' }); break;
-      case 'confirmarCancelacion': dispatch({ tipo: 'confirmarCancelacion' }); break;
       case 'guardarDestinatario': dispatch({ tipo: 'guardarDestinatario' }); break;
     }
   };
@@ -253,7 +249,6 @@ const PanelContenido: FC<{ vista: VistaPanel; estado: EstadoApp; dispatch: (a: A
           case 'cancelar': dispatch({ tipo: 'cerrarPanel' }); break;
           case 'volverPago': dispatch({ tipo: 'irPaso', paso: 'pago' }); break;
           case 'comprobante': comprobante(); break;
-          case 'cancelarPactada': dispatch({ tipo: 'cancelarPactada' }); break;
           case 'pagar': pagar(); break;
         }
       },
@@ -311,7 +306,7 @@ const PanelContenido: FC<{ vista: VistaPanel; estado: EstadoApp; dispatch: (a: A
             {v.revision.ayuda ? <span className="flex items-center gap-2 text-caption text-app-ink-2"><Icono nombre="info-circle" tamano="xs" /><span>{v.revision.ayuda}</span></span> : null}
             {v.revision.error ? <MensajeError>{v.revision.error}</MensajeError> : null}
           </div>
-          {v.revision.tdc != null ? <CajaTdcValiu sinBorde tdc={v.revision.tdc} tipo="Precio indicativo" className="self-start" /> : null}
+          {v.revision.tdc != null ? <CajaTdcValiu sinBorde tdc={v.revision.tdc} unidad={v.revision.tdcUnidad} tipo="Precio indicativo" className="self-start" /> : null}
           <div className="grid grid-cols-2 gap-3">
             <CampoTexto etiqueta="Concepto" opcional valor={v.revision.concepto} onCambiar={(t) => dispatch({ tipo: 'motivo', motivo: t })} placeholder="Ej. Pago a proveedores" />
             <CampoTexto etiqueta="Referencia" opcional valor={v.revision.referencia} onCambiar={(t) => dispatch({ tipo: 'referencia', referencia: t })} placeholder="Ej. Factura 0457" />

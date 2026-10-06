@@ -46,6 +46,13 @@ export function deducir(origen: Divisa, destino: Divisa): Operacion | null {
   return null; // combinación que no existe (ej. GBP → CAD)
 }
 
+/** Unidad en la que se lee un tipo de cambio: "MXN por USD" para USD/MXN, "USD por EUR" para EUR/USD (C-42). */
+export function unidadTdc(par: string | null): string {
+  if (!par) return '';
+  const [base, cotizada] = par.split('/');
+  return `${cotizada} por ${base}`;
+}
+
 /** Tipo de cambio de una tabla para la operación deducida (null en transferencias). */
 export function tdcDe(op: Operacion, pares: TablaPares = PARES): TdcMicro | null {
   if (!op.par || !op.lado) return null;

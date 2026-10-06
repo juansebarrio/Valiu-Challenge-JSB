@@ -9,7 +9,7 @@ import { Badge } from './ui/Badge';
 import { Boton } from './ui/Boton';
 import { ChipDivisa } from './ui/ChipDivisa';
 
-/** Control de operaciones: lo operado en la sesión por estado (pactadas, en proceso, canceladas) y lo realizado antes; cada fila abre su detalle. */
+/** Control de operaciones: lo operado en la sesión por estado (pactadas, en proceso) y lo realizado antes; cada fila abre su detalle. */
 export const SeccionControl: FC<{ vista: VistaControl; dispatch: (a: Accion) => void }> = ({ vista, dispatch }) => {
   const fila = (f: VistaFila) => ({ fecha: f.fecha, nombre: f.nombre, detalle: f.detalle, monto: f.monto, divisa: f.divisa, estado: f.badge, onAbrir: () => dispatch({ tipo: 'abrirDetalle', id: f.id }) });
   return (

@@ -137,15 +137,19 @@ export interface OpcionListaProps {
   onElegir: () => void;
   children: ReactNode;
   alta?: boolean;
+  /** No se puede elegir (p. ej. cuenta sin saldo para la transferencia): fuera del tab order, cursor not-allowed. */
+  deshabilitada?: boolean;
 }
 
-export const OpcionLista: FC<OpcionListaProps> = ({ seleccionada, onElegir, children, alta }) => (
+export const OpcionLista: FC<OpcionListaProps> = ({ seleccionada, onElegir, children, alta, deshabilitada }) => (
   <button
     type="button"
     role="option"
     aria-selected={!!seleccionada}
-    onClick={onElegir}
-    className={['flex w-full cursor-pointer items-center gap-2.5 rounded-sm px-2 text-left hover:bg-app-accent-bg', alta ? 'min-h-(--app-row-h) py-1' : 'h-(--app-nav-item-h)', seleccionada ? 'bg-app-selected' : 'bg-transparent'].join(' ')}
+    aria-disabled={deshabilitada || undefined}
+    disabled={deshabilitada}
+    onClick={deshabilitada ? undefined : onElegir}
+    className={['flex w-full items-center gap-2.5 rounded-sm px-2 text-left', deshabilitada ? 'cursor-not-allowed text-app-ink-2' : 'cursor-pointer hover:bg-app-accent-bg', alta ? 'min-h-(--app-row-h) py-1' : 'h-(--app-nav-item-h)', seleccionada ? 'bg-app-selected' : 'bg-transparent'].join(' ')}
   >
     {children}
   </button>

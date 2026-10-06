@@ -11,7 +11,7 @@ const montserrat = Montserrat({
 
 export const metadata: Metadata = {
   title: 'Valiu · Inicio',
-  description: 'Rediseño del home de Valiu y del flujo de pago de una factura en dólares con pesos (challenge 1).',
+  description: 'Rediseño del home de Valiu y del flujo de pago en alta (challenge 1): importadora y minorista de turismo.',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

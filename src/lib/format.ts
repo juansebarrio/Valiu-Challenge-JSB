@@ -1,4 +1,6 @@
-// src/lib/format.ts — un formato por tipo de dato (D-10). Montos en centavos, tipo de cambio en micro-unidades.
+// src/lib/format.ts — un formato por tipo de dato. Montos en centavos, tipo de cambio en micro-unidades.
+// Fechas (C-44, reemplaza a D-10): en pantalla van `martes 6 de octubre` (fechaLarga), `vie 9` (diaCorto), `4 oct` (diaMes),
+// `Hoy` / `Mañana` / `Ayer` (diaRelativo) y la hora `10:42` en 24 h; `05 oct 2026` (fecha, fechaHora) no aparece en ninguna pantalla.
 import type { Centavos, TdcMicro } from './dinero';
 
 const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];

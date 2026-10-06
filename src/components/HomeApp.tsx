@@ -50,7 +50,7 @@ function accionesDeUrl(estado: ReturnType<typeof estadoDeEscenario>, o: ReturnTy
 /**
  * Estado vivo del prototipo, todo en memoria (recargar reinicia el escenario):
  * reloj del escenario (10:42 + tiempo real), indicativo oscilando ±0.002 % cada 3–5 s, cuenta regresiva del precio,
- * "Confirmando…" y "Cancelando…" de 800 ms y parámetros de URL: ?escenario= · ?congelar=1 · ?demo=1 · ?recorrido=0.
+ * "Confirmando…" de 800 ms y parámetros de URL: ?escenario= · ?congelar=1 · ?demo=1 · ?recorrido=0.
  */
 export function HomeApp({ arquetipo }: { arquetipo: ArquetipoId }) {
   const [estado, dispatch] = useReducer(reducer, arquetipo, (a) => estadoInicial('faltante', {}, a));
@@ -85,8 +85,10 @@ export function HomeApp({ arquetipo }: { arquetipo: ArquetipoId }) {
   const onPaso = useCallback((pares: TablaPares) => dispatch({ tipo: 'tdcVivo', pares }), []);
   useTdcEnVivo({ base: tdcBase, activo: !congelado && !pausado, onPaso });
 
-  // Tecla P (D-32): pausa el indicativo en vivo y la cuenta regresiva (demo). Nunca se dispara con el foco en un campo.
+  // Tecla P (D-32): pausa el indicativo en vivo y la cuenta regresiva, solo con ?demo=1 (C-40). Nunca se dispara con el foco en un campo.
+  const demo = estado.demo;
   useEffect(() => {
+    if (!demo) return;
     const onKey = (e: KeyboardEvent) => {
       if ((e.key !== 'p' && e.key !== 'P') || e.ctrlKey || e.metaKey || e.altKey) return;
       const t = e.target as HTMLElement | null;
@@ -97,7 +99,7 @@ export function HomeApp({ arquetipo }: { arquetipo: ArquetipoId }) {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, []);
+  }, [demo]);
 
   const confirmandoPanel = estado.panel.confirmando;
   useEffect(() => {
@@ -105,13 +107,6 @@ export function HomeApp({ arquetipo }: { arquetipo: ArquetipoId }) {
     const id = window.setTimeout(() => dispatch({ tipo: 'confirmado', hora: horaEscenario(inicioRef.current) }), CONFIRMANDO_MS);
     return () => window.clearTimeout(id);
   }, [confirmandoPanel]);
-
-  const cancelando = estado.panel.cancelando;
-  useEffect(() => {
-    if (!cancelando) return;
-    const id = window.setTimeout(() => dispatch({ tipo: 'pactadaCancelada', hora: horaEscenario(inicioRef.current) }), CONFIRMANDO_MS);
-    return () => window.clearTimeout(id);
-  }, [cancelando]);
 
   const confirmandoOperar = estado.operar.confirmando;
   useEffect(() => {

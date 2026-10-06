@@ -1,4 +1,4 @@
-// src/data/escenario-turismo.ts — datos del flujo secundario (challenge 2 · turismo), frames S01–S08.
+// src/data/escenario-turismo.ts — datos del segundo arquetipo del challenge 1 (minorista de turismo), frames S01–S08.
 // Misma forma que la importadora (src/data/escenario.ts). Marcado "inventado": no viene del brief; se eligió para completar la pantalla.
 import { centavos } from '@/lib/dinero';
 import * as fmt from '@/lib/format';
@@ -61,7 +61,6 @@ export const TURISMO: Arquetipo = {
   tendencia: [21.231, 21.238, 21.235, 21.246, 21.242, 21.255, 21.249, 21.25], // inventado
   ordenPosiciones: ['eur', 'usd', 'mxn'],
   pagoPrincipal: 't-p1',
-  entradaCobro: 'pago',
   contexto: [
     `La ${CUENTAS[2].nombre} está en cero: faltan ${fmt.monto(PAGOS[1].monto, 'EUR')}`,
     `Cobra ${fmt.monto(LO_NUEVO.monto, 'MXN')} de ${LO_NUEVO.de} y paga al ${PAGOS[1].destinatario} el viernes`,

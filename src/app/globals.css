@@ -111,7 +111,7 @@
   --breakpoint-md: 900px;
   --breakpoint-lg: 1100px;
   --breakpoint-xl: 1280px;
-  --breakpoint-min: 1200px;
+  --breakpoint-min: 1024px;
   --breakpoint-stack: 800px; /* la pantalla inicial apila las tarjetas por debajo */
   --container-md: 900px;
   --container-lg: 1100px;

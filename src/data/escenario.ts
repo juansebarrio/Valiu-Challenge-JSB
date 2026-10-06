@@ -105,7 +105,6 @@ export interface Arquetipo {
   /** Pago que resuelven los escenarios "resuelta" y "pactada". */
   pagoPrincipal: string;
   /** "Usar para pagar": paso Destino (como quedó en el código para la importadora) o paso Pago "¿Qué pagas con este cobro?" (D-30). */
-  entradaCobro: 'destino' | 'pago';
   /** Tres líneas de contexto de la tarjeta de la pantalla inicial. */
   contexto: string[];
 }
@@ -192,7 +191,6 @@ export const IMPORTADORA: Arquetipo = {
   tendencia: TENDENCIA_DIA,
   ordenPosiciones: ORDEN_POSICIONES,
   pagoPrincipal: 'p1',
-  entradaCobro: 'destino',
   contexto: [
     `Faltan ${fmt.monto(PAGOS_USD.reduce((acc, p) => acc + p.monto, 0) - CUENTAS[1].saldo, 'USD')} para los pagos de la semana`,
     `Paga ${fmt.monto(PAGOS_USD[0].monto, 'USD')} a ${PAGOS_USD[0].destinatario} con pesos`,
@@ -242,7 +240,7 @@ export const PARES_SELECTOR: { titulo: string; items: { par: string; nombre: str
 
 export const AVISO_PAR_SIN_PROTOTIPO = 'Este par no está en el prototipo.';
 export const AVISO_FUERA_DEL_PROTOTIPO = 'Esta sección no está en el prototipo.';
-export const ANCHO_MINIMO = 1200;
+export const ANCHO_MINIMO = 1024;
 
-/** Agendar un pago: la fecha de vencimiento va de hoy hasta AGENDAR_DIAS días después. */
+/** Cargar un pago: la fecha de vencimiento va de hoy hasta AGENDAR_DIAS días después. */
 export const AGENDAR_DIAS = 90;

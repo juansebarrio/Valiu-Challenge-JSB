@@ -54,7 +54,7 @@ const Lado: FC<{ label: string; monto: Centavos; divisa: Divisa; aprox: boolean;
 
 /**
  * Dos bloques separados por divisor; el lado fijo lleva candado + tag "Fijo", el otro la marca "se actualiza en vivo".
- * Con factura: "Pagas" arriba (en vivo) y "{destinatario} recibe" fijo. Sin factura (editable): "Recibe" y "Pagas", los dos campos;
+ * Siempre "Pagas" arriba y "{destinatario} recibe" abajo, con y sin factura (C-39). Sin factura (editable) los dos son campos;
  * el que el usuario escribe queda fijo y el otro se recalcula con el indicativo (sección 7 del brief).
  */
 export const BloqueMonto: FC<BloqueMontoProps> = ({ pagas, recibe, ladoFijo, conTdc, editable, onCambiar }) => {
@@ -63,9 +63,9 @@ export const BloqueMonto: FC<BloqueMontoProps> = ({ pagas, recibe, ladoFijo, con
   const ladoRecibe = <Lado label={editable ? `Recibe · ${recibe.destinatario.replace(/ recibe$/, '')}` : recibe.destinatario} monto={recibe.monto} divisa={recibe.divisa} aprox={conTdc && ladoFijo !== 'recibe'} derecha={ladoFijo === 'recibe' ? fijo : conTdc ? <EnVivo /> : null} editable={!!editable} onCambiar={(c) => onCambiar?.('recibe', c)} />;
   return (
     <div data-component="BloqueMonto" className="flex flex-col rounded-sm border border-app-divider">
-      {editable ? ladoRecibe : ladoPagas}
+      {ladoPagas}
       <div className="h-px bg-app-divider" />
-      {editable ? ladoPagas : ladoRecibe}
+      {ladoRecibe}
     </div>
   );
 };

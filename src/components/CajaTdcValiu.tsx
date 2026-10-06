@@ -4,7 +4,8 @@ import * as fmt from '@/lib/format';
 
 export interface CajaTdcValiuProps {
   tdc: TdcMicro;
-  divisa?: string;
+  /** Qué se paga por qué: "MXN por USD", "USD por EUR" (C-42). */
+  unidad: string;
   /** "Indicativo" · "Ejecutable" · "Último cierre" · "Precio indicativo". */
   tipo: string;
   /** Vencido: borde Grey3 y valor en Grey1. */
@@ -17,7 +18,7 @@ export interface CajaTdcValiuProps {
 }
 
 /** "TDC Valiu" 10/700 y valor 18/700. En el clásico lleva el borde 2 px #0086FF del DS; en el panel va sin borde. */
-export const CajaTdcValiu: FC<CajaTdcValiuProps> = ({ tdc, divisa = 'MXN', tipo, apagada, pegada, sinBorde, className }) => (
+export const CajaTdcValiu: FC<CajaTdcValiuProps> = ({ tdc, unidad, tipo, apagada, pegada, sinBorde, className }) => (
   <div data-component="CajaTdcValiu" className={['flex min-w-(--app-tdc-box-w) flex-col justify-center gap-0.75 px-4 py-2.5', sinBorde ? 'rounded-sm bg-app-canvas' : ['border-2 bg-app-surface', pegada ? 'rounded-r-sm' : 'rounded-sm', apagada ? 'border-app-ink-disabled' : 'border-app-accent'].join(' '), className].filter(Boolean).join(' ')}>
     <div className="flex justify-between gap-3">
       <span className="text-micro font-bold">TDC Valiu</span>
@@ -25,7 +26,7 @@ export const CajaTdcValiu: FC<CajaTdcValiuProps> = ({ tdc, divisa = 'MXN', tipo,
     </div>
     <div className="flex items-baseline gap-1">
       <span className={['text-tdc font-bold tabular-nums', apagada ? 'text-app-ink-2' : 'text-app-ink'].join(' ')}>{fmt.tdc(tdc)}</span>
-      <span className="text-tiny text-app-ink-2">{divisa}</span>
+      <span className="text-tiny text-app-ink-2">{unidad}</span>
     </div>
   </div>
 );

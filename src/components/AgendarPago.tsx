@@ -6,7 +6,7 @@ import { ChipDivisa } from './ui/ChipDivisa';
 import { Icono } from './ui/Icono';
 import { CampoTexto } from './ui/Campo';
 
-/** Paso de datos de "Agendar un pago": destinatario elegido, monto en su divisa, vencimiento, concepto y referencia (opcionales). */
+/** Paso de datos de "Cargar un pago": destinatario elegido, monto en su divisa, vencimiento, concepto y referencia (opcionales). */
 export const AgendarPago: FC<{ vista: VistaAgenda; dispatch: (a: Accion) => void }> = ({ vista: v, dispatch }) => {
   return (
     <>
