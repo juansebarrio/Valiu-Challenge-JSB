@@ -10,6 +10,8 @@ import { arquetipoDe } from '@/data/arquetipos';
 import { claseDe, cuentaPorId, cuentasActuales, finDeSemana, motivoPorDefecto, movimientoDe, opcionesDelCobro, ordenDePago, pagoPorDefectoDelCobro, posicionesPorDivisa } from './derivados';
 
 export type Pestana = 'posicion' | 'operar';
+/** Sección del menú lateral: Inicio o Movimientos (la lista completa). */
+export type Seccion = 'inicio' | 'movimientos';
 export type PasoPanel = 'pago' | 'destino' | 'origen' | 'revision' | 'precio' | 'confirmacion' | 'cancelar';
 export type Precio = { estado: 'indicativo' } | { estado: 'fijo'; tdc: TdcMicro; venceEn: number } | { estado: 'vencido'; tdc: TdcMicro };
 
@@ -131,6 +133,7 @@ export interface EstadoApp {
   arquetipo: ArquetipoId;
   escenario: EscenarioNombre;
   datos: Datos;
+  seccion: Seccion;
   pestana: Pestana;
   panel: Panel;
   operar: Operar;
@@ -176,6 +179,7 @@ export function estadoInicial(escenario: EscenarioNombre = 'faltante', opciones:
     arquetipo,
     escenario,
     datos: datosEscenario(escenario === 'resuelta' || escenario === 'pactada' ? 'faltante' : escenario, arq),
+    seccion: 'inicio',
     pestana: 'posicion',
     panel: PANEL_CERRADO,
     operar: OPERAR_INICIAL,
@@ -199,6 +203,7 @@ export const ESTADO_INICIAL: EstadoApp = estadoInicial('faltante');
 export type Accion =
   | { tipo: 'reiniciar'; estado: EstadoApp }
   | { tipo: 'pestana'; pestana: Pestana }
+  | { tipo: 'seccion'; seccion: Seccion }
   | { tipo: 'cerrarAviso' }
   | { tipo: 'cerrarAvisoOperar' }
   | { tipo: 'toast'; texto: string }
@@ -404,6 +409,8 @@ export function reducer(e: EstadoApp, a: Accion): EstadoApp {
       return a.estado;
     case 'pestana':
       return { ...e, pestana: a.pestana, operar: cerrarSelectores(e.operar) };
+    case 'seccion':
+      return { ...e, seccion: a.seccion, onboarding: { ...e.onboarding, activo: false }, operar: cerrarSelectores(e.operar) };
     case 'cerrarAviso':
       return { ...e, aviso: null };
     case 'cerrarAvisoOperar':

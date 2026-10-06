@@ -30,12 +30,13 @@ Parámetros de `/importadora` y `/turismo`:
 - `?demo=1` muestra un control flotante con "Vencer precio" (deja la cuenta en 0:05), "Ver recorrido" y "Reiniciar escenario".
 - `?recorrido=0` apaga el onboarding.
 - `?pago=<id>` abre el panel en Origen con ese pago cargado; `?cobro=<id>` entra desde el cobro de hoy (en turismo, al paso "¿Qué pagas con este cobro?").
+- `?seccion=movimientos` abre la sección Movimientos del menú (la lista completa de próximos y realizados).
 
-Estado en memoria: recargar reinicia el escenario (nada de localStorage). Solo escritorio: con menos de 1200 px aparece un aviso.
+Estado en memoria: recargar reinicia el escenario (nada de localStorage). Solo escritorio: con menos de 1200 px el shell se oculta y queda solo el aviso, y el documento nunca tiene scroll horizontal.
 
 Teclado: **Esc** cierra el panel o el recorrido · **P** pausa el tipo de cambio en vivo y la cuenta regresiva (demo) · **← →** mueven la selección en la fecha valor y en las opciones de origen (las deshabilitadas se saltan) · **Tab** recorre el panel con el foco atrapado · **Enter** sobre el nombre de un movimiento abre su detalle (toda la fila responde al clic) · el token es un solo input de 6 dígitos (admite pegar) · el código `000000` simula un token incorrecto.
 
-Movimientos: cada fila de Próximos y Realizados abre su detalle en el panel (pendiente, pactado, en proceso, cancelado o realizado). El "+" junto al título agenda un pago nuevo (destinatario → monto, vencimiento, motivo y referencia → confirmación) que entra a Próximos como pendiente y se paga con el flujo de siempre. Un pago pactado se cancela desde su detalle ("Cancelar pacto" → pregunta → "Cancelando…" 800 ms): el pago vuelve a Próximos y la pactada queda en Realizados como Cancelada.
+Movimientos: cada fila de Próximos y Realizados abre su detalle en el panel (pendiente, pactado, en proceso, cancelado o realizado). "Ver más" al final del bloque (y "Movimientos" en el menú lateral) abre la sección completa: todos los pagos próximos con sus totales por divisa y todos los realizados, con "Agendar un pago" y "Pagar" en el encabezado. El "+" junto al título agenda un pago nuevo (destinatario → monto, vencimiento, motivo y referencia → confirmación) que entra a Próximos como pendiente y se paga con el flujo de siempre. Un pago pactado se cancela desde su detalle ("Cancelar pacto" → pregunta → "Cancelando…" 800 ms): el pago vuelve a Próximos y la pactada queda en Realizados como Cancelada.
 
 ## Estructura
 

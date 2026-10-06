@@ -304,6 +304,7 @@ html, body { font-family: var(--font-sans); color: var(--fg-1); }
   --app-dot-sm:          6px;   /* viñeta de las líneas de contexto (pantalla inicial) */
   --app-avatar:          40px;  /* avatar con iniciales (pantalla inicial) */
   --app-arquetipo-w:     360px; /* tarjeta de arquetipo (pantalla inicial) */
+  --app-arquetipos-w:    744px; /* dos tarjetas de arquetipo con su gap de 24 */
   --app-icon-xs:         14px;
   --app-icon-sm:         16px;
   --app-icon-md:         18px;

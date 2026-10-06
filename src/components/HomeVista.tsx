@@ -3,7 +3,7 @@ import { useMemo, useState, type FC, type RefObject } from 'react';
 import * as fmt from '@/lib/format';
 import { AVISO_FUERA_DEL_PROTOTIPO, HOY, type CuentaId } from '@/data/escenario';
 import { ONBOARDING_PASOS, type Accion, type EstadoApp } from '@/state/estado';
-import { vistaHome, vistaOperar, vistaPanel, type VistaPanel } from '@/state/vistas';
+import { vistaHome, vistaOperar, vistaPanel, type VistaFila, type VistaPanel } from '@/state/vistas';
 import { AppShell, type ModoShell } from './AppShell';
 import { AvisoResultado } from './AvisoResultado';
 import { TarjetaPosicion } from './TarjetaPosicion';
@@ -48,13 +48,18 @@ export const HomeVista: FC<HomeVistaProps> = ({ estado, dispatch, modo = 'app', 
   const [verTotal, setVerTotal] = useState(false);
   const noDisponible = () => dispatch({ tipo: 'toast', texto: AVISO_FUERA_DEL_PROTOTIPO });
   const paso = estado.onboarding.activo ? PASOS_ONBOARDING[estado.onboarding.paso] : null;
+  const enMovimientos = estado.seccion === 'movimientos';
+  // Una fila de Movimientos: "Pagar" abre el flujo con el pago cargado; el resto de la fila abre su detalle.
+  const fila = (f: VistaFila) => ({ fecha: f.fecha, nombre: f.nombre, detalle: f.detalle, monto: f.monto, divisa: f.divisa, estado: f.badge, onPagar: f.orden ? () => dispatch({ tipo: 'abrirPanel', orden: f.orden! }) : undefined, onAbrir: () => dispatch({ tipo: 'abrirDetalle', id: f.id }) });
 
   return (
     <>
       <AppShell
         modo={modo}
         raizRef={raizRef}
+        activo={enMovimientos ? 1 : 0}
         onNoDisponible={noDisponible}
+        onNavegar={(i) => dispatch({ tipo: 'seccion', seccion: i === 1 ? 'movimientos' : 'inicio' })}
         capas={
           <>
             {panel ? <PanelContenido vista={panel} estado={estado} dispatch={dispatch} modo={modo} /> : null}
@@ -76,8 +81,32 @@ export const HomeVista: FC<HomeVistaProps> = ({ estado, dispatch, modo = 'app', 
           </>
         }
       >
-        {estado.aviso && estado.pestana === 'posicion' ? <AvisoResultado tipo={estado.aviso.tipo} texto={estado.aviso.texto} onCerrar={() => dispatch({ tipo: 'cerrarAviso' })} /> : null}
+        {estado.aviso && (enMovimientos || estado.pestana === 'posicion') ? <AvisoResultado tipo={estado.aviso.tipo} texto={estado.aviso.texto} onCerrar={() => dispatch({ tipo: 'cerrarAviso' })} /> : null}
 
+        {enMovimientos ? (
+          <>
+            <div className="flex items-start justify-between gap-6">
+              <div className="flex flex-col gap-0.5">
+                <h1 className="text-h1 font-bold">Movimientos</h1>
+                <span className="text-body text-app-ink-2">{home.empresa} · {fmt.fechaLarga(HOY)}</span>
+              </div>
+              <div className="flex gap-3">
+                <Boton variante="secondary" tamano="large" onClick={() => dispatch({ tipo: 'abrirAgendar' })}>Agendar un pago</Boton>
+                <Boton variante="secondary" tamano="large" onClick={() => dispatch({ tipo: 'abrirPanel', orden: null })}>Pagar</Boton>
+              </div>
+            </div>
+            <div className="grid grid-cols-3 items-start gap-6">
+              <div className="col-span-2 flex min-w-0 flex-col gap-5">
+                <ListaMovimientos modo="completa" resumen={home.resumenProximos} totalProximos={home.totalProximos} verTodos proximos={home.proximosTodos.map(fila)} realizados={home.realizados.map(fila)} />
+              </div>
+              <div className="flex min-w-0 flex-col gap-5">
+                <TarjetaTipoDeCambio {...home.tdc} />
+                <ModuloCuentas cuentas={home.cuentas} onVerTodas={noDisponible} />
+              </div>
+            </div>
+          </>
+        ) : (
+        <>
         <div className="flex items-start justify-between gap-6">
           <div className="flex flex-col gap-0.5">
             <h1 className="text-h1 font-bold">Inicio</h1>
@@ -139,8 +168,9 @@ export const HomeVista: FC<HomeVistaProps> = ({ estado, dispatch, modo = 'app', 
                   verTodos={home.verTodos}
                   onVerTodos={(valor) => dispatch({ tipo: 'verTodosLosPagos', valor })}
                   onAgendar={() => dispatch({ tipo: 'abrirAgendar' })}
-                  proximos={home.proximos.map((p) => ({ fecha: p.fecha, nombre: p.nombre, detalle: p.detalle, monto: p.monto, divisa: p.divisa, estado: p.badge, onPagar: p.orden ? () => dispatch({ tipo: 'abrirPanel', orden: p.orden! }) : undefined, onAbrir: () => dispatch({ tipo: 'abrirDetalle', id: p.id }) }))}
-                  realizados={home.realizados.map((r) => ({ fecha: r.fecha, nombre: r.nombre, detalle: r.detalle, monto: r.monto, divisa: r.divisa, estado: r.badge, onAbrir: () => dispatch({ tipo: 'abrirDetalle', id: r.id }) }))}
+                  onVerMas={() => dispatch({ tipo: 'seccion', seccion: 'movimientos' })}
+                  proximos={home.proximos.map(fila)}
+                  realizados={home.realizados.map(fila)}
                 />
               </div>
               <div className="flex min-w-0 flex-col gap-5">
@@ -164,6 +194,8 @@ export const HomeVista: FC<HomeVistaProps> = ({ estado, dispatch, modo = 'app', 
               <ModuloCuentas cuentas={home.cuentas} onVerTodas={noDisponible} className="self-start" />
             </div>
           </div>
+        )}
+        </>
         )}
       </AppShell>
       {modo === 'app' ? <Toast texto={estado.toast?.texto ?? null} /> : null}

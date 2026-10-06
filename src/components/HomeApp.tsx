@@ -31,15 +31,18 @@ function opcionesDeUrl(arquetipo: ArquetipoId) {
     /** ?pago=<id> abre el panel en Origen con ese pago; ?cobro=<id> lo abre desde el cobro de hoy. */
     pago: params.get('pago'),
     cobro: params.get('cobro'),
+    /** ?seccion=movimientos abre la sección Movimientos del menú. */
+    seccion: params.get('seccion'),
   };
 }
 
 /** Acciones iniciales que piden los parámetros de URL, sobre el estado ya reiniciado. */
 function accionesDeUrl(estado: ReturnType<typeof estadoDeEscenario>, o: ReturnType<typeof opcionesDeUrl>): Accion[] {
+  const acciones: Accion[] = o.seccion === 'movimientos' ? [{ tipo: 'seccion', seccion: 'movimientos' }] : [];
   const pago = o.pago ? pagoPorId(estado, o.pago) : null;
-  if (pago) return [{ tipo: 'abrirPanel', orden: ordenDePago(pago) }];
-  if (o.cobro && estado.datos.loNuevo?.id === o.cobro) return [{ tipo: 'abrirCobro', cobroId: o.cobro }];
-  return [];
+  if (pago) acciones.push({ tipo: 'abrirPanel', orden: ordenDePago(pago) });
+  else if (o.cobro && estado.datos.loNuevo?.id === o.cobro) acciones.push({ tipo: 'abrirCobro', cobroId: o.cobro });
+  return acciones;
 }
 
 /**

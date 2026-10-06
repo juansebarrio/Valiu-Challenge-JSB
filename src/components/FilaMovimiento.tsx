@@ -59,33 +59,47 @@ export interface ListaMovimientosProps {
   /** "+" junto al título: agenda un pago nuevo en Próximos. */
   onAgendar?: () => void;
   tour?: string;
+  /** resumen: el bloque del inicio (la semana, "Ver los N pagos futuros" y "Ver más") · completa: la sección Movimientos con todos los pagos. */
+  modo?: 'resumen' | 'completa';
+  /** "Ver más" (Secondary): lleva a la sección Movimientos del menú lateral. */
+  onVerMas?: () => void;
+  /** Línea bajo el encabezado en modo completa: cuántos pagos próximos y cuánto suman por divisa. */
+  resumen?: string;
 }
 
-/** Próximos de la semana (con "Ver los N pagos futuros") y Realizados, separados por "Hoy". Cada fila abre su detalle. */
-export const ListaMovimientos: FC<ListaMovimientosProps> = ({ proximos, realizados, totalProximos, verTodos, onVerTodos, onAgendar, tour }) => (
-  <section data-tour={tour} aria-labelledby="movimientos-titulo" className="flex flex-col">
-    <div className="flex items-center justify-between border-b border-app-divider pb-2">
-      <div className="flex items-center gap-2">
-        <h2 id="movimientos-titulo" className="text-h3 font-semibold">Movimientos</h2>
-        {onAgendar ? (
-          <button type="button" onClick={onAgendar} aria-label="Agendar un pago" title="Agendar un pago" aria-haspopup="dialog" className="flex size-(--app-close-btn) cursor-pointer items-center justify-center rounded-sm border border-app-primary bg-app-surface text-app-primary hover:bg-app-accent-bg">
-            <Icono nombre="plus" tamano="sm" />
-          </button>
-        ) : null}
+/** Próximos de la semana (con "Ver los N pagos futuros") y Realizados, separados por "Hoy". Cada fila abre su detalle; "Ver más" abre la sección completa. */
+export const ListaMovimientos: FC<ListaMovimientosProps> = ({ proximos, realizados, totalProximos, verTodos, onVerTodos, onAgendar, tour, modo = 'resumen', onVerMas, resumen }) => {
+  const completa = modo === 'completa';
+  return (
+    <section data-tour={tour} aria-labelledby={completa ? undefined : 'movimientos-titulo'} aria-label={completa ? 'Todos los movimientos' : undefined} className="flex flex-col">
+      <div className="flex items-center justify-between border-b border-app-divider pb-2">
+        {completa ? (
+          <span className="text-body text-app-ink-2 tabular-nums">{resumen}</span>
+        ) : (
+          <div className="flex items-center gap-2">
+            <h2 id="movimientos-titulo" className="text-h3 font-semibold">Movimientos</h2>
+            {onAgendar ? (
+              <button type="button" onClick={onAgendar} aria-label="Agendar un pago" title="Agendar un pago" aria-haspopup="dialog" className="flex size-(--app-close-btn) cursor-pointer items-center justify-center rounded-sm border border-app-primary bg-app-surface text-app-primary hover:bg-app-accent-bg">
+                <Icono nombre="plus" tamano="sm" />
+              </button>
+            ) : null}
+          </div>
+        )}
       </div>
-    </div>
-    <RotuloLista className="pb-0.5 pt-2.5">Próximos</RotuloLista>
-    {proximos.length ? proximos.map((p, i) => <FilaMovimiento key={`${p.nombre}-${p.fecha}-${i}`} {...p} />) : <span className="py-3 text-body text-app-ink-2">Sin pagos cargados esta semana.</span>}
-    {totalProximos > proximos.length || verTodos ? (
-      <div className="pt-2">
-        <Boton variante="link" aria-expanded={verTodos} onClick={() => onVerTodos?.(!verTodos)}>{verTodos ? 'Ver solo esta semana' : `Ver los ${totalProximos} pagos futuros`}</Boton>
+      <RotuloLista className="pb-0.5 pt-2.5">{completa ? `Próximos (${proximos.length})` : 'Próximos'}</RotuloLista>
+      {proximos.length ? proximos.map((p, i) => <FilaMovimiento key={`${p.nombre}-${p.fecha}-${i}`} {...p} />) : <span className="py-3 text-body text-app-ink-2">{completa ? 'Sin pagos próximos.' : 'Sin pagos cargados esta semana.'}</span>}
+      {!completa && (totalProximos > proximos.length || verTodos) ? (
+        <div className="pt-2">
+          <Boton variante="link" aria-expanded={verTodos} onClick={() => onVerTodos?.(!verTodos)}>{verTodos ? 'Ver solo esta semana' : `Ver los ${totalProximos} pagos futuros`}</Boton>
+        </div>
+      ) : null}
+      <div className="flex items-center gap-3 pb-0.5 pt-3.5">
+        <span className="text-caption font-bold uppercase tracking-wide-caps text-app-ink-2">Hoy</span>
+        <span className="h-px flex-1 bg-app-divider" />
       </div>
-    ) : null}
-    <div className="flex items-center gap-3 pb-0.5 pt-3.5">
-      <span className="text-caption font-bold uppercase tracking-wide-caps text-app-ink-2">Hoy</span>
-      <span className="h-px flex-1 bg-app-divider" />
-    </div>
-    <RotuloLista className="pb-0.5 pt-1">Realizados</RotuloLista>
-    {realizados.map((r, i) => <FilaMovimiento key={`${r.nombre}-${i}`} {...r} />)}
-  </section>
-);
+      <RotuloLista className="pb-0.5 pt-1">{completa ? `Realizados (${realizados.length})` : 'Realizados'}</RotuloLista>
+      {realizados.map((r, i) => <FilaMovimiento key={`${r.nombre}-${i}`} {...r} />)}
+      {!completa && onVerMas ? <Boton variante="secondary" tamano="mid" className="mt-4 w-full" onClick={onVerMas}>Ver más</Boton> : null}
+    </section>
+  );
+};

@@ -53,6 +53,10 @@ export interface VistaHome {
   posiciones: VistaPosicion[];
   nuevo: { id: string; cuentaId: CuentaId; monto: Centavos; divisa: Divisa; de: string; meta: string } | null;
   proximos: VistaFila[];
+  /** Todos los próximos (sección Movimientos). */
+  proximosTodos: VistaFila[];
+  /** "10 pagos próximos · 3,000.00 USD · 80,350.50 MXN" */
+  resumenProximos: string;
   totalProximos: number;
   verTodos: boolean;
   realizados: VistaFila[];
@@ -121,6 +125,12 @@ export function vistaHome(e: EstadoApp): VistaHome {
   }));
   const todas = [...filasPendientes, ...filasPactadasPropias].sort((a, b) => ordenFecha(a, e) - ordenFecha(b, e));
   const proximos = e.verTodosLosPagos ? todas : todas.filter((f) => f.estaSemana);
+  const totales = todas.reduce<{ divisa: Divisa; total: Centavos }[]>((acc, f) => {
+    const t = acc.find((x) => x.divisa === f.divisa);
+    if (t) t.total += -f.monto; else acc.push({ divisa: f.divisa, total: -f.monto });
+    return acc;
+  }, []);
+  const resumenProximos = todas.length ? `${todas.length} ${todas.length === 1 ? 'pago próximo' : 'pagos próximos'} · ${totales.map((t) => fmt.monto(t.total, t.divisa)).join(' · ')}` : 'Sin pagos próximos.';
 
   // Hoy: lo que salió (En proceso) y las pactadas que se cancelaron (no movieron dinero, pero quedan en el historial).
   const hechas: VistaFila[] = e.operaciones.filter((o) => o.estado !== 'Pactada').map((o) => {
@@ -143,6 +153,8 @@ export function vistaHome(e: EstadoApp): VistaHome {
     posiciones: vistaPos,
     nuevo: e.datos.loNuevo ? { id: e.datos.loNuevo.id, cuentaId: e.datos.loNuevo.cuentaId, monto: e.datos.loNuevo.monto, divisa: e.datos.loNuevo.divisa, de: e.datos.loNuevo.de, meta: `Hoy ${e.datos.loNuevo.hora} · ${e.datos.loNuevo.banco} · Ref. ${e.datos.loNuevo.referencia}` } : null,
     proximos,
+    proximosTodos: todas,
+    resumenProximos,
     totalProximos: todas.length,
     verTodos: e.verTodosLosPagos,
     realizados: [...hechas, ...pasados],

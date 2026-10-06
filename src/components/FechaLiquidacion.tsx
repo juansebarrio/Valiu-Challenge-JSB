@@ -40,7 +40,7 @@ export const FechaLiquidacion: FC<FechaLiquidacionProps> = ({ opciones, valor, o
   return (
     <div data-component="FechaLiquidacion" className="flex flex-col gap-2">
       <span id="fecha-liquidacion-label" className="text-caption font-bold text-app-ink-label">¿Cuándo sale el dinero?</span>
-      <div ref={ref} role="radiogroup" aria-labelledby="fecha-liquidacion-label" className="flex items-center gap-1 rounded-full bg-app-canvas p-1 shadow-mid">
+      <div ref={ref} role="radiogroup" aria-labelledby="fecha-liquidacion-label" className="flex flex-wrap items-center gap-1 rounded-full bg-app-canvas p-1 shadow-mid">
         {opciones.map((o, i) => {
           const sel = i === idx;
           const hover = demoHover === i;

@@ -24,16 +24,19 @@ export interface AppShellProps {
   activo?: number;
   /** Secciones fuera del prototipo: muestran un aviso breve en lugar de navegar. */
   onNoDisponible?: () => void;
+  /** Inicio (0) y Movimientos (1) son secciones reales: cambian la vista dentro de la app. */
+  onNavegar?: (indice: number) => void;
 }
 
 const ITEM = 'flex h-(--app-nav-item-h) cursor-pointer items-center gap-2.5 rounded-sm px-2.5 text-body whitespace-nowrap transition-colors hover:bg-app-accent-bg @max-lg/shell:w-(--app-nav-item-w-min) @max-lg/shell:justify-center @max-lg/shell:px-0';
 
 /** Sidebar 240 · header 48 · main 24 32 32 · footer 40 (README · Layout del AppShell). */
-export const AppShell: FC<AppShellProps> = ({ children, capas, modo = 'app', raizRef, activo = 0, onNoDisponible }) => {
+export const AppShell: FC<AppShellProps> = ({ children, capas, modo = 'app', raizRef, activo = 0, onNoDisponible, onNavegar }) => {
   const esApp = modo === 'app';
   const noDisponible = (e: React.MouseEvent) => { e.preventDefault(); onNoDisponible?.(); };
   return (
-    <div ref={raizRef} data-shell={modo} className={['relative flex bg-app-canvas text-app-ink @container/shell', esApp ? 'min-h-dvh w-full' : 'w-(--app-frame-w) overflow-hidden'].join(' ')}>
+    // En la app, por debajo del ancho mínimo el shell se oculta y solo queda el aviso de pantalla (AvisoPantalla): así nada desborda ni en el teléfono.
+    <div ref={raizRef} data-shell={modo} className={['relative flex bg-app-canvas text-app-ink @container/shell', esApp ? 'min-h-dvh w-full max-min:hidden' : 'w-(--app-frame-w) overflow-hidden'].join(' ')}>
       <aside className={['flex shrink-0 flex-col gap-1 border-app-divider bg-app-surface px-2 py-4 hairline-r', 'w-(--app-sidebar-w) @max-lg/shell:w-(--app-sidebar-w-min) @max-lg/shell:items-center', esApp ? 'sticky top-0 h-dvh' : ''].join(' ')}>
         <div className="mb-4 flex h-(--app-logo-row-h) items-center px-3 @max-lg/shell:px-0">
           <Logo className="@max-lg/shell:hidden" />
@@ -41,7 +44,7 @@ export const AppShell: FC<AppShellProps> = ({ children, capas, modo = 'app', rai
         </div>
         <nav aria-label="Principal" className="flex flex-col gap-1 @max-lg/shell:items-center">
           {NAV.map((it, i) => (
-            <a key={it.label} href="#" onClick={i === activo ? (e) => e.preventDefault() : noDisponible} aria-current={i === activo ? 'page' : undefined} title={it.label} className={[ITEM, i === activo ? 'bg-app-accent-bg font-semibold text-app-accent' : 'font-medium text-app-ink'].join(' ')}>
+            <a key={it.label} href="#" onClick={onNavegar && i <= 1 ? (e) => { e.preventDefault(); onNavegar(i); } : i === activo ? (e) => e.preventDefault() : noDisponible} aria-current={i === activo ? 'page' : undefined} title={it.label} className={[ITEM, i === activo ? 'bg-app-accent-bg font-semibold text-app-accent' : 'font-medium text-app-ink'].join(' ')}>
               <Icono nombre={it.icono} tamano="md" />
               <span className="@max-lg/shell:sr-only">{it.label}</span>
             </a>

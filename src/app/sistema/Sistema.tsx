@@ -98,7 +98,7 @@ export const Sistema: FC = () => {
 
       <div className="flex flex-col gap-12 p-8">
         <Seccion id="color" titulo="Color" nota="Dos tintas que no se intercambian: indigo = acción · core light = foco, activo y ON (D-16). Sin mint todavía.">
-          <div className="grid grid-cols-3 gap-4">{COLORES.map(([t, n, u]) => <Muestra key={t} token={t} nombre={n} uso={u} />)}</div>
+          <div className="grid grid-cols-2 gap-4 xl:grid-cols-3">{COLORES.map(([t, n, u]) => <Muestra key={t} token={t} nombre={n} uso={u} />)}</div>
           <div className="flex flex-wrap gap-3">
             <Badge tono="success">Success · Alcanza, En vivo, Precio fijo</Badge>
             <Badge tono="warning">Warning · En proceso, Hoy no alcanza</Badge>
@@ -160,7 +160,7 @@ export const Sistema: FC = () => {
         </Seccion>
 
         <Seccion id="controles" titulo="Inputs, selectores, tabs y token" nota="Input min-height 48, padding 12, radio 8, borde 0.5 px #021734; activo 1 px #0086FF; error 1 px #B40909 con mensaje 12/500. Token: un solo input con seis casillas visuales.">
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 gap-4 xl:grid-cols-3">
             <CampoTexto etiqueta="Referencia" opcional valor={texto} onCambiar={setTexto} placeholder="Ej. Factura 0457" />
             <CampoTexto etiqueta="Con error" valor="5,000.00" onCambiar={() => {}} monto sufijo="USD" error="Supera tu saldo disponible: 2,000.00 USD." />
             <CampoTexto etiqueta="Deshabilitado" valor="" onCambiar={() => {}} placeholder="Placeholder" disabled />
@@ -172,7 +172,7 @@ export const Sistema: FC = () => {
               <div className="rounded-sm bg-app-surface"><Pestanas etiqueta="Ejemplo" llenas pestanas={[{ id: 'a', label: 'Comprar' }, { id: 'b', label: 'Vender' }, { id: 'c', label: 'Transferir' }]} activa={tab} onCambiar={setTab} /></div>
             </div>
           </div>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 gap-4 xl:grid-cols-3">
             <Caso titulo="CampoToken · habilitado"><CampoToken valor={token} habilitado onChange={setToken} /></Caso>
             <Caso titulo="CampoToken · token incorrecto"><CampoToken valor="" habilitado onChange={() => {}} error="El código no coincide. Revisa tu token y vuelve a intentarlo." /></Caso>
             <Caso titulo="CampoToken · deshabilitado (confirmando)"><CampoToken valor="123456" habilitado={false} onChange={() => {}} /></Caso>
@@ -184,7 +184,7 @@ export const Sistema: FC = () => {
         </Seccion>
 
         <Seccion id="posicion" titulo="TarjetaPosicion" nota="Protagonista: blanca, radio 8, Shadow Mid. Resultado 24/600; faltan en #B40909 con badge Error; línea de 0 siempre visible y “faltante” en el día que cruza; un solo primario por vista.">
-          <div className="grid grid-cols-3 gap-6">
+          <div className="grid grid-cols-2 gap-6 xl:grid-cols-3">
             <TarjetaPosicion divisa="USD" nombre="Dólares" saldo={centavos(2000)} pagosFuturos={{ cantidad: 3, total: centavos(3000) }} resultado={{ tipo: 'faltan', monto: centavos(1000) }} proyeccion={{ serie: [2000, 2000, 500, -1000].map(centavos), etiquetas: ['mar 6', 'mié 7', 'jue 8', 'vie 9'], etiquetaCruce: 'faltante' }} linea="≈ 18,091.18 MXN a precio de compra" accion={{ label: 'Comprar 1,000 USD', onClick: () => {} }} />
             <TarjetaPosicion divisa="MXN" nombre="Pesos" saldo={centavos(1_180_000)} pactadasLiquidar={{ cantidad: 1, total: centavos(27_138.62) }} pagosFuturos={{ cantidad: 7, total: centavos(80_350.5) }} resultado={{ tipo: 'sobran', monto: centavos(1_072_510.88) }} linea="Incluye los 180,000.00 de Comercial Norte" />
             <TarjetaPosicion divisa="USD" nombre="Dólares" saldo={centavos(2000)} pactadasRecibir={{ cantidad: 1, total: centavos(1000) }} pagosFuturos={{ cantidad: 3, total: centavos(3000) }} resultado={{ tipo: 'sobran', monto: 0 }} proyeccion={{ serie: [2000, 2000, 500, 0].map(centavos), etiquetas: ['mar 6', 'mié 7', 'jue 8', 'vie 9'] }} />
@@ -220,7 +220,7 @@ export const Sistema: FC = () => {
         </Seccion>
 
         <Seccion id="panel" titulo="Bloques del panel" nota="BloqueMonto (fijo o editable), PrecioEjecutable (fijo / últimos 30 s / vencido) y CajaTdcValiu (con borde en el clásico, sin borde en el panel).">
-          <div className="grid grid-cols-3 gap-6">
+          <div className="grid grid-cols-2 gap-6 xl:grid-cols-3">
             <Caso titulo="BloqueMonto · con factura"><BloqueMonto pagas={{ monto: centavos(27_136.77), divisa: 'MXN' }} recibe={{ monto: centavos(1500), divisa: 'USD', destinatario: 'Shenzhen Parts Co. recibe' }} ladoFijo="recibe" conTdc /></Caso>
             <Caso titulo="BloqueMonto · sin factura (editable)"><BloqueMonto pagas={{ monto: centavos(18_091.18), divisa: 'MXN' }} recibe={{ monto: centavos(1000), divisa: 'USD', destinatario: 'Tu Cuenta USD recibe' }} ladoFijo="recibe" conTdc editable onCambiar={() => {}} /></Caso>
             <Caso titulo="PrecioEjecutable · fijo"><PrecioEjecutable estado="fijo" tdc={18_092_415} segundos={120} pagas={centavos(27_138.62)} pagasDivisa="MXN" recibe={centavos(1500)} recibeDivisa="USD" destinatario="Shenzhen Parts Co. recibe" desde="Cuenta Principal MXN" sale="El dinero sale el jue 8" /></Caso>
@@ -231,7 +231,7 @@ export const Sistema: FC = () => {
         </Seccion>
 
         <Seccion id="home" titulo="Módulos del inicio" nota="FranjaNuevo, FilaMovimiento (badge solo en estados no finales, D-23), TarjetaTipoDeCambio con el par de la decisión primero y los demás pares de las posiciones compactos (D-33), y ModuloCuentas.">
-          <div className="grid grid-cols-3 gap-6">
+          <div className="grid grid-cols-2 gap-6 xl:grid-cols-3">
             <div className="col-span-2 flex flex-col gap-4">
               <FranjaNuevo monto={centavos(180_000)} divisa="MXN" origen="Comercial Norte" meta="Hoy 10:42 · BBVA México · Ref. factura 2231" onUsar={() => {}} />
               <div className="flex flex-col rounded-sm bg-app-surface px-6 py-2">

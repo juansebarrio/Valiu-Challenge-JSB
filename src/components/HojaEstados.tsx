@@ -21,7 +21,7 @@ export const Caso: FC<{ titulo: string; children: ReactNode; className?: string 
 export const HojaEstados: FC<{ compacta?: boolean }> = ({ compacta }) => {
   const [fecha, setFecha] = useState(fechas[0].fecha);
   return (
-    <div className={['grid gap-6', compacta ? 'grid-cols-2' : 'grid-cols-3'].join(' ')}>
+    <div className={['grid gap-6', compacta ? 'grid-cols-2' : 'grid-cols-2 xl:grid-cols-3'].join(' ')}>
       <Caso titulo="FechaLiquidacion · por defecto Hoy · el pago vence el jue 8 (interactivo)"><FechaLiquidacion opciones={fechas} valor={fecha} onChange={setFecha} /></Caso>
       <Caso titulo="Otra fecha: jue 8 · la operación queda Pactada"><FechaLiquidacion opciones={fechas} valor={fechas[2].fecha} onChange={() => {}} /></Caso>
       <Caso titulo="Vence después del vie 9: ninguna opción lleva “vence”"><FechaLiquidacion opciones={fechasSinVence} valor={fechasSinVence[0].fecha} onChange={() => {}} /></Caso>

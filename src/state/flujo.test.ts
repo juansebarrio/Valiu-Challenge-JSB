@@ -646,3 +646,20 @@ describe('flujo secundario · turismo (S03–S08)', () => {
     expect(pos(estadoDeEscenario('sin-saldo', {}, 'turismo'), 'MXN').saldo).toBe(centavos(20_000));
   });
 });
+
+describe('sección Movimientos del menú', () => {
+  it('"Ver más" lleva a la lista completa: todos los próximos con sus totales por divisa', () => {
+    const h = vistaHome(base);
+    expect(h.proximosTodos).toHaveLength(10);
+    expect(h.resumenProximos).toBe('10 pagos próximos · 3,000.00 USD · 80,350.50 MXN');
+    const e = aplicar([{ tipo: 'onboardingIniciar' }, { tipo: 'seccion', seccion: 'movimientos' }], base);
+    expect(e.seccion).toBe('movimientos');
+    expect(e.onboarding.activo).toBe(false);
+    expect(aplicar([{ tipo: 'seccion', seccion: 'inicio' }], e).seccion).toBe('inicio');
+  });
+  it('el resumen sigue a las operaciones: pactada y agendado cuentan, lo pagado hoy no', () => {
+    expect(vistaHome(estadoDeEscenario('pactada')).resumenProximos).toBe('10 pagos próximos · 3,000.00 USD · 80,350.50 MXN');
+    expect(vistaHome(estadoDeEscenario('resuelta')).resumenProximos).toBe('9 pagos próximos · 1,500.00 USD · 80,350.50 MXN');
+    expect(vistaHome(estadoInicial('faltante', {}, 'turismo')).resumenProximos).toBe('2 pagos próximos · 2,500.00 USD · 4,200.00 EUR');
+  });
+});

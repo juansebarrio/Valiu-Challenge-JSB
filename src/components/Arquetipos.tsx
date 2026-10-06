@@ -30,10 +30,10 @@ export const Arquetipos: FC = () => {
           <h1 className="text-h1 font-bold">¿Con quién entras?</h1>
           <p className="text-body text-app-ink-2">Dos empresas de ejemplo, dos semanas de pagos.</p>
         </div>
-        <ul className="grid grid-cols-2 gap-6 max-stack:grid-cols-1" aria-label="Empresas de ejemplo">
+        <ul className="grid w-full max-w-(--app-arquetipos-w) grid-cols-2 gap-6 max-stack:max-w-(--app-arquetipo-w) max-stack:grid-cols-1" aria-label="Empresas de ejemplo">
           {tarjetas.map((t) => (
-            <li key={t.id} className="flex">
-              <article aria-labelledby={`arquetipo-${t.id}`} className="flex w-(--app-arquetipo-w) max-w-full flex-col gap-3 rounded-sm bg-app-surface p-6 shadow-mid">
+            <li key={t.id} className="flex min-w-0">
+              <article aria-labelledby={`arquetipo-${t.id}`} className="flex w-full min-w-0 flex-col gap-3 rounded-sm bg-app-surface p-6 shadow-mid">
                 <span aria-hidden className="flex size-(--app-avatar) items-center justify-center rounded-full bg-app-accent-bg text-body font-semibold text-app-primary">{t.iniciales}</span>
                 <h2 id={`arquetipo-${t.id}`} className="text-h3 font-semibold">{t.empresa}</h2>
                 <span className="text-body text-app-ink-2">{t.persona}</span>

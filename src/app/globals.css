@@ -125,6 +125,8 @@
     font-family: var(--font-sans);
     color: var(--app-ink);
     background: var(--app-canvas);
+    /* Nunca scroll horizontal: el prototipo es de escritorio y todo lo que no entra se recorta. */
+    overflow-x: hidden;
     -webkit-font-smoothing: antialiased;
   }
   body {
