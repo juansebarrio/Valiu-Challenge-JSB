@@ -77,3 +77,26 @@ describe('fechasLiquidacion', () => {
     expect(siguienteHabil(new Date(2026, 9, 9)).getDate()).toBe(12);
   });
 });
+
+describe('flujo secundario · turismo (EUR/MXN 21.25, EUR/USD 1.085)', () => {
+  const pares = { 'EUR/MXN': { compra: 21_250_000, venta: 21_100_000 }, 'EUR/USD': { compra: 1_085_000, venta: 1_085_000 }, 'USD/MXN': { compra: 18_091_183, venta: 18_032_135 } };
+  it('compra de 4,200 EUR con pesos: 4,200 × 21.25 = 89,250.00 MXN', () => {
+    const c = cotizar({ origen: 'MXN', destino: 'EUR', monto: centavos(4200), ladoFijo: 'recibe', pares })!;
+    expect(c).toMatchObject({ tipo: 'compra', par: 'EUR/MXN', lado: 'comprar', tdc: 21_250_000 });
+    expect(c.pagas).toBe(centavos(89_250));
+    expect(fmt.monto(c.pagas, 'MXN')).toBe('89,250.00 MXN');
+  });
+  it('4,200 EUR desde la Cuenta USD con el cross 1.085: 4,557.00 USD', () => {
+    const c = cotizar({ origen: 'USD', destino: 'EUR', monto: centavos(4200), ladoFijo: 'recibe', pares })!;
+    expect(c).toMatchObject({ tipo: 'compra', par: 'EUR/USD', lado: 'comprar', tdc: 1_085_000 });
+    expect(c.pagas).toBe(centavos(4_557));
+  });
+  it('precio ejecutable sobre 21.250000 y lo que paga con él', () => {
+    expect(ejecutable(21_250_000, 'comprar')).toBe(21_251_447);
+    expect(porTdc(centavos(4200), ejecutable(21_250_000, 'comprar'))).toBe(centavos(89_256.08));
+  });
+  it('fechas de liquidación con vencimiento vie 9: "vie 9" lleva vence', () => {
+    const f = fechasLiquidacion(new Date(2026, 9, 6, 10, 42), new Date(2026, 9, 9));
+    expect(f.map((x) => [x.etiqueta, x.vence])).toEqual([['Hoy', false], ['mié 7', false], ['jue 8', false], ['vie 9', true]]);
+  });
+});

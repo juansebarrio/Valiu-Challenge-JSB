@@ -8,6 +8,9 @@ export const HOY = new Date(2026, 9, 6, 10, 42);
 
 export const empresa = 'Servicios Corporativos KAAX';
 
+/** Arquetipos de empresa de la pantalla inicial: la importadora (flujo principal) y la minorista de turismo (flujo secundario). */
+export type ArquetipoId = 'importadora' | 'turismo';
+
 export type EscenarioNombre = 'faltante' | 'resuelta' | 'pactada' | 'sin-saldo' | 'mercado-cerrado';
 export const ESCENARIOS: EscenarioNombre[] = ['faltante', 'resuelta', 'pactada', 'sin-saldo', 'mercado-cerrado'];
 
@@ -63,13 +66,45 @@ export interface Realizado {
   estado: 'Confirmada' | 'Enviada';
 }
 
+/** El cobro de hoy ("Lo nuevo"): `id` es el del realizado que lo registra y `cuentaId` la cuenta donde entró. */
+export interface Cobro {
+  id: string;
+  cuentaId: CuentaId;
+  monto: Centavos;
+  divisa: Divisa;
+  de: string;
+  hora: string;
+  banco: string;
+  referencia: string;
+}
+
 export interface Datos {
   cuentas: Cuenta[];
   destinatarios: Destinatario[];
   pagosFuturos: PagoFuturo[];
-  loNuevo: { monto: Centavos; divisa: Divisa; de: string; hora: string; banco: string; referencia: string } | null;
+  loNuevo: Cobro | null;
   realizados: Realizado[];
   mercado: 'abierto' | 'cerrado';
+}
+
+/** Una empresa de ejemplo: sus datos base más lo que cambia entre arquetipos (tipo de cambio, par de la decisión, orden de las tarjetas). */
+export interface Arquetipo {
+  id: ArquetipoId;
+  empresa: string;
+  usuario: { nombre: string; rol: string; iniciales: string };
+  datos: Datos;
+  /** Tipo de cambio indicativo base por par (micro-unidades); el "en vivo" oscila alrededor de estos valores. */
+  pares: TablaPares;
+  /** Pares de la tarjeta de tipo de cambio: el primero es el de la decisión de la semana y lleva la tendencia (D-33). */
+  paresTarjeta: string[];
+  /** Tendencia intradía del primer par, solo para la gráfica (inventado). */
+  tendencia: number[];
+  /** Orden de las TarjetaPosicion: la divisa con faltante primero; no cambia durante la sesión (D-34). */
+  ordenPosiciones: CuentaId[];
+  /** Pago que resuelven los escenarios "resuelta" y "pactada". */
+  pagoPrincipal: string;
+  /** "Usar para pagar": paso Destino (como quedó en el código para la importadora) o paso Pago "¿Qué pagas con este cobro?" (D-30). */
+  entradaCobro: 'destino' | 'pago';
 }
 
 /** Orden de las TarjetaPosicion en el inicio (frames 01–07): la divisa de los pagos cargados primero, después pesos y euros. */
@@ -133,25 +168,50 @@ const REALIZADOS: Realizado[] = [
   { id: 'r3', fecha: new Date(2026, 9, 1), nombre: 'Distribuidora Norte', monto: centavos(50_000), divisa: 'MXN', tipo: 'cobro', hora: '09:05', banco: 'Santander', mascara: '7781', referencia: 'factura 2198', estado: 'Confirmada' },
 ];
 
-const LO_NUEVO: Datos['loNuevo'] = { monto: REALIZADOS[0].monto, divisa: REALIZADOS[0].divisa, de: REALIZADOS[0].nombre, hora: REALIZADOS[0].hora, banco: REALIZADOS[0].banco, referencia: REALIZADOS[0].referencia };
+const LO_NUEVO: Cobro = { id: REALIZADOS[0].id, cuentaId: 'mxn', monto: REALIZADOS[0].monto, divisa: REALIZADOS[0].divisa, de: REALIZADOS[0].nombre, hora: REALIZADOS[0].hora, banco: REALIZADOS[0].banco, referencia: REALIZADOS[0].referencia };
 
-/** Datos del escenario pedido. "resuelta" y "pactada" parten del base y aplican el pago a Shenzhen (src/state/escenarios.ts). */
-export function datosEscenario(nombre: EscenarioNombre): Datos {
-  const base: Datos = { cuentas: CUENTAS.map((c) => ({ ...c })), destinatarios: DESTINATARIOS, pagosFuturos: [...PAGOS_USD, ...PAGOS_MXN], loNuevo: LO_NUEVO, realizados: REALIZADOS, mercado: 'abierto' };
-  if (nombre === 'sin-saldo') {
-    return { ...base, cuentas: base.cuentas.map((c) => (c.id === 'mxn' ? { ...c, saldo: centavos(20_000) } : c)), pagosFuturos: PAGOS_USD, loNuevo: null, realizados: REALIZADOS.slice(1) };
-  }
-  if (nombre === 'mercado-cerrado') return { ...base, mercado: 'cerrado' };
-  return base;
-}
-
-/** Tipo de cambio indicativo base (dos lados, sin punto medio). El "en vivo" oscila ±0.002 % alrededor de estos valores. */
+/** Tipo de cambio indicativo base de la importadora (dos lados, sin punto medio; valores del handoff). */
 export const TDC_BASE: TablaPares = Object.fromEntries(Object.entries(PARES).map(([k, v]) => [k, { compra: v.compra, venta: v.venta }]));
 export const OSCILACION_TDC = 0.00002; // ±0.002 %
 export const OSCILACION_MS = [3000, 5000] as const; // un paso cada 3 a 5 segundos
 /** Tendencia intradía de USD/MXN, solo para la gráfica (inventado). */
 export const TENDENCIA_DIA = [18.062, 18.071, 18.068, 18.084, 18.079, 18.095, 18.088, 18.091];
 export const HORA_TDC = '10:42';
+
+/** La importadora del flujo principal (frames 01–20). */
+export const IMPORTADORA: Arquetipo = {
+  id: 'importadora',
+  empresa,
+  usuario: { nombre: 'Jorge R.', rol: 'Tesorería', iniciales: 'JR' },
+  datos: { cuentas: CUENTAS, destinatarios: DESTINATARIOS, pagosFuturos: [...PAGOS_USD, ...PAGOS_MXN], loNuevo: LO_NUEVO, realizados: REALIZADOS, mercado: 'abierto' },
+  pares: TDC_BASE,
+  paresTarjeta: ['USD/MXN', 'EUR/MXN'],
+  tendencia: TENDENCIA_DIA,
+  ordenPosiciones: ORDEN_POSICIONES,
+  pagoPrincipal: 'p1',
+  entradaCobro: 'destino',
+};
+
+/**
+ * Datos del escenario pedido para un arquetipo. "resuelta" y "pactada" parten del base y aplican el pago principal (src/state/escenarios.ts);
+ * "sin-saldo" deja la cuenta en pesos en 20,000.00 sin el cobro de hoy y sin pagos en pesos; "mercado-cerrado" solo cambia el mercado.
+ */
+export function datosEscenario(nombre: EscenarioNombre, arquetipo: Arquetipo = IMPORTADORA): Datos {
+  const d = arquetipo.datos;
+  const base: Datos = { ...d, cuentas: d.cuentas.map((c) => ({ ...c })), pagosFuturos: [...d.pagosFuturos] };
+  if (nombre === 'sin-saldo') {
+    const cobro = d.loNuevo;
+    return {
+      ...base,
+      cuentas: base.cuentas.map((c) => (c.id === 'mxn' ? { ...c, saldo: centavos(20_000) } : c)),
+      pagosFuturos: base.pagosFuturos.filter((p) => p.divisa !== 'MXN'),
+      loNuevo: null,
+      realizados: cobro ? d.realizados.filter((r) => r.id !== cobro.id) : d.realizados,
+    };
+  }
+  if (nombre === 'mercado-cerrado') return { ...base, mercado: 'cerrado' };
+  return base;
+}
 
 /** Segundos que dura el precio ejecutable. */
 export const DURACION_PRECIO_S = 120;
