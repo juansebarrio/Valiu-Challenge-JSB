@@ -26,7 +26,7 @@ export const micro = (tdc: number): TdcMicro => Math.round(tdc * 1_000_000);
 
 /** Centavos × tipo de cambio (p. ej. 1,500.00 USD × 18.091183 = 27,136.77 MXN). */
 export const porTdc = (c: Centavos, t: TdcMicro): Centavos => Number(dividirHalfUp(BigInt(c) * BigInt(t), MICRO));
-/** Centavos ÷ tipo de cambio (p. ej. 1,500.00 USD ÷ 1.080000 = 1,388.89 EUR). */
+/** Centavos ÷ tipo de cambio (p. ej. 1,500.00 USD ÷ 1.171000 = 1,280.96 EUR). */
 export const entreTdc = (c: Centavos, t: TdcMicro): Centavos => Number(dividirHalfUp(BigInt(c) * MICRO, BigInt(t)));
 /** Tipo de cambio × factor expresado en diezmillonésimas (1.0000681 → 10_000_681). */
 export const escalarTdc = (t: TdcMicro, factorDiezMillonesimas: number): TdcMicro =>

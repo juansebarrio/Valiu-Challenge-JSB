@@ -20,9 +20,9 @@ Frames: S01–S08 del archivo de diseño (capturas en `docs/design/frames/S0*.pn
 | Confirmación (Hoy) | Título y fila TDC | "Pago en proceso" (C-02) · fila "TDC" | "Pago enviado" · fila "TDC EUR/MXN" | S07H |
 | Confirmación (pactada) | Botón secundario | "Descargar confirmación" (C-10) | "Descargar comprobante" | S07 |
 | AvisoResultado (Hoy) | Texto | "Pago en proceso. Ya te alcanza para los pagos en EUR de la semana." (C-12) | "Pago enviado. Ya no tienes pagos pendientes en euros." | S08H |
-| OpcionOrigen · Cuenta USD | Consecuencia | "Te faltarían 1,057.00 USD el jue 8" (día con fecha, como el flujo principal) | "Te faltarían 1,057.00 USD el jueves" | S03 |
+| OpcionOrigen · Cuenta USD | Consecuencia | "Te faltarían 1,435.00 USD el jue 8" (día con fecha, como el flujo principal; monto con EUR/USD 1.175000, ver sección 7) | "Te faltarían 1,057.00 USD el jueves" | S03 |
 | OpcionPago | Orden de las opciones | Por fecha de vencimiento, como Próximos (Mayorista Caribe jue 8, Hotel vie 9); el faltante va seleccionado aunque no sea el primero | El faltante primero (Hotel, Mayorista) | S02 |
-| OpcionPago | "Pagar a otro destinatario" | Link Button del DS: tinta #151522, 600, subrayado (C-13), deshabilitado con `aria-disabled` y tooltip "Todavía no está en el prototipo." (sin destino) | 700 14 #3D46CC subrayado, habilitado sin destino | S02 |
+| OpcionPago | "Pagar a otro destinatario" | Link Button del DS: tinta #151522, 600, subrayado (C-13); abre el paso Destino "¿A quién le pagas?" (sección 7) | 700 14 #3D46CC subrayado, sin destino | S02 |
 | TarjetaTipoDeCambio | Pares secundarios | Una línea compacta por par: "USD/MXN · comprar USD 18.091183 · vender USD 18.032135" (forma que ya tenía el código con `otros[]`) | Bloque con dos filas "Para comprar USD" / "Para vender USD", separado por divisor con padding-top 12 | S01 |
 | TarjetaTipoDeCambio | Hora de la tendencia | "10:42" (`HORA_TDC`, compartida por los dos arquetipos) | "09:40" | S01 |
 | TarjetaTipoDeCambio | Badge | "En vivo" · "Congelado" (`?congelar=1`) · "En pausa" (tecla P) | "En vivo" siempre | S01 |
@@ -42,7 +42,7 @@ Frames: S01–S08 del archivo de diseño (capturas en `docs/design/frames/S0*.pn
 
 | Dato | Valor en código | Origen |
 |---|---|---|
-| EUR/USD venta | 1.085, igual a la compra | El pedido da un solo cross (1.085); la venta no se usa en el flujo. |
+| EUR/USD | 1.175000 / 1.171000 en los dos arquetipos | Sección 7 del brief: el cross cierra con USD/MXN y EUR/MXN (18.091183 × 1.175 ≈ 21.26). Reemplaza al 1.0845 / 1.08 del flujo principal y al 1.085 del pedido de turismo. |
 | CLABE de la Cuenta Principal MXN | `012180000044100017` | Inventada, para "Ver datos para depositar". |
 | Destinatario Familia Ortega | BBVA México **** 7702 | Inventado, para el detalle del cobro. |
 | Realizados Aerolínea Centro y Familia Ríos | Hora, banco, cuenta y referencia | Inventados, para el detalle del movimiento. |
@@ -56,3 +56,19 @@ Frames: S01–S08 del archivo de diseño (capturas en `docs/design/frames/S0*.pn
 - **Tecla P**: pausa en cualquier parte salvo en campos de texto libre; en el token y los montos (numéricos) la P no es un carácter válido, así que también pausa.
 - **Escenarios por URL** (`?escenario=`) funcionan también en `/turismo`: resuelta y pactada pagan el Hotel desde la cuenta en pesos; sin-saldo deja la cuenta en pesos en 20,000.00 sin el cobro.
 - **Operar clásico** en `/turismo` usa las cuentas y el tipo de cambio de Viajes Altavista con el mismo formulario del flujo principal.
+
+## Sección 7 del brief (aplicada después del flujo secundario)
+
+Cambios pedidos sobre el brief original, en orden, con lo que había antes en el código y en los archivos de diseño.
+
+| Componente | Propiedad | Valor en código (ahora) | Valor anterior / en diseño | Frame |
+|---|---|---|---|---|
+| PanelOperar | Transferencia por el mismo panel | Origen en la divisa del pago (Shenzhen desde Cuenta USD; Mayorista Caribe desde Cuenta USD en turismo): revisión sin tipo de cambio ni fecha valor, "Continuar" en lugar de "Pedir precio", resumen + token al confirmar, "Pago en proceso" sin TDC | Ya funcionaba así en el código; el diseño del flujo principal solo mostraba la compra | 02–06, S03 |
+| Paso Destino | "Pagar" del encabezado y "Pagar a otro destinatario" | "¿A quién le pagas?" con buscador y tres grupos (Pagos próximos, Tus cuentas, Destinatarios) con el selector del clásico; desde el cobro, la cuenta del cobro queda como origen y "Volver" regresa al paso Pago | "Pagar a otro destinatario" estaba deshabilitado con tooltip | S02 |
+| Paso Destino → Origen | Cuenta propia en otra divisa | Es una compra o una venta por el mismo panel; desde Origen se puede continuar sin monto ("El monto se elige después") y en la revisión se escribe | Antes "Continuar" quedaba deshabilitado sin monto, así que solo "Comprar X" (con monto) llegaba a la revisión | — |
+| BloqueMonto | Lado fijo sin factura | Dos campos, "Recibe · {destino}" arriba y "Pagas" abajo; el que el usuario escribe queda fijo (tag Fijo) y el otro se recalcula en vivo con el indicativo. Con factura sigue "Pagas" en vivo y "{destinatario} recibe" fijo | Los dos campos ya eran editables; el orden era Pagas / recibe en ambos casos | 03 (Comprar 1,000 USD) |
+| fx.ts | EUR/USD | 1.175000 / 1.171000 en los dos arquetipos: Shenzhen desde Cuenta EUR ≈ 1,280.96 EUR; Hotel desde Cuenta USD ≈ 4,935.00 USD y "Te faltarían 1,435.00 USD el jue 8"; muestras de /sistema calculadas con `cotizar()` | 1.0845 / 1.080000 (flujo principal: 1,388.89 EUR) y 1.085 (turismo: 4,557.00 USD, 1,057.00) | 02, S03 |
+| Tecla P (D-32) | Dónde se dispara | Nunca con el foco en un campo (input, textarea, select, contenteditable) | Pausaba también desde el token y los campos numéricos | — |
+| Revisión y Agendar | "Concepto" | Campo de texto opcional "Concepto", precargado solo con el pago cargado (vacío sin factura); las filas del detalle y la confirmación dicen "Concepto"; el clásico conserva "Motivo de pago" | "Motivo de pago", lista cerrada precargada según el caso (C-05, del handoff de alta) | 03, 06, A2 |
+| FranjaNuevo | "Comprobante" | Abre el detalle del cobro de hoy; "Descargar comprobante" y "Descargar confirmación" (panel, detalle y clásico) descargan un .html con las mismas filas que muestra la pantalla | Toast "Esta sección no está en el prototipo." | 01, 06, D2 |
+| Estados de token incorrecto, origen sin saldo y pactada sin saldo | Alcance | Se dejan como están (000000, "Hoy no alcanza" / escenario sin-saldo, "Sin saldo" en turismo), sin seguir desarrollándolos | — | — |

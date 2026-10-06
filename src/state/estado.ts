@@ -5,7 +5,7 @@ import { leerCentavos } from '@/lib/dinero';
 import { cotizar, deducir, ejecutable, esFinDeSemana, fechasLiquidacion, mismoDia, siguienteHabil, tdcDe, type Divisa, type TablaPares } from '@/lib/fx';
 import { neto } from '@/lib/posicion';
 import * as fmt from '@/lib/format';
-import { AGENDAR_DIAS, HOY, DURACION_PRECIO_S, MOTIVOS, TOKEN_INCORRECTO, datosEscenario, type ArquetipoId, type CuentaId, type Datos, type EscenarioNombre, type PagoFuturo } from '@/data/escenario';
+import { AGENDAR_DIAS, HOY, DURACION_PRECIO_S, TOKEN_INCORRECTO, datosEscenario, type ArquetipoId, type CuentaId, type Datos, type EscenarioNombre, type PagoFuturo } from '@/data/escenario';
 import { arquetipoDe } from '@/data/arquetipos';
 import { claseDe, cuentaPorId, cuentasActuales, finDeSemana, motivoPorDefecto, movimientoDe, opcionesDelCobro, ordenDePago, pagoPorDefectoDelCobro, posicionesPorDivisa } from './derivados';
 
@@ -219,6 +219,7 @@ export type Accion =
   | { tipo: 'abrirCobro'; cobroId: string }
   | { tipo: 'elegirPago'; pagoId: string }
   | { tipo: 'continuarPago' }
+  | { tipo: 'otroDestinatario' }
   | { tipo: 'abrirDepositar' }
   | { tipo: 'cerrarPanel' }
   | { tipo: 'busquedaDestino'; texto: string }
@@ -393,10 +394,10 @@ export function fechaAgendable(f: Date): 'ok' | 'fin-de-semana' | 'fuera-de-rang
 export function pagoAgendado(e: Pick<EstadoApp, 'datos' | 'panel'>): PagoFuturo | null {
   const { destino, montoTexto, fecha, motivo, referencia } = e.panel.agenda;
   const monto = leerCentavos(montoTexto);
-  if (!destino || destino.tipo !== 'tercero' || monto == null || monto <= 0 || !fecha || !motivo || fechaAgendable(fecha) !== 'ok') return null;
+  if (!destino || destino.tipo !== 'tercero' || monto == null || monto <= 0 || !fecha || fechaAgendable(fecha) !== 'ok') return null;
   const n = e.datos.pagosFuturos.filter((p) => p.id.startsWith('a')).length + 1;
   return {
-    id: `a${n}`, destinatarioId: destino.id, destinatario: destino.nombre, monto, divisa: destino.divisa, fecha: inicioDelDia(fecha), referencia: referencia.trim(), motivo,
+    id: `a${n}`, destinatarioId: destino.id, destinatario: destino.nombre, monto, divisa: destino.divisa, fecha: inicioDelDia(fecha), referencia: referencia.trim(), motivo: (motivo ?? '').trim(),
     cuentaDestino: { divisa: destino.divisa, banco: destino.banco, mascara: destino.mascara },
   };
 }
@@ -485,6 +486,12 @@ export function reducer(e: EstadoApp, a: Accion): EstadoApp {
       if (e.panel.tipo !== 'pago' || e.panel.paso !== 'pago' || !e.datos.loNuevo) return e;
       const valido = opcionesDelCobro(e, e.datos.loNuevo).some((o) => o.pago.id === a.pagoId);
       return valido ? { ...e, panel: { ...e.panel, pagoElegidoId: a.pagoId } } : e;
+    }
+    case 'otroDestinatario': {
+      // "Pagar a otro destinatario" desde el cobro: el paso Destino de siempre, con la cuenta del cobro como origen.
+      const cobro = e.datos.loNuevo;
+      if (!cobro || e.panel.paso !== 'pago') return e;
+      return { ...e, panel: { ...e.panel, paso: 'destino', orden: null, origenId: cobro.cuentaId, busquedaDestino: '' } };
     }
     case 'continuarPago': {
       const cobro = e.datos.loNuevo;
@@ -588,7 +595,7 @@ export function reducer(e: EstadoApp, a: Accion): EstadoApp {
     case 'abrirAgendar':
       return { ...e, onboarding: { ...e.onboarding, activo: false }, operar: cerrarSelectores(e.operar), pestana: 'posicion', panel: { ...PANEL_CERRADO, abierto: true, tipo: 'agendar', paso: 'destino' } };
     case 'agendaDestino':
-      return { ...e, panel: { ...e.panel, paso: 'revision', busquedaDestino: '', agenda: { ...e.panel.agenda, destino: a.destino, motivo: e.panel.agenda.motivo ?? MOTIVOS[0] } } };
+      return { ...e, panel: { ...e.panel, paso: 'revision', busquedaDestino: '', agenda: { ...e.panel.agenda, destino: a.destino } } };
     case 'agendaMonto':
       return { ...e, panel: { ...e.panel, agenda: { ...e.panel.agenda, montoTexto: a.texto.replace(/[^\d.,]/g, '') } } };
     case 'agendaFecha':

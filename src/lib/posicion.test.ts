@@ -67,13 +67,13 @@ describe('evaluarOrigen (frame 02)', () => {
   });
   it('EUR también cubre el faltante en USD', () => {
     const r = evaluarOrigen({ ...base, origen: { divisa: 'EUR', saldo: centavos(50_000) } });
-    expect(r.pagasTexto).toBe('Pagas ≈ 1,388.89 EUR');
+    expect(r.pagasTexto).toBe('Pagas ≈ 1,280.96 EUR');
     expect(r.consecuencia).toMatchObject({ texto: 'Cubre el faltante en USD', tono: 'ok' });
   });
   it('sin faltante que cubrir: te quedan X', () => {
     const sinFaltante = { ...posiciones, USD: posicion('USD', centavos(5000), agregar(pendientesUSD)) };
     const r = evaluarOrigen({ ...base, posiciones: sinFaltante, origen: { divisa: 'EUR', saldo: centavos(50_000) } });
-    expect(r.consecuencia).toMatchObject({ texto: 'Te quedan 48,611.11 EUR', tono: 'neutro' });
+    expect(r.consecuencia).toMatchObject({ texto: 'Te quedan 48,719.04 EUR', tono: 'neutro' });
   });
   it('hoy no alcanza se puede elegir igual', () => {
     const r = evaluarOrigen({ ...base, origen: { divisa: 'MXN', saldo: centavos(20_000) } });

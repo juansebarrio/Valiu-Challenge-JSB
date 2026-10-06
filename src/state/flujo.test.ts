@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { aplicar, estadoInicial, pagoPorId, type Accion } from './estado';
-import { destinoDeDestinatario, ordenDePago } from './derivados';
+import { destinoDeCuenta, destinoDeDestinatario, ordenDePago } from './derivados';
 import { estadoDeEscenario } from './escenarios';
 import { vistaHome, vistaPanel, vistaOperar } from './vistas';
 import { centavos } from '@/lib/dinero';
@@ -56,7 +56,7 @@ describe('flujo principal 02 → 07', () => {
     expect(p.origenes.map((o) => [o.pagas, o.consecuencia.texto, o.consecuencia.tono])).toEqual([
       ['Pagas ≈ 27,136.77 MXN', 'Cubre el faltante en USD', 'success'],
       ['Pagas 1,500.00 USD, sin tipo de cambio', 'Te faltarían 1,000.00 USD el vie 9', 'warning'],
-      ['Pagas ≈ 1,388.89 EUR', 'Cubre el faltante en USD', 'success'],
+      ['Pagas ≈ 1,280.96 EUR', 'Cubre el faltante en USD', 'success'],
     ]);
     expect(p.origenes[0].seleccionada).toBe(true);
     expect(p.secundario?.label).toBe('Cancelar');
@@ -70,7 +70,7 @@ describe('flujo principal 02 → 07', () => {
     expect(r.fechas.map((f) => f.vence)).toEqual([false, false, true, false]);
     expect(r.texto).toBe('Vas a pagar 1,500.00 USD con pesos. Compras los dólares a 18.091183 MXN.');
     expect(r.efecto).toBe('Tu cuenta en pesos queda en ≈ 1,152,863.23 MXN.');
-    expect(r.motivo).toBe('Pago a proveedores');
+    expect(r.concepto).toBe('Pago a proveedores');
     expect(r.referencia).toBe('Factura 0457');
   });
   const e04 = aplicar([{ tipo: 'pedirPrecio' }], e03);
@@ -116,7 +116,7 @@ describe('flujo principal 02 → 07', () => {
       { k: 'Enviaste', v: '1,500.00 USD a Shenzhen Parts Co.' },
       { k: 'Pagaste', v: '27,138.62 MXN' },
       { k: 'TDC', v: '18.092415' },
-      { k: 'Motivo', v: 'Pago a proveedores' },
+      { k: 'Concepto', v: 'Pago a proveedores' },
       { k: 'Referencia', v: 'Factura 0457' },
     ]);
     expect(vistaPanel(e06)!.secundario?.label).toBe('Descargar comprobante');
@@ -190,7 +190,7 @@ describe('entradas al panel', () => {
     expect(p.origenes[0].consecuencia.texto).toBe('Cubre el faltante en USD');
     const r = vistaPanel(aplicar([{ tipo: 'irPaso', paso: 'revision' }], e))!.revision!;
     expect(r.editable).toBe(true);
-    expect(r.motivo).toBe('Compra de divisas');
+    expect(r.concepto).toBe(''); // Concepto opcional: sin factura queda vacío
     expect(fmt.monto(r.pagas, 'MXN')).toBe('18,091.18 MXN');
   });
   it('Comprar 1,000 USD con Hoy: 18,092.42 MXN; USD 3,000 sobran 0; MXN 1,161,907.58 sobran 1,081,557.08', () => {
@@ -243,7 +243,7 @@ describe('casos: vender y transferir por el panel', () => {
     const r = vistaPanel(e)!.revision!;
     expect(fmt.tdc(r.tdc!)).toBe('18.032135');
     expect(fmt.monto(r.recibe, 'MXN')).toBe('18,032.14 MXN');
-    expect(r.motivo).toBe('Venta de divisas');
+    expect(r.concepto).toBe('');
     const c = vistaPanel(aplicar([{ tipo: 'pedirPrecio' }, ...TOKEN], e))!.confirmacion!;
     expect(c.titulo).toBe('Venta en proceso');
     expect(fmt.tdc(c.tdc!)).toBe('18.030907');
@@ -386,7 +386,7 @@ describe('detalle de movimiento en el panel', () => {
       { k: 'Destinatario', v: 'Shenzhen Parts Co. · HSBC Hong Kong **** 4410' },
       { k: 'Monto', v: '1,500.00 USD' },
       { k: 'Vence', v: 'jueves 8 de octubre' },
-      { k: 'Motivo', v: 'Pago a proveedores' },
+      { k: 'Concepto', v: 'Pago a proveedores' },
       { k: 'Referencia', v: 'Factura 0457' },
       { k: 'Con pesos, hoy', v: '≈ 27,136.77 MXN' },
     ]);
@@ -468,9 +468,9 @@ describe('agendar un pago desde el "+" de Movimientos', () => {
     expect(p.destino?.grupos.map((g) => g.titulo)).toEqual(['Destinatarios']);
     expect(p.primario.habilitado).toBe(false);
   });
-  it('"Agendar" se habilita solo con monto, fecha hábil y motivo', () => {
+  it('"Agendar" se habilita solo con monto y fecha hábil (concepto y referencia son opcionales)', () => {
     const conDestino = aplicar([{ tipo: 'agendaDestino', destino: asia }], abierto);
-    expect(vistaPanel(conDestino)!.agenda).toMatchObject({ destinatario: 'Asia Packaging', divisa: 'USD', motivo: 'Pago a proveedores', fechaMin: '2026-10-06', fechaMax: '2027-01-04' });
+    expect(vistaPanel(conDestino)!.agenda).toMatchObject({ destinatario: 'Asia Packaging', divisa: 'USD', concepto: '', fechaMin: '2026-10-06', fechaMax: '2027-01-04' });
     expect(vistaPanel(conDestino)!.primario).toEqual({ label: 'Agendar', habilitado: false, accion: 'agendar' });
     const sabado = aplicar([{ tipo: 'agendaMonto', texto: '250' }, { tipo: 'agendaFecha', fecha: new Date(2026, 9, 10) }], conDestino);
     expect(vistaPanel(sabado)!.agenda?.fechaError).toBe('Elige un día hábil.');
@@ -582,7 +582,7 @@ describe('flujo secundario · turismo (S03–S08)', () => {
     const p = vistaPanel(s03)!;
     expect(p.origenes.map((o) => [o.nombre, o.saldo, o.pagas, o.consecuencia.texto, o.consecuencia.tono, o.deshabilitada, o.seleccionada])).toEqual([
       ['Cuenta Principal MXN', 'Saldo 420,000.00 MXN · incluye el cobro de hoy', 'Pagas ≈ 89,250.00 MXN', 'Cubre el faltante en EUR', 'success', false, true],
-      ['Cuenta USD', 'Saldo 6,000.00 USD', 'Pagas ≈ 4,557.00 USD', 'Te faltarían 1,057.00 USD el jue 8', 'warning', false, false],
+      ['Cuenta USD', 'Saldo 6,000.00 USD', 'Pagas ≈ 4,935.00 USD', 'Te faltarían 1,435.00 USD el jue 8', 'warning', false, false],
       ['Cuenta EUR', 'Saldo 0.00 EUR', 'Pagas 4,200.00 EUR, sin tipo de cambio', 'Sin saldo', 'neutral', true, false],
     ]);
     expect(aplicar([{ tipo: 'elegirOrigen', origenId: 'eur' }], s03).panel.origenId).toBe('mxn');
@@ -661,5 +661,54 @@ describe('sección Movimientos del menú', () => {
     expect(vistaHome(estadoDeEscenario('pactada')).resumenProximos).toBe('10 pagos próximos · 3,000.00 USD · 80,350.50 MXN');
     expect(vistaHome(estadoDeEscenario('resuelta')).resumenProximos).toBe('9 pagos próximos · 1,500.00 USD · 80,350.50 MXN');
     expect(vistaHome(estadoInicial('faltante', {}, 'turismo')).resumenProximos).toBe('2 pagos próximos · 2,500.00 USD · 4,200.00 EUR');
+  });
+});
+
+describe('sección 7 del brief · destino propio sin monto y transferencia por el panel', () => {
+  it('"Pagar" del encabezado → Cuenta EUR → Origen deja continuar sin monto y la revisión es editable (compra)', () => {
+    const eur = base.datos.cuentas.find((c) => c.id === 'eur')!;
+    const e = aplicar([{ tipo: 'abrirPanel', orden: null }, { tipo: 'elegirDestino', destino: destinoDeCuenta(eur) }], base);
+    const origen = vistaPanel(e)!;
+    expect(origen.paso).toBe('origen');
+    expect(origen.primario).toEqual({ label: 'Continuar', habilitado: true, accion: 'continuar' });
+    expect(origen.origenes.map((o) => o.pagas)).toEqual(['El monto se elige después', 'El monto se elige después']);
+    const rev = aplicar([{ tipo: 'irPaso', paso: 'revision' }], e);
+    const r = vistaPanel(rev)!;
+    expect(r.revision?.editable).toBe(true);
+    expect(r.primario.habilitado).toBe(false);
+    const conMonto = aplicar([{ tipo: 'monto', lado: 'recibe', valor: centavos(1000) }], rev);
+    expect(vistaPanel(conMonto)!.revision).toMatchObject({ pagas: centavos(19_619.89), recibe: centavos(1000), ladoFijo: 'recibe' });
+    const desdePagas = aplicar([{ tipo: 'monto', lado: 'pagas', valor: centavos(10_000) }], conMonto);
+    expect(vistaPanel(desdePagas)!.revision).toMatchObject({ pagas: centavos(10_000), recibe: centavos(509.69), ladoFijo: 'pagas' });
+    expect(vistaPanel(desdePagas)!.primario).toEqual({ label: 'Pedir precio', habilitado: true, accion: 'pedirPrecio' });
+  });
+  it('Shenzhen desde la Cuenta USD es una transferencia: sin TDC, sin fecha valor, token al confirmar', () => {
+    const e = aplicar([{ tipo: 'abrirPanel', orden: shenzhen }, { tipo: 'elegirOrigen', origenId: 'usd' }, { tipo: 'irPaso', paso: 'revision' }], base);
+    const r = vistaPanel(e)!;
+    expect(r.sinTdc).toBe(true);
+    expect(r.revision?.fechas).toEqual([]);
+    expect(r.revision?.tdc).toBeNull();
+    expect(r.primario).toEqual({ label: 'Continuar', habilitado: true, accion: 'pedirPrecio' });
+    const precio = aplicar([{ tipo: 'pedirPrecio' }], e);
+    expect(vistaPanel(precio)!.precio).toMatchObject({ estado: 'sinTdc', pagas: centavos(1500), recibe: centavos(1500) });
+    const hecho = aplicar([...TOKEN, { tipo: 'volverInicio' }], precio);
+    expect(hecho.operaciones[0]).toMatchObject({ clase: 'pago', estado: 'En proceso', pagas: centavos(1500), recibe: centavos(1500), tdc: null });
+    expect(vistaHome(hecho).cuentas.find((c) => c.id === 'usd')?.saldo).toBe(centavos(500));
+  });
+  it('Mayorista Caribe desde la Cuenta USD (turismo) también es transferencia', () => {
+    const t = estadoInicial('faltante', {}, 'turismo');
+    const e = aplicar([{ tipo: 'abrirPanel', orden: ordenDePago(pagoPorId(t, 't-p2')!) }, { tipo: 'elegirOrigen', origenId: 'usd' }, { tipo: 'irPaso', paso: 'revision' }, { tipo: 'pedirPrecio' }, ...TOKEN, { tipo: 'volverInicio' }], t);
+    expect(e.operaciones[0]).toMatchObject({ estado: 'En proceso', tdc: null, pagas: centavos(2500) });
+    expect(vistaHome(e).cuentas.find((c) => c.id === 'usd')?.saldo).toBe(centavos(3500));
+  });
+  it('"Pagar a otro destinatario" va al paso Destino con la cuenta del cobro y "Volver" regresa', () => {
+    const t = estadoInicial('faltante', {}, 'turismo');
+    const e = aplicar([{ tipo: 'abrirCobro', cobroId: 't-r1' }, { tipo: 'otroDestinatario' }], t);
+    const p = vistaPanel(e)!;
+    expect(p.paso).toBe('destino');
+    expect(p.destino?.grupos.map((g) => g.titulo)).toEqual(['Pagos próximos', 'Tus cuentas', 'Destinatarios']);
+    expect(p.secundario).toEqual({ label: 'Volver', accion: 'volverPago' });
+    expect(e.panel.origenId).toBe('mxn');
+    expect(vistaPanel(aplicar([{ tipo: 'irPaso', paso: 'pago' }], e))!.paso).toBe('pago');
   });
 });

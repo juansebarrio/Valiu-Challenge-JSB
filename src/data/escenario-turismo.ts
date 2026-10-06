@@ -39,12 +39,12 @@ const REALIZADOS: Realizado[] = [
 const LO_NUEVO: Cobro = { id: REALIZADOS[0].id, cuentaId: 'mxn', monto: REALIZADOS[0].monto, divisa: 'MXN', de: REALIZADOS[0].nombre, hora: REALIZADOS[0].hora, banco: REALIZADOS[0].banco, referencia: REALIZADOS[0].referencia };
 
 /**
- * Tipo de cambio del pedido: EUR/MXN compra 21.25 (venta 21.10, inventada), EUR/USD 1.085 (cross del pedido; la venta se iguala a falta de dato),
- * USD/MXN 18.091183 / 18.032135. El precio ejecutable sale de `ejecutable()` (fx.ts), no de un valor fijo.
+ * Tipo de cambio del pedido: EUR/MXN compra 21.25 (venta 21.10, inventada), USD/MXN 18.091183 / 18.032135 y EUR/USD 1.175000 / 1.171000,
+ * el cross que cierra con los otros dos (sección 7 del brief). El precio ejecutable sale de `ejecutable()` (fx.ts), no de un valor fijo.
  */
 const PARES_TURISMO: TablaPares = {
   'USD/MXN': { compra: 18_091_183, venta: 18_032_135 },
-  'EUR/USD': { compra: 1_085_000, venta: 1_085_000 },
+  'EUR/USD': { compra: 1_175_000, venta: 1_171_000 },
   'EUR/MXN': { compra: 21_250_000, venta: 21_100_000 },
   'GBP/MXN': { compra: 24_300_000, venta: 24_100_000 },
   'CAD/MXN': { compra: 13_200_000, venta: 13_050_000 },

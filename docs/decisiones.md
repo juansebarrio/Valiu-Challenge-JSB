@@ -8,7 +8,7 @@ Correcciones aplicadas sobre el export de Claude Design (`docs/handoff/prototipo
 | C-02 | Confirmación con Hoy titulada "Pago en proceso" (y "Compra/Venta/Transferencia en proceso"). | "Pago enviado" se contradecía con el badge "En proceso" y con "Te avisamos cuando Banco BASE confirme el envío". |
 | C-03 | En 04 y 05 el botón secundario es "Volver" (regresa a la revisión y descarta el precio); la × cierra y descarta todo. | El export ofrecía "Cancelar", que cerraba el panel desde un paso intermedio. |
 | C-04 | Precio vencido con estilo informativo (alert info, badge neutral "Vencido" sobre el precio fijo que venció), sin casillas de token y única acción "Pedir precio". | Que el precio venza es esperable; el export lo trataba como error y ponía el badge sobre el indicativo. |
-| C-05 | "Motivo de pago" (lista cerrada, precargado según el caso) reemplaza a "Concepto"; "Referencia" es opcional y se precarga con la factura. | Alineado con producción y con el clásico del export. Falta `docs/ui-actual.md`: la lista se completó con Transferencia entre cuentas, Pago de servicios, Nómina y Otro. |
+| C-05 | ~~"Motivo de pago" (lista cerrada, precargado según el caso) reemplaza a "Concepto"~~ **Revertida (sección 7 del brief)**: el panel vuelve a "Concepto", opcional y de texto libre, precargado solo con el pago cargado; el clásico conserva "Motivo de pago". "Referencia" sigue opcional y precargada con la factura. | El brief pide Concepto opcional. |
 | C-06 | Línea de efecto por fecha: "Tu cuenta en pesos queda en ≈ X" con Hoy y "El jue 8 tu cuenta en pesos queda en ≈ X" con otra fecha; si la fecha es posterior al vencimiento, agrega "El dinero sale después del vencimiento (jue 8)". | En 03B el export repetía la línea de Hoy, que era falsa. |
 | C-07 | La caja "TDC Valiu" del panel va sin borde de campo (en el clásico conserva el borde 2 px del DS, como en el export). | Es información; con borde parecía un input con foco. |
 | C-08 | Cuenta regresiva de 2:00 que arranca al pedir precio (el export mostraba 1:59 fijo). | El precio dura 2 minutos. |
@@ -19,7 +19,7 @@ Correcciones aplicadas sobre el export de Claude Design (`docs/handoff/prototipo
 | C-13 | Acciones de texto: "Pagar" de fila en índigo sin subrayado; todas las demás (Atrás, Cancelar, Probar el nuevo flujo, Ver datos para depositar, Comprobante…) con el Link Button del DS: tinta #151522, 600, subrayado. | El export mezclaba tres tratamientos. |
 | C-14 | "Programar · Futuro" y el horario "6:30 a 16:30" no se construyen; el horario queda como dato vacío en `src/data/escenario.ts` y el aviso de mercado cerrado no lo muestra. | Contradice la restricción del brief / dato sin verificar (handoff). |
 | C-15 | Las notas del tablero que afirmaban cómo funciona hoy el producto (frames 11, 13 y 14) se reemplazan por hechos del prototipo. | Sin captura que las respalde. |
-| C-16 | Cuenta EUR como origen: "Pagas ≈ 1,388.89 EUR" con el lado vender de EUR/USD (1.080000). | Valores de tipo de cambio del handoff. |
+| C-16 | Cuenta EUR como origen: "Pagas ≈ 1,280.96 EUR" con el lado vender de EUR/USD, que pasó a 1.175000 / 1.171000 para cerrar con USD/MXN y EUR/MXN (sección 7 del brief; antes 1.080000 → 1,388.89). | El cross del handoff no cerraba con los otros dos pares. |
 | C-17 | Próximos muestra solo la semana y "Ver los 10 pagos futuros" despliega el resto; "Pagos futuros (7)" de MXN cuenta los siete pagos ficticios desde el lunes 12. | Handoff; los siete pagos no cambian la gráfica ni la lista del frame 01. |
 | C-18 | Tipo de cambio: EUR/MXN en una línea con sus dos lados, debajo de USD/MXN. | La empresa tiene saldo en euros. |
 | C-19 | La gráfica muestra siempre la línea de 0 y etiqueta "faltante" el primer día bajo cero (decisión abierta 3, por defecto sí). | Handoff. |
@@ -38,3 +38,5 @@ Correcciones aplicadas sobre el export de Claude Design (`docs/handoff/prototipo
 ## Flujo secundario (turismo) y pantalla inicial
 
 Las diferencias entre el código y el archivo de diseño del flujo secundario, y las ambigüedades resueltas, están en `docs/diferencias-cc-vs-diseno.md` (regla del handoff: el código manda y lo nuevo se construye extendiendo lo que existe). Las decisiones de diseño D-30 a D-34 están en `docs/handoff-turismo/docs/decisiones.md`.
+
+Los cambios de la sección 7 del brief (transferencia por el panel, paso Destino desde el cobro, lado fijo editable, EUR/USD, tecla P, Concepto opcional, comprobante descargable) están registrados en la sección homónima de `docs/diferencias-cc-vs-diseno.md`.

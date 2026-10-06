@@ -129,9 +129,9 @@ export function ordenDePago(p: PagoFuturo): Orden {
 }
 
 /** Orden a una cuenta propia (TarjetaPosicion → "Comprar 1,000 USD"): monto fijo del lado que recibes, editable. */
-export function ordenACuenta(c: Cuenta, monto: Centavos, origen?: Divisa): Orden {
-  const op = origen ? deducir(origen, c.divisa) : null;
-  return { destino: destinoDeCuenta(c), monto, ladoFijo: 'recibe', conFactura: false, motivo: op?.tipo === 'venta' ? 'Venta de divisas' : op?.tipo === 'transferencia' ? 'Transferencia entre cuentas' : 'Compra de divisas', referencia: '' };
+export function ordenACuenta(c: Cuenta, monto: Centavos): Orden {
+  // Concepto opcional (brief): sin factura queda vacío; el tipo de operación se deduce de origen y destino al cotizar.
+  return { destino: destinoDeCuenta(c), monto, ladoFijo: 'recibe', conFactura: false, motivo: null, referencia: '' };
 }
 
 /** Orden sin destino todavía (el panel arranca en Destino). */
@@ -145,11 +145,9 @@ export function claseDe(origen: Divisa, destino: Destino): 'pago' | 'compra' | '
 }
 
 /** Motivo precargado según el caso: factura → Pago a proveedores; cuenta propia → Compra o Venta de divisas. */
-export function motivoPorDefecto(origen: Divisa | null, orden: Orden): string {
-  if (orden.destino.tipo === 'tercero') return orden.motivo ?? 'Pago a proveedores';
-  if (!origen) return orden.motivo ?? 'Compra de divisas';
-  const clase = claseDe(origen, orden.destino);
-  return clase === 'venta' ? 'Venta de divisas' : clase === 'transferencia' ? 'Transferencia entre cuentas' : 'Compra de divisas';
+/** "Concepto" del panel es opcional (brief): viene precargado solo cuando el pago cargado lo trae; sin factura queda vacío. */
+export function motivoPorDefecto(_origen: Divisa | null, orden: Orden): string | null {
+  return orden.motivo || null;
 }
 
 export interface OpcionDelCobro extends PagoEvaluado {

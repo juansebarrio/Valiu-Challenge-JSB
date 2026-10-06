@@ -8,7 +8,7 @@ describe('dinero', () => {
     expect(porTdc(centavos(1500), 18_091_183)).toBe(centavos(27_136.77)); // 27,136.7745
     expect(porTdc(centavos(1500), 18_092_415)).toBe(centavos(27_138.62)); // 27,138.6225
     expect(porTdc(centavos(1000), 18_092_415)).toBe(centavos(18_092.42)); // 18,092.415 → .42 (half-up)
-    expect(entreTdc(centavos(1500), 1_080_000)).toBe(centavos(1_388.89)); // 1,388.888…
+    expect(entreTdc(centavos(1500), 1_171_000)).toBe(centavos(1_280.96)); // 1,280.956…
   });
   it('precio ejecutable con los factores del handoff', () => {
     expect(escalarTdc(18_091_183, 10_000_681)).toBe(18_092_415);
@@ -52,8 +52,8 @@ describe('cotizar', () => {
   it('1,500 USD fijos desde MXN cuestan 27,136.77 MXN', () => {
     expect(cotizar({ origen: 'MXN', destino: 'USD', monto: centavos(1500), ladoFijo: 'recibe' })!.pagas).toBe(centavos(27_136.77));
   });
-  it('1,500 USD desde EUR cuestan 1,388.89 EUR (lado vender de EUR/USD)', () => {
-    expect(cotizar({ origen: 'EUR', destino: 'USD', monto: centavos(1500), ladoFijo: 'recibe' })!.pagas).toBe(centavos(1_388.89));
+  it('1,500 USD desde EUR cuestan 1,280.96 EUR (lado vender de EUR/USD, 1.171000)', () => {
+    expect(cotizar({ origen: 'EUR', destino: 'USD', monto: centavos(1500), ladoFijo: 'recibe' })!.pagas).toBe(centavos(1_280.96));
   });
   it('con el ejecutable fijo: 27,138.62 MXN', () => {
     expect(cotizar({ origen: 'MXN', destino: 'USD', monto: centavos(1500), ladoFijo: 'recibe', tdc: 18_092_415 })!.pagas).toBe(centavos(27_138.62));
@@ -78,18 +78,20 @@ describe('fechasLiquidacion', () => {
   });
 });
 
-describe('flujo secundario · turismo (EUR/MXN 21.25, EUR/USD 1.085)', () => {
-  const pares = { 'EUR/MXN': { compra: 21_250_000, venta: 21_100_000 }, 'EUR/USD': { compra: 1_085_000, venta: 1_085_000 }, 'USD/MXN': { compra: 18_091_183, venta: 18_032_135 } };
+describe('flujo secundario · turismo (EUR/MXN 21.25, EUR/USD 1.175 / 1.171)', () => {
+  const pares = { 'EUR/MXN': { compra: 21_250_000, venta: 21_100_000 }, 'EUR/USD': { compra: 1_175_000, venta: 1_171_000 }, 'USD/MXN': { compra: 18_091_183, venta: 18_032_135 } };
   it('compra de 4,200 EUR con pesos: 4,200 × 21.25 = 89,250.00 MXN', () => {
     const c = cotizar({ origen: 'MXN', destino: 'EUR', monto: centavos(4200), ladoFijo: 'recibe', pares })!;
     expect(c).toMatchObject({ tipo: 'compra', par: 'EUR/MXN', lado: 'comprar', tdc: 21_250_000 });
     expect(c.pagas).toBe(centavos(89_250));
     expect(fmt.monto(c.pagas, 'MXN')).toBe('89,250.00 MXN');
   });
-  it('4,200 EUR desde la Cuenta USD con el cross 1.085: 4,557.00 USD', () => {
+  it('4,200 EUR desde la Cuenta USD con EUR/USD 1.175000: 4,935.00 USD', () => {
     const c = cotizar({ origen: 'USD', destino: 'EUR', monto: centavos(4200), ladoFijo: 'recibe', pares })!;
-    expect(c).toMatchObject({ tipo: 'compra', par: 'EUR/USD', lado: 'comprar', tdc: 1_085_000 });
-    expect(c.pagas).toBe(centavos(4_557));
+    expect(c).toMatchObject({ tipo: 'compra', par: 'EUR/USD', lado: 'comprar', tdc: 1_175_000 });
+    expect(c.pagas).toBe(centavos(4_935));
+    // Los tres pares cierran entre sí: 18.091183 × 1.175 ≈ 21.26 ≈ EUR/MXN
+    expect(Math.abs(18.091183 * 1.175 - 21.25) < 0.02).toBe(true);
   });
   it('precio ejecutable sobre 21.250000 y lo que paga con él', () => {
     expect(ejecutable(21_250_000, 'comprar')).toBe(21_251_447);

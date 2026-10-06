@@ -30,7 +30,9 @@ import { Pestanas } from './ui/Pestanas';
 import { Alerta } from './ui/Alerta';
 import { Icono } from './ui/Icono';
 import { Toast } from './ui/Toast';
-import { CampoSelector, CampoTexto, OpcionLista } from './ui/Campo';
+import { CampoTexto } from './ui/Campo';
+import { descargarComprobante, htmlComprobante } from './comprobante';
+import { arquetipoDe } from '@/data/arquetipos';
 import { ListaDetalle } from './ui/ListaDetalle';
 
 export interface HomeVistaProps {
@@ -159,7 +161,7 @@ export const HomeVista: FC<HomeVistaProps> = ({ estado, dispatch, modo = 'app', 
                 {home.nuevo ? (
                   <section aria-labelledby="nuevo-titulo" className="flex flex-col gap-2">
                     <h2 id="nuevo-titulo" className="text-h3 font-semibold">Lo nuevo</h2>
-                    <FranjaNuevo monto={home.nuevo.monto} divisa={home.nuevo.divisa} origen={home.nuevo.de} meta={home.nuevo.meta} onComprobante={noDisponible} onUsar={() => dispatch({ tipo: 'abrirCobro', cobroId: home.nuevo!.id })} />
+                    <FranjaNuevo monto={home.nuevo.monto} divisa={home.nuevo.divisa} origen={home.nuevo.de} meta={home.nuevo.meta} onComprobante={() => dispatch({ tipo: 'abrirDetalle', id: home.nuevo!.id })} onUsar={() => dispatch({ tipo: 'abrirCobro', cobroId: home.nuevo!.id })} />
                   </section>
                 ) : null}
                 <ListaMovimientos
@@ -190,7 +192,7 @@ export const HomeVista: FC<HomeVistaProps> = ({ estado, dispatch, modo = 'app', 
               </div>
             </div>
             <div className="grid grid-cols-3 items-start gap-6">
-              <div className="col-span-2 min-w-0"><FormularioOperar vista={operar} dispatch={dispatch} onNoDisponible={noDisponible} /></div>
+              <div className="col-span-2 min-w-0"><FormularioOperar vista={operar} dispatch={dispatch} onNoDisponible={noDisponible} onComprobante={(c) => descargarComprobante(`comprobante-${estado.operar.ultima?.id ?? 'operacion'}`, htmlComprobante({ titulo: c.titulo, sub: `${c.destino} · ${c.referencia || '—'}`, empresa: home.empresa, filas: c.detalle, nota: c.texto ?? c.fondeo }))} /></div>
               <ModuloCuentas cuentas={home.cuentas} onVerTodas={noDisponible} className="self-start" />
             </div>
           </div>
@@ -204,8 +206,16 @@ export const HomeVista: FC<HomeVistaProps> = ({ estado, dispatch, modo = 'app', 
 };
 
 const PanelContenido: FC<{ vista: VistaPanel; estado: EstadoApp; dispatch: (a: Accion) => void; modo: ModoShell }> = ({ vista: v, estado, dispatch, modo }) => {
-  const [motivoAbierto, setMotivoAbierto] = useState(false);
   const noDisponible = () => dispatch({ tipo: 'toast', texto: AVISO_FUERA_DEL_PROTOTIPO });
+  const empresa = arquetipoDe(estado.arquetipo).empresa;
+  // "Descargar comprobante / confirmación": el archivo lleva las mismas filas que muestra el panel.
+  const comprobante = () => {
+    const c = v.confirmacion;
+    const d = v.detalle;
+    if (c) descargarComprobante(`comprobante-${estado.operaciones[0]?.id ?? 'operacion'}`, htmlComprobante({ titulo: c.titulo, sub: v.sub, empresa, filas: c.detalle, nota: c.texto ?? c.fondeo }));
+    else if (d) descargarComprobante(`comprobante-${estado.panel.movimientoId ?? 'movimiento'}`, htmlComprobante({ titulo: d.titulo, sub: `${v.titulo} · ${v.sub}`, empresa, filas: d.filas, nota: d.texto }));
+    else noDisponible();
+  };
   const cerrar = () => dispatch(v.paso === 'confirmacion' ? { tipo: 'volverInicio' } : { tipo: 'cerrarPanel' });
   const pagar = () => { if (v.detalle?.orden) dispatch({ tipo: 'abrirPanel', orden: v.detalle.orden }); };
   const primario = () => {
@@ -231,7 +241,8 @@ const PanelContenido: FC<{ vista: VistaPanel; estado: EstadoApp; dispatch: (a: A
           case 'volverOrigen': dispatch({ tipo: 'irPaso', paso: 'origen' }); break;
           case 'volverDestino': dispatch({ tipo: 'irPaso', paso: 'destino' }); break;
           case 'cancelar': dispatch({ tipo: 'cerrarPanel' }); break;
-          case 'comprobante': noDisponible(); break;
+          case 'volverPago': dispatch({ tipo: 'irPaso', paso: 'pago' }); break;
+          case 'comprobante': comprobante(); break;
           case 'cancelarPactada': dispatch({ tipo: 'cancelarPactada' }); break;
           case 'pagar': pagar(); break;
         }
@@ -261,8 +272,7 @@ const PanelContenido: FC<{ vista: VistaPanel; estado: EstadoApp; dispatch: (a: A
           <h3 className="text-h3 font-semibold">{v.pago.titulo}</h3>
           <GrupoPago opciones={v.pago.opciones.map((o) => ({ id: o.id, destinatario: o.destinatario, monto: o.monto, linea: o.linea, consecuencia: o.consecuencia }))} valor={estado.panel.pagoElegidoId} onCambiar={(id) => dispatch({ tipo: 'elegirPago', pagoId: id })} />
           {v.pago.resto ? <span className="text-body text-app-ink-2 tabular-nums">{v.pago.resto}</span> : null}
-          {/* Sin destino todavía: queda deshabilitado (aria-disabled) con el motivo en el tooltip. */}
-          <Boton variante="link" aria-disabled title={v.pago.otro.motivo} onClick={noDisponible} className="cursor-not-allowed self-start text-app-ink-disabled hover:text-app-ink-disabled">{v.pago.otro.label}</Boton>
+          <Boton variante="link" className="self-start" onClick={() => dispatch({ tipo: 'otroDestinatario' })}>{v.pago.otro.label}</Boton>
         </>
       ) : null}
 
@@ -288,11 +298,7 @@ const PanelContenido: FC<{ vista: VistaPanel; estado: EstadoApp; dispatch: (a: A
           </div>
           {v.revision.tdc != null ? <CajaTdcValiu sinBorde tdc={v.revision.tdc} tipo="Precio indicativo" className="self-start" /> : null}
           <div className="grid grid-cols-2 gap-3">
-            <CampoSelector etiqueta="Motivo de pago" valor={v.revision.motivo} placeholder="Elige un motivo" abierto={motivoAbierto} onAbrir={setMotivoAbierto}>
-              {v.revision.motivos.map((m) => (
-                <OpcionLista key={m} seleccionada={m === v.revision!.motivo} onElegir={() => { dispatch({ tipo: 'motivo', motivo: m }); setMotivoAbierto(false); }}><span className="text-body">{m}</span></OpcionLista>
-              ))}
-            </CampoSelector>
+            <CampoTexto etiqueta="Concepto" opcional valor={v.revision.concepto} onCambiar={(t) => dispatch({ tipo: 'motivo', motivo: t })} placeholder="Ej. Pago a proveedores" />
             <CampoTexto etiqueta="Referencia" opcional valor={v.revision.referencia} onCambiar={(t) => dispatch({ tipo: 'referencia', referencia: t })} placeholder="Ej. Factura 0457" />
           </div>
           <span className="text-body text-app-ink-2 tabular-nums">{v.revision.efecto}{v.revision.posVencimiento ? ` ${v.revision.posVencimiento}` : ''}</span>

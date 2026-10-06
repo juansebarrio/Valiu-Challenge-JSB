@@ -1,7 +1,7 @@
 'use client';
 import type { FC } from 'react';
 import type { Divisa } from '@/lib/fx';
-import type { VistaOperar } from '@/state/vistas';
+import type { VistaConfirmacion, VistaOperar } from '@/state/vistas';
 import type { Accion } from '@/state/estado';
 import { Pestanas } from './ui/Pestanas';
 import { Badge } from './ui/Badge';
@@ -18,6 +18,8 @@ export interface FormularioOperarProps {
   vista: VistaOperar;
   dispatch: (a: Accion) => void;
   onNoDisponible?: () => void;
+  /** "Descargar comprobante" de la confirmación. */
+  onComprobante?: (confirmacion: VistaConfirmacion) => void;
 }
 
 /** Split Compras / Pagas: lado activo con borde 1.5 px #0086FF, error 1 px #B40909 con mensaje inline. */
@@ -56,7 +58,7 @@ const CampoMontoDoble: FC<{ v: VistaOperar; dispatch: (a: Accion) => void }> = (
 };
 
 /** El formulario Operar clásico con el mismo motor que el panel: cotización, precio ejecutable, cuenta regresiva, token y vencimiento. */
-export const FormularioOperar: FC<FormularioOperarProps> = ({ vista: v, dispatch, onNoDisponible }) => {
+export const FormularioOperar: FC<FormularioOperarProps> = ({ vista: v, dispatch, onNoDisponible, onComprobante }) => {
   const onCta = () => {
     if (!v.cta.habilitado) return;
     if (v.cta.accion === 'pedirPrecio') dispatch({ tipo: 'opPedirPrecio' });
@@ -72,7 +74,7 @@ export const FormularioOperar: FC<FormularioOperarProps> = ({ vista: v, dispatch
         <div className="flex flex-col gap-4 px-6 pb-6 pt-2">
           <Confirmacion vista={v.confirmacion} />
           <div className="flex items-center justify-end gap-4 border-t border-app-divider pt-4">
-            <Boton variante="link" onClick={onNoDisponible}>{v.confirmacion.comprobante}</Boton>
+            <Boton variante="link" onClick={() => onComprobante?.(v.confirmacion!)}>{v.confirmacion.comprobante}</Boton>
             <Boton variante="primary" tamano="mid" onClick={() => dispatch({ tipo: 'opNueva' })}>Nueva operación</Boton>
           </div>
         </div>

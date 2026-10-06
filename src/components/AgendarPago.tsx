@@ -1,14 +1,13 @@
 'use client';
-import { useState, type FC } from 'react';
+import type { FC } from 'react';
 import type { Accion } from '@/state/estado';
 import { fechaDeIso, type VistaAgenda } from '@/state/vistas';
 import { ChipDivisa } from './ui/ChipDivisa';
 import { Icono } from './ui/Icono';
-import { CampoSelector, CampoTexto, OpcionLista } from './ui/Campo';
+import { CampoTexto } from './ui/Campo';
 
-/** Paso de datos de "Agendar un pago": destinatario elegido, monto en su divisa, vencimiento, motivo y referencia. */
+/** Paso de datos de "Agendar un pago": destinatario elegido, monto en su divisa, vencimiento, concepto y referencia (opcionales). */
 export const AgendarPago: FC<{ vista: VistaAgenda; dispatch: (a: Accion) => void }> = ({ vista: v, dispatch }) => {
-  const [motivoAbierto, setMotivoAbierto] = useState(false);
   return (
     <>
       <div className="flex items-center gap-2.5 rounded-sm border border-app-divider px-3 py-2.5">
@@ -20,11 +19,7 @@ export const AgendarPago: FC<{ vista: VistaAgenda; dispatch: (a: Accion) => void
         <CampoTexto etiqueta="Vence el" type="date" min={v.fechaMin} max={v.fechaMax} valor={v.fecha} onCambiar={(t) => dispatch({ tipo: 'agendaFecha', fecha: fechaDeIso(t) })} error={v.fechaError} className="tabular-nums" />
       </div>
       <div className="grid grid-cols-2 gap-3">
-        <CampoSelector etiqueta="Motivo de pago" valor={v.motivo} placeholder="Elige un motivo" abierto={motivoAbierto} onAbrir={setMotivoAbierto}>
-          {v.motivos.map((m) => (
-            <OpcionLista key={m} seleccionada={m === v.motivo} onElegir={() => { dispatch({ tipo: 'agendaMotivo', motivo: m }); setMotivoAbierto(false); }}><span className="text-body">{m}</span></OpcionLista>
-          ))}
-        </CampoSelector>
+        <CampoTexto etiqueta="Concepto" opcional valor={v.concepto} onCambiar={(t) => dispatch({ tipo: 'agendaMotivo', motivo: t })} placeholder="Ej. Pago a proveedores" />
         <CampoTexto etiqueta="Referencia" opcional valor={v.referencia} onCambiar={(t) => dispatch({ tipo: 'agendaReferencia', referencia: t })} placeholder="Ej. Factura 0457" />
       </div>
       {v.resumen ? (

@@ -83,14 +83,13 @@ export function HomeApp({ arquetipo }: { arquetipo: ArquetipoId }) {
   const onPaso = useCallback((pares: TablaPares) => dispatch({ tipo: 'tdcVivo', pares }), []);
   useTdcEnVivo({ base: tdcBase, activo: !congelado && !pausado, onPaso });
 
-  // Tecla P: pausa el indicativo en vivo y la cuenta regresiva (demo). No interfiere con los campos de texto;
-  // en los numéricos (token, montos) la P no es un carácter válido, así que ahí también pausa.
+  // Tecla P (D-32): pausa el indicativo en vivo y la cuenta regresiva (demo). Nunca se dispara con el foco en un campo.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.key !== 'p' && e.key !== 'P') || e.ctrlKey || e.metaKey || e.altKey) return;
       const t = e.target as HTMLElement | null;
-      const campoDeTexto = !!t && (t.tagName === 'TEXTAREA' || t.isContentEditable || (t.tagName === 'INPUT' && !['numeric', 'decimal'].includes((t as HTMLInputElement).inputMode)));
-      if (campoDeTexto) return;
+      const enCampo = !!t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable);
+      if (enCampo) return;
       e.preventDefault();
       dispatch({ tipo: 'alternarPausa' });
     };

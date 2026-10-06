@@ -90,7 +90,7 @@ export function vistaHome(e: EstadoApp): VistaHome {
         const t = op ? tdcDe(op, e.tdcVivo) : null;
         const cot = t != null ? cotizar({ origen: 'MXN', destino: c.divisa, monto: p.resultado.monto, ladoFijo: 'recibe', pares: e.tdcVivo }) : null;
         if (cot) linea = `≈ ${fmt.monto(cot.pagas, 'MXN')} a precio de compra`;
-        accion = { label: `Comprar ${fmt.compacto(p.resultado.monto)} ${c.divisa}`, orden: ordenACuenta(c, p.resultado.monto, 'MXN') };
+        accion = { label: `Comprar ${fmt.compacto(p.resultado.monto)} ${c.divisa}`, orden: ordenACuenta(c, p.resultado.monto) };
       }
     } else if (e.datos.loNuevo && c.divisa === e.datos.loNuevo.divisa) {
       linea = `Incluye los ${fmt.numero(e.datos.loNuevo.monto)} de ${e.datos.loNuevo.de}`;
@@ -242,17 +242,18 @@ export interface VistaPanel {
   mercadoCerrado: boolean;
   /** pagar: abre el flujo de pago con `orden` (detalle de un pendiente o "Pagar ahora" tras agendar) · continuarPago: del paso Pago al Origen. */
   primario: { label: string; habilitado: boolean; accion: 'continuar' | 'continuarPago' | 'pedirPrecio' | 'confirmar' | 'volverInicio' | 'cerrar' | 'pagar' | 'agendar' | 'confirmarCancelacion' | 'ninguna' };
-  secundario: { label: string; accion: 'cancelar' | 'volver' | 'volverOrigen' | 'comprobante' | 'volverDestino' | 'cancelarPactada' | 'pagar' } | null;
+  secundario: { label: string; accion: 'cancelar' | 'volver' | 'volverOrigen' | 'comprobante' | 'volverDestino' | 'volverPago' | 'cancelarPactada' | 'pagar' } | null;
   destino: { titulo: string; busqueda: string; grupos: GrupoDestino[] } | null;
   /** Paso "¿Qué pagas con este cobro?" (entrada desde "Usar para pagar", D-30). */
-  pago: { titulo: string; opciones: VistaOpcionPago[]; resto: string | null; otro: { label: string; motivo: string } } | null;
+  pago: { titulo: string; opciones: VistaOpcionPago[]; resto: string | null; otro: { label: string } } | null;
   origenes: VistaOpcionOrigen[];
   revision: {
+    /** Sin factura: los dos montos se editan ("Recibe" y "Pagas"); el que escribes queda fijo y el otro se recalcula con el indicativo. */
     editable: boolean;
     pagas: Centavos; pagasDivisa: Divisa; recibe: Centavos; recibeDivisa: Divisa; ladoFijo: 'recibe' | 'pagas'; destinatario: string;
     fechas: VistaFecha[]; fechaEsHoy: boolean; fechaDia: string; hoyNoAlcanza: boolean;
     texto: string; ayuda: string | null; efecto: string; posVencimiento: string | null;
-    tdc: TdcMicro | null; motivo: string | null; motivos: string[]; referencia: string;
+    tdc: TdcMicro | null; concepto: string; referencia: string;
   } | null;
   precio: {
     estado: 'fijo' | 'vencido' | 'sinTdc'; tdc: TdcMicro | null; segundos: number; porVencer: boolean; pausado: boolean;
@@ -294,8 +295,7 @@ export interface VistaAgenda {
   fechaMin: string;
   fechaMax: string;
   fechaError: string | null;
-  motivo: string | null;
-  motivos: string[];
+  concepto: string;
   referencia: string;
   /** Resumen cuando todo está completo. */
   resumen: string | null;
@@ -350,7 +350,12 @@ export function vistaPanel(e: EstadoApp): VistaPanel | null {
 
   const orden = panel.orden;
   if (panel.paso === 'destino' || !orden) {
-    return { ...vacio, titulo: 'Pagar', sub: '¿A quién le pagas?', paso: 'destino', destino: { titulo: '¿A quién le pagas?', busqueda: panel.busquedaDestino, grupos: gruposDestino(e, panel.busquedaDestino, { conPagos: true, excluirCuentaId: panel.origenId }) } };
+    const desdeCobro = !!panel.cobroId && e.datos.loNuevo?.id === panel.cobroId;
+    return {
+      ...vacio, titulo: 'Pagar', sub: '¿A quién le pagas?', paso: 'destino',
+      destino: { titulo: '¿A quién le pagas?', busqueda: panel.busquedaDestino, grupos: gruposDestino(e, panel.busquedaDestino, { conPagos: true, excluirCuentaId: panel.origenId }) },
+      secundario: desdeCobro ? { label: 'Volver', accion: 'volverPago' } : { label: 'Cancelar', accion: 'cancelar' },
+    };
   }
 
   const ctas = cuentasActuales(e);
@@ -379,7 +384,7 @@ export function vistaPanel(e: EstadoApp): VistaPanel | null {
       const deshabilitada = origenDeshabilitado(c, orden);
       const saldo = `Saldo ${fmt.monto(c.saldo, c.divisa)}${cobro && cobro.cuentaId === c.id ? ' · incluye el cobro de hoy' : ''}`;
       const consecuencia = deshabilitada ? { texto: 'Sin saldo', tono: 'neutral' as const } : { texto: ev.consecuencia.texto, tono: tonoBadge[ev.consecuencia.tono], ayuda: ev.consecuencia.ayuda };
-      return { id: c.id, nombre: c.nombre, saldo, pagas: ev.pagasTexto, consecuencia, seleccionada: c.id === panel.origenId, deshabilitada };
+      return { id: c.id, nombre: c.nombre, saldo, pagas: montoRecibe > 0 ? ev.pagasTexto : 'El monto se elige después', consecuencia, seleccionada: c.id === panel.origenId, deshabilitada };
     });
 
   const hoyNoAlcanza = !!origen && !!cotInd && cotInd.pagas > origen.saldo;
@@ -411,7 +416,7 @@ export function vistaPanel(e: EstadoApp): VistaPanel | null {
       editable: !orden.conFactura,
       pagas: cotInd.pagas, pagasDivisa: origen.divisa, recibe: cotInd.recibe, recibeDivisa: orden.destino.divisa, ladoFijo: orden.ladoFijo, destinatario: recibeNombre,
       fechas: sinTdc ? [] : fechas, fechaEsHoy, fechaDia, hoyNoAlcanza, texto, ayuda, efecto, posVencimiento: sinTdc ? null : posVencimiento,
-      tdc: sinTdc ? null : tdcInd, motivo: orden.motivo, motivos: MOTIVOS, referencia: orden.referencia,
+      tdc: sinTdc ? null : tdcInd, concepto: orden.motivo ?? '', referencia: orden.referencia,
     };
   }
 
@@ -434,10 +439,12 @@ export function vistaPanel(e: EstadoApp): VistaPanel | null {
 
   const tokenListo = panel.token.length === 6 && !panel.confirmando;
   const mercadoCerrado = e.datos.mercado === 'cerrado';
-  const puedeContinuar = !!origen && !!cotInd && cotInd.recibe > 0;
+  // Sin factura el monto se elige en la revisión, así que desde Origen se puede continuar con monto 0; para pedir precio sí hace falta un monto.
+  const puedeContinuar = !!origen && !!cotInd && (cotInd.recibe > 0 || !orden.conFactura);
+  const puedePedir = !!origen && !!cotInd && cotInd.recibe > 0;
   const primario: VistaPanel['primario'] =
     panel.paso === 'origen' ? { label: 'Continuar', habilitado: puedeContinuar, accion: 'continuar' }
-      : panel.paso === 'revision' ? (sinTdc ? { label: 'Continuar', habilitado: puedeContinuar, accion: 'pedirPrecio' } : { label: 'Pedir precio', habilitado: puedeContinuar && !mercadoCerrado, accion: 'pedirPrecio' })
+      : panel.paso === 'revision' ? (sinTdc ? { label: 'Continuar', habilitado: puedePedir, accion: 'pedirPrecio' } : { label: 'Pedir precio', habilitado: puedePedir && !mercadoCerrado, accion: 'pedirPrecio' })
         : panel.paso === 'precio' ? (panel.precio.estado === 'vencido' ? { label: 'Pedir precio', habilitado: !mercadoCerrado, accion: 'pedirPrecio' } : { label: panel.confirmando ? 'Confirmando…' : 'Confirmar pago', habilitado: tokenListo, accion: 'confirmar' })
           : { label: 'Volver al inicio', habilitado: true, accion: 'volverInicio' };
   const secundario: VistaPanel['secundario'] =
@@ -462,7 +469,7 @@ export function vistaConfirmacion(e: EstadoApp, o: OperacionHecha): VistaConfirm
     { k: o.clase === 'compra' ? 'Compraste' : o.clase === 'venta' ? 'Vendiste' : o.clase === 'transferencia' ? 'Pasaste' : 'Enviaste', v: o.clase === 'venta' ? `${pagas} desde tu ${origen.nombre}` : `${recibe} a ${destino}` },
     { k: o.clase === 'venta' ? 'Recibes' : 'Pagaste', v: o.clase === 'venta' ? recibe : pagas },
     ...(o.tdc != null ? [{ k: 'TDC', v: fmt.tdc(o.tdc) }] : []),
-    ...(o.motivo ? [{ k: 'Motivo', v: o.motivo }] : []),
+    ...(o.motivo ? [{ k: 'Concepto', v: o.motivo }] : []),
     { k: 'Referencia', v: o.referencia || '—' },
   ];
   const envio = o.destino.tipo === 'propia' ? `entran ${recibe} a ${destino}` : `se envían ${recibe} a ${destino}`;
@@ -500,7 +507,7 @@ function vistaPagoPanel(e: EstadoApp, vacio: VistaPanel): VistaPanel {
     ...vacio, tipo: 'pago', paso: 'pago',
     titulo: `Usar el cobro de ${cobro.de}`,
     sub: `${fmt.montoSigno(cobro.monto, cobro.divisa)} · Hoy ${cobro.hora} · Ref. ${cobro.referencia}`,
-    pago: { titulo: '¿Qué pagas con este cobro?', opciones: vistaOpciones, resto, otro: { label: 'Pagar a otro destinatario', motivo: 'Todavía no está en el prototipo.' } },
+    pago: { titulo: '¿Qué pagas con este cobro?', opciones: vistaOpciones, resto, otro: { label: 'Pagar a otro destinatario' } },
     primario: { label: 'Continuar', habilitado: !!elegida && elegida.usa != null && elegida.usa <= cobro.monto, accion: 'continuarPago' },
     secundario: { label: 'Cancelar', accion: 'cancelar' },
   };
@@ -520,7 +527,7 @@ function filasOperacion(e: EstadoApp, o: OperacionHecha): { k: string; v: string
     { k: o.clase === 'venta' ? 'Vendes' : 'Pagas', v: `${fmt.monto(o.pagas, origen.divisa)} desde tu ${origen.nombre}` },
     { k: o.clase === 'venta' ? 'Recibes' : o.destino.tipo === 'propia' ? 'Entran' : 'Recibe', v: fmt.monto(o.recibe, o.destino.divisa) },
     ...(o.tdc != null ? [{ k: 'TDC', v: fmt.tdc(o.tdc) }] : []),
-    ...(o.motivo ? [{ k: 'Motivo', v: o.motivo }] : []),
+    ...(o.motivo ? [{ k: 'Concepto', v: o.motivo }] : []),
     { k: 'Referencia', v: o.referencia || '—' },
     ...(o.estado === 'Pactada' ? [{ k: 'Pactada', v: `Hoy ${o.hora}` }] : []),
     ...(o.estado === 'Cancelada' && o.cancelada ? [{ k: 'Cancelada', v: `Hoy ${o.cancelada}` }] : []),
@@ -541,7 +548,7 @@ function detallePendiente(e: EstadoApp, p: PagoFuturo, agendado: boolean): Vista
       { k: 'Destinatario', v: conCuenta(p.destinatario, p.cuentaDestino.banco, p.cuentaDestino.mascara) },
       { k: 'Monto', v: fmt.monto(p.monto, p.divisa) },
       { k: 'Vence', v: fmt.fechaLarga(p.fecha) },
-      { k: 'Motivo', v: p.motivo },
+      ...(p.motivo ? [{ k: 'Concepto', v: p.motivo }] : []),
       { k: 'Referencia', v: p.referencia || '—' },
       ...(cot ? [{ k: 'Con pesos, hoy', v: `≈ ${fmt.monto(cot.pagas, 'MXN')}` }] : []),
     ],
@@ -589,7 +596,7 @@ function detalleRealizado(e: EstadoApp, r: Realizado): VistaDetalle {
       { k: cobro ? 'De' : 'Para', v: conCuenta(r.nombre, r.banco, r.mascara) },
       { k: 'Monto', v: fmt.montoSigno(r.monto, r.divisa) },
       { k: 'Fecha', v: `${mismoDia(r.fecha, HOY) ? 'Hoy' : fmt.fechaLarga(r.fecha)}, ${r.hora}` },
-      ...(r.motivo ? [{ k: 'Motivo', v: r.motivo }] : []),
+      ...(r.motivo ? [{ k: 'Concepto', v: r.motivo }] : []),
       { k: 'Referencia', v: r.referencia },
       { k: cobro ? 'A' : 'Desde', v: propia },
       { k: 'Estado', v: r.estado },
@@ -686,7 +693,7 @@ function vistaAgendarPanel(e: EstadoApp, vacio: VistaPanel): VistaPanel {
       destinatario: d.nombre, destinoSub: `${d.banco} **** ${d.mascara}`, divisa: d.divisa,
       montoTexto: agenda.montoTexto, montoError,
       fecha: agenda.fecha ? aIso(agenda.fecha) : '', fechaMin: aIso(HOY), fechaMax: aIso(fechaMaximaAgendable()), fechaError,
-      motivo: agenda.motivo, motivos: MOTIVOS, referencia: agenda.referencia, resumen,
+      concepto: agenda.motivo ?? '', referencia: agenda.referencia, resumen,
     },
     primario: { label: 'Agendar', habilitado: !!pago, accion: 'agendar' }, secundario: { label: 'Volver', accion: 'volverDestino' },
   };

@@ -2,6 +2,11 @@
 import { useState, type FC, type ReactNode } from 'react';
 import Link from 'next/link';
 import { centavos } from '@/lib/dinero';
+import * as fmt from '@/lib/format';
+import { cotizar } from '@/lib/fx';
+
+/** 1,500.00 USD pagados desde la Cuenta EUR, con el lado vender de EUR/USD (la muestra sale de fx.ts, no de un número escrito a mano). */
+const pagasEur = cotizar({ origen: 'EUR', destino: 'USD', monto: centavos(1500), ladoFijo: 'recibe' })!.pagas;
 import { Boton } from '@/components/ui/Boton';
 import { Badge } from '@/components/ui/Badge';
 import { Alerta } from '@/components/ui/Alerta';
@@ -199,8 +204,8 @@ export const Sistema: FC = () => {
           <div role="radiogroup" aria-label="Ejemplo" className="grid grid-cols-2 gap-2.5">
             <OpcionOrigen cuenta="Cuenta Principal MXN" saldo="Saldo 1,180,000.00 MXN" pagas="Pagas ≈ 27,136.77 MXN" consecuencia={{ texto: 'Cubre el faltante en USD', tono: 'success' }} seleccionada={origen === 'mxn'} onElegir={() => setOrigen('mxn')} />
             <OpcionOrigen cuenta="Cuenta USD" saldo="Saldo 2,000.00 USD" pagas="Pagas 1,500.00 USD, sin tipo de cambio" consecuencia={{ texto: 'Te faltarían 1,000.00 USD el vie 9', tono: 'warning' }} seleccionada={origen === 'usd'} onElegir={() => setOrigen('usd')} />
-            <OpcionOrigen cuenta="Cuenta EUR" saldo="Saldo 50,000.00 EUR" pagas="Pagas ≈ 1,388.89 EUR" consecuencia={{ texto: 'Cubre el faltante en USD', tono: 'success' }} seleccionada={origen === 'eur'} onElegir={() => setOrigen('eur')} />
-            <OpcionOrigen cuenta="Cuenta EUR" saldo="Saldo 50,000.00 EUR" pagas="Pagas ≈ 1,388.89 EUR" consecuencia={{ texto: 'Te quedan 48,611.11 EUR', tono: 'neutral' }} seleccionada={false} onElegir={() => {}} />
+            <OpcionOrigen cuenta="Cuenta EUR" saldo="Saldo 50,000.00 EUR" pagas={`Pagas ≈ ${fmt.monto(pagasEur, 'EUR')}`} consecuencia={{ texto: 'Cubre el faltante en USD', tono: 'success' }} seleccionada={origen === 'eur'} onElegir={() => setOrigen('eur')} />
+            <OpcionOrigen cuenta="Cuenta EUR" saldo="Saldo 50,000.00 EUR" pagas={`Pagas ≈ ${fmt.monto(pagasEur, 'EUR')}`} consecuencia={{ texto: `Te quedan ${fmt.monto(centavos(50_000) - pagasEur, 'EUR')}`, tono: 'neutral' }} seleccionada={false} onElegir={() => {}} />
             <OpcionOrigen cuenta="Cuenta Principal MXN" saldo="Saldo 420,000.00 MXN · incluye el cobro de hoy" pagas="Pagas ≈ 89,250.00 MXN" consecuencia={{ texto: 'Cubre el faltante en EUR', tono: 'success' }} seleccionada onElegir={() => {}} />
             <OpcionOrigen cuenta="Cuenta EUR" saldo="Saldo 0.00 EUR" pagas="Pagas 4,200.00 EUR, sin tipo de cambio" consecuencia={{ texto: 'Sin saldo', tono: 'neutral' }} seleccionada={false} deshabilitada onElegir={() => {}} />
           </div>
