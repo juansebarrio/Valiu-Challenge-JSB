@@ -1,6 +1,8 @@
 import type { FC, ReactNode, Ref } from 'react';
+import Link from 'next/link';
 import { Logo } from './ui/Logo';
 import { Icono, type NombreIcono } from './ui/Icono';
+import { PieApp } from './ui/PieApp';
 
 export type ModoShell = 'app' | 'frame';
 
@@ -46,10 +48,18 @@ export const AppShell: FC<AppShellProps> = ({ children, capas, modo = 'app', rai
           ))}
         </nav>
         <div className="flex-1" />
-        <a href="#" onClick={noDisponible} title="Cerrar sesión" className={[ITEM, 'font-medium text-app-ink-2'].join(' ')}>
-          <Icono nombre="signout" tamano="md" />
-          <span className="@max-lg/shell:sr-only">Cerrar sesión</span>
-        </a>
+        {esApp ? (
+          // Cerrar sesión vuelve a la pantalla inicial de arquetipos.
+          <Link href="/" title="Cerrar sesión" className={[ITEM, 'font-medium text-app-ink-2'].join(' ')}>
+            <Icono nombre="signout" tamano="md" />
+            <span className="@max-lg/shell:sr-only">Cerrar sesión</span>
+          </Link>
+        ) : (
+          <a href="#" onClick={noDisponible} title="Cerrar sesión" className={[ITEM, 'font-medium text-app-ink-2'].join(' ')}>
+            <Icono nombre="signout" tamano="md" />
+            <span className="@max-lg/shell:sr-only">Cerrar sesión</span>
+          </a>
+        )}
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
@@ -65,13 +75,7 @@ export const AppShell: FC<AppShellProps> = ({ children, capas, modo = 'app', rai
 
         <main className="flex flex-1 flex-col gap-5 px-8 pb-8 pt-6">{children}</main>
 
-        <footer className="flex h-(--app-footer-h) shrink-0 items-center justify-center gap-4 whitespace-nowrap border-app-divider px-8 text-caption text-app-ink-2 hairline-t">
-          Las operaciones bancarias serán realizadas por Banco BASE
-          <span className="text-app-ink-disabled">·</span>
-          <a href="#" onClick={noDisponible} className="text-app-ink-2 hover:text-app-primary">Términos y condiciones</a>
-          <span className="text-app-ink-disabled">·</span>
-          <a href="#" onClick={noDisponible} className="text-app-ink-2 hover:text-app-primary">Aviso de privacidad</a>
-        </footer>
+        <PieApp onNoDisponible={onNoDisponible} />
       </div>
       {capas}
     </div>

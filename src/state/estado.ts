@@ -5,7 +5,8 @@ import { leerCentavos } from '@/lib/dinero';
 import { cotizar, deducir, ejecutable, esFinDeSemana, fechasLiquidacion, mismoDia, siguienteHabil, tdcDe, type Divisa, type TablaPares } from '@/lib/fx';
 import { neto } from '@/lib/posicion';
 import * as fmt from '@/lib/format';
-import { AGENDAR_DIAS, HOY, DURACION_PRECIO_S, MOTIVOS, TDC_BASE, TOKEN_INCORRECTO, datosEscenario, type CuentaId, type Datos, type EscenarioNombre, type PagoFuturo } from '@/data/escenario';
+import { AGENDAR_DIAS, HOY, DURACION_PRECIO_S, MOTIVOS, TOKEN_INCORRECTO, datosEscenario, type ArquetipoId, type CuentaId, type Datos, type EscenarioNombre, type PagoFuturo } from '@/data/escenario';
+import { arquetipoDe } from '@/data/arquetipos';
 import { claseDe, cuentaPorId, cuentasActuales, finDeSemana, motivoPorDefecto, movimientoDe, ordenDePago, posicionesPorDivisa } from './derivados';
 
 export type Pestana = 'posicion' | 'operar';
@@ -56,6 +57,10 @@ export interface Panel {
   /** Cancelación de una pactada en curso ("Cancelando…"). */
   cancelando: boolean;
   agenda: Agenda;
+  /** Cobro de hoy desde el que se entró ("Usar para pagar"): el origen preseleccionado es la cuenta donde entró. */
+  cobroId: string | null;
+  /** Pago elegido en el paso "¿Qué pagas con este cobro?". */
+  pagoElegidoId: string | null;
   orden: Orden | null;
   origenId: CuentaId | null;
   fechaValor: Date;
@@ -122,6 +127,8 @@ export interface Aviso {
 }
 
 export interface EstadoApp {
+  /** Empresa de ejemplo elegida en la pantalla inicial. */
+  arquetipo: ArquetipoId;
   escenario: EscenarioNombre;
   datos: Datos;
   pestana: Pestana;
@@ -133,7 +140,11 @@ export interface EstadoApp {
   avisoOperar: Aviso | null;
   /** Indicativo en vivo por par (micro-unidades). */
   tdcVivo: TablaPares;
+  /** Valores base del arquetipo alrededor de los que oscila el indicativo. */
+  tdcBase: TablaPares;
   congelado: boolean;
+  /** Tecla P: pausa el indicativo en vivo y la cuenta regresiva (demo). */
+  pausado: boolean;
   demo: boolean;
   toast: { id: number; texto: string } | null;
   verTodosLosPagos: boolean;
@@ -143,7 +154,7 @@ export const ONBOARDING_PASOS = 4;
 export const VENCE_EN_DEMO = 5;
 
 const AGENDA_VACIA: Agenda = { destino: null, montoTexto: '', fecha: null, motivo: null, referencia: '', creado: null };
-const PANEL_CERRADO: Panel = { abierto: false, tipo: 'pago', paso: 'origen', movimientoId: null, cancelando: false, agenda: AGENDA_VACIA, orden: null, origenId: null, fechaValor: HOY, precio: { estado: 'indicativo' }, token: '', tokenError: null, confirmando: false, busquedaDestino: '' };
+const PANEL_CERRADO: Panel = { abierto: false, tipo: 'pago', paso: 'origen', movimientoId: null, cancelando: false, agenda: AGENDA_VACIA, cobroId: null, pagoElegidoId: null, orden: null, origenId: null, fechaValor: HOY, precio: { estado: 'indicativo' }, token: '', tokenError: null, confirmando: false, busquedaDestino: '' };
 
 export const OPERAR_INICIAL: Operar = {
   tipo: 'comprar', par: 'USD/MXN', parAbierto: false, montoIzq: '', montoDer: '', ladoActivo: null, editando: null,
@@ -159,10 +170,12 @@ export interface OpcionesInicio {
   recorrido?: boolean;
 }
 
-export function estadoInicial(escenario: EscenarioNombre = 'faltante', opciones: OpcionesInicio = {}): EstadoApp {
+export function estadoInicial(escenario: EscenarioNombre = 'faltante', opciones: OpcionesInicio = {}, arquetipo: ArquetipoId = 'importadora'): EstadoApp {
+  const arq = arquetipoDe(arquetipo);
   return {
+    arquetipo,
     escenario,
-    datos: datosEscenario(escenario === 'resuelta' || escenario === 'pactada' ? 'faltante' : escenario),
+    datos: datosEscenario(escenario === 'resuelta' || escenario === 'pactada' ? 'faltante' : escenario, arq),
     pestana: 'posicion',
     panel: PANEL_CERRADO,
     operar: OPERAR_INICIAL,
@@ -170,8 +183,10 @@ export function estadoInicial(escenario: EscenarioNombre = 'faltante', opciones:
     operaciones: [],
     aviso: null,
     avisoOperar: null,
-    tdcVivo: { ...TDC_BASE },
+    tdcVivo: { ...arq.pares },
+    tdcBase: arq.pares,
     congelado: !!opciones.congelado,
+    pausado: false,
     demo: !!opciones.demo,
     toast: null,
     verTodosLosPagos: false,
@@ -190,10 +205,12 @@ export type Accion =
   | { tipo: 'cerrarToast' }
   | { tipo: 'verTodosLosPagos'; valor: boolean }
   | { tipo: 'tdcVivo'; pares: TablaPares }
+  | { tipo: 'pausar'; valor: boolean }
   | { tipo: 'tick' }
   | { tipo: 'vencerPrecio' }
   // Panel
   | { tipo: 'abrirPanel'; orden: Orden | null; origenId?: CuentaId | null; paso?: PasoPanel }
+  | { tipo: 'abrirCobro'; cobroId: string }
   | { tipo: 'abrirDepositar' }
   | { tipo: 'cerrarPanel' }
   | { tipo: 'busquedaDestino'; texto: string }
@@ -391,12 +408,15 @@ export function reducer(e: EstadoApp, a: Accion): EstadoApp {
       return { ...e, toast: null };
     case 'verTodosLosPagos':
       return { ...e, verTodosLosPagos: a.valor };
+    case 'pausar':
+      return { ...e, pausado: a.valor };
     case 'tdcVivo': {
-      if (e.congelado) return e;
+      if (e.congelado || e.pausado) return e;
       const s = { ...e, tdcVivo: a.pares };
       return { ...s, operar: recalcular(s, s.operar) };
     }
     case 'tick': {
+      if (e.pausado) return e;
       let s = e;
       if (s.panel.precio.estado === 'fijo') {
         const venceEn = s.panel.precio.venceEn - 1;
@@ -429,6 +449,13 @@ export function reducer(e: EstadoApp, a: Accion): EstadoApp {
         operar: cerrarSelectores(e.operar),
         panel: { ...PANEL_CERRADO, abierto: true, tipo: 'pago', paso, orden: ordenConMotivo, origenId },
       };
+    }
+    case 'abrirCobro': {
+      // "Usar para pagar": la importadora entra al paso Destino con la cuenta del cobro preseleccionada (como quedó en el código).
+      const cobro = e.datos.loNuevo;
+      if (!cobro || cobro.id !== a.cobroId) return e;
+      const abierto = reducer(e, { tipo: 'abrirPanel', orden: null, origenId: cobro.cuentaId });
+      return { ...abierto, panel: { ...abierto.panel, cobroId: cobro.id } };
     }
     case 'abrirDepositar':
       return { ...e, panel: { ...PANEL_CERRADO, abierto: true, tipo: 'depositar', paso: 'origen' } };

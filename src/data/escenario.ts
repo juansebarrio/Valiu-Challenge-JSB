@@ -2,6 +2,7 @@
 // Montos en centavos (dinero.ts). Nada de montos escritos a mano en los componentes: todo sale de acá y de src/lib.
 import { centavos, type Centavos } from '@/lib/dinero';
 import { PARES, type Divisa, type TablaPares } from '@/lib/fx';
+import * as fmt from '@/lib/format';
 
 /** Fecha fija del escenario: martes 6 de octubre de 2026, 10:42 hora de CDMX. Nunca se usa la fecha del sistema. */
 export const HOY = new Date(2026, 9, 6, 10, 42);
@@ -105,6 +106,8 @@ export interface Arquetipo {
   pagoPrincipal: string;
   /** "Usar para pagar": paso Destino (como quedó en el código para la importadora) o paso Pago "¿Qué pagas con este cobro?" (D-30). */
   entradaCobro: 'destino' | 'pago';
+  /** Tres líneas de contexto de la tarjeta de la pantalla inicial. */
+  contexto: string[];
 }
 
 /** Orden de las TarjetaPosicion en el inicio (frames 01–07): la divisa de los pagos cargados primero, después pesos y euros. */
@@ -190,6 +193,11 @@ export const IMPORTADORA: Arquetipo = {
   ordenPosiciones: ORDEN_POSICIONES,
   pagoPrincipal: 'p1',
   entradaCobro: 'destino',
+  contexto: [
+    `Faltan ${fmt.monto(PAGOS_USD.reduce((acc, p) => acc + p.monto, 0) - CUENTAS[1].saldo, 'USD')} para los pagos de la semana`,
+    `Paga ${fmt.monto(PAGOS_USD[0].monto, 'USD')} a ${PAGOS_USD[0].destinatario} con pesos`,
+    `Acaba de cobrar ${fmt.monto(LO_NUEVO.monto, 'MXN')} de ${LO_NUEVO.de}`,
+  ],
 };
 
 /**

@@ -1,7 +1,7 @@
 'use client';
 import { useMemo, useState, type FC, type RefObject } from 'react';
 import * as fmt from '@/lib/format';
-import { AVISO_FUERA_DEL_PROTOTIPO, HOY, empresa, type CuentaId } from '@/data/escenario';
+import { AVISO_FUERA_DEL_PROTOTIPO, HOY, type CuentaId } from '@/data/escenario';
 import { ONBOARDING_PASOS, type Accion, type EstadoApp } from '@/state/estado';
 import { vistaHome, vistaOperar, vistaPanel, type VistaPanel } from '@/state/vistas';
 import { AppShell, type ModoShell } from './AppShell';
@@ -81,7 +81,7 @@ export const HomeVista: FC<HomeVistaProps> = ({ estado, dispatch, modo = 'app', 
         <div className="flex items-start justify-between gap-6">
           <div className="flex flex-col gap-0.5">
             <h1 className="text-h1 font-bold">Inicio</h1>
-            <span className="text-body text-app-ink-2">{empresa} · {fmt.fechaLarga(HOY)}</span>
+            <span className="text-body text-app-ink-2">{home.empresa} · {fmt.fechaLarga(HOY)}</span>
           </div>
           <div className="flex gap-3">
             <Boton variante="secondary" tamano="large" onClick={noDisponible}>Subir documento</Boton>
@@ -130,7 +130,7 @@ export const HomeVista: FC<HomeVistaProps> = ({ estado, dispatch, modo = 'app', 
                 {home.nuevo ? (
                   <section aria-labelledby="nuevo-titulo" className="flex flex-col gap-2">
                     <h2 id="nuevo-titulo" className="text-h3 font-semibold">Lo nuevo</h2>
-                    <FranjaNuevo monto={home.nuevo.monto} divisa={home.nuevo.divisa} origen={home.nuevo.de} meta={home.nuevo.meta} onComprobante={noDisponible} onUsar={() => dispatch({ tipo: 'abrirPanel', orden: null, origenId: 'mxn' })} />
+                    <FranjaNuevo monto={home.nuevo.monto} divisa={home.nuevo.divisa} origen={home.nuevo.de} meta={home.nuevo.meta} onComprobante={noDisponible} onUsar={() => dispatch({ tipo: 'abrirCobro', cobroId: home.nuevo!.id })} />
                   </section>
                 ) : null}
                 <ListaMovimientos

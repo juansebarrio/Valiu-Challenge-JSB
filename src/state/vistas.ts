@@ -3,10 +3,11 @@ import type { Centavos, TdcMicro } from '@/lib/dinero';
 import { cotizar, deducir, fechasLiquidacion, mismoDia, PARES, tdcDe, type Divisa } from '@/lib/fx';
 import * as fmt from '@/lib/format';
 import { evaluarOrigen, type Posicion, type Tono } from '@/lib/posicion';
-import { HOY, HORARIO, HORA_TDC, MOTIVOS, NOMBRE_DIVISA, ORDEN_POSICIONES, PARES_SELECTOR, TENDENCIA_DIA, AVISO_PAR_SIN_PROTOTIPO, type Cuenta, type CuentaId, type Destinatario, type PagoFuturo, type Realizado } from '@/data/escenario';
+import { HOY, HORARIO, HORA_TDC, MOTIVOS, NOMBRE_DIVISA, PARES_SELECTOR, AVISO_PAR_SIN_PROTOTIPO, type ArquetipoId, type Cuenta, type CuentaId, type Destinatario, type PagoFuturo, type Realizado } from '@/data/escenario';
+import { ARQUETIPO_IDS, arquetipoDe } from '@/data/arquetipos';
 import { leerCentavos } from '@/lib/dinero';
 import { cuentaPorId, cuentasActuales, destinoDeCuenta, destinoDeDestinatario, finDeSemana, movimientoDe, ordenACuenta, ordenDePago, pactadas, pagosPendientes, posiciones, posicionesPorDivisa, proyecciones } from './derivados';
-import { cotizacionPanel, divisasOperar, fechaAgendable, fechaMaximaAgendable, pagoAgendado, type Clase, type Destino, type EstadoApp, type OperacionHecha, type Orden } from './estado';
+import { cotizacionPanel, divisasOperar, estadoInicial, fechaAgendable, fechaMaximaAgendable, pagoAgendado, type Clase, type Destino, type EstadoApp, type OperacionHecha, type Orden } from './estado';
 
 
 export type TonoBadge = 'success' | 'warning' | 'error' | 'neutral' | 'pactada' | 'info';
@@ -47,8 +48,10 @@ export interface VistaFila {
 export interface VistaCuenta { id: CuentaId; nombre: string; mascara: string; saldo: Centavos; divisa: Divisa }
 
 export interface VistaHome {
+  arquetipo: ArquetipoId;
+  empresa: string;
   posiciones: VistaPosicion[];
-  nuevo: { monto: Centavos; divisa: Divisa; de: string; meta: string } | null;
+  nuevo: { id: string; cuentaId: CuentaId; monto: Centavos; divisa: Divisa; de: string; meta: string } | null;
   proximos: VistaFila[];
   totalProximos: number;
   verTodos: boolean;
@@ -59,12 +62,13 @@ export interface VistaHome {
 }
 
 export function vistaHome(e: EstadoApp): VistaHome {
+  const arq = arquetipoDe(e.arquetipo);
   const ctas = cuentasActuales(e);
   const pos = posiciones(e);
   const proy = proyecciones(e);
   const pendientes = pagosPendientes(e);
   const pact = pactadas(e);
-  const ordenadas = [...ctas].sort((a, b) => ORDEN_POSICIONES.indexOf(a.id) - ORDEN_POSICIONES.indexOf(b.id));
+  const ordenadas = [...ctas].sort((a, b) => arq.ordenPosiciones.indexOf(a.id) - arq.ordenPosiciones.indexOf(b.id));
 
   const vistaPos: VistaPosicion[] = ordenadas.map((c) => {
     const p = pos[c.id];
@@ -86,6 +90,13 @@ export function vistaHome(e: EstadoApp): VistaHome {
       }
     } else if (e.datos.loNuevo && c.divisa === e.datos.loNuevo.divisa) {
       linea = `Incluye los ${fmt.numero(e.datos.loNuevo.monto)} de ${e.datos.loNuevo.de}`;
+    } else if (p.resultado.tipo === 'nada') {
+      // Sin pendientes porque el único pago en esta divisa ya se pagó (o pactó) desde otra cuenta: la tarjeta dice con qué.
+      const op = e.operaciones.find((o) => o.pagoId && o.destino.divisa === c.divisa && o.estado !== 'Cancelada' && o.origenId !== c.id);
+      if (op) {
+        const con = NOMBRE_DIVISA[cuentaPorId(e, op.origenId)!.divisa].con;
+        linea = op.estado === 'Pactada' ? `${op.destino.nombre}: pactado en ${con}, sale el ${fmt.diaCorto(op.fechaValor)}` : `${op.destino.nombre}: pagado hoy en ${con}`;
+      }
     }
     const cruce = pr ? pr.serie.findIndex((v) => v < 0) : -1;
     return {
@@ -122,18 +133,20 @@ export function vistaHome(e: EstadoApp): VistaHome {
   });
   const pasados: VistaFila[] = e.datos.realizados.map((r) => ({ id: r.id, fecha: mismoDia(r.fecha, HOY) ? 'Hoy' : fmt.diaMes(r.fecha), nombre: r.nombre, monto: r.monto, divisa: r.divisa, estaSemana: true }));
 
-  const usd = e.tdcVivo['USD/MXN'];
-  const eurmxn = e.tdcVivo['EUR/MXN'];
+  const [parPrincipal, ...otrosPares] = arq.paresTarjeta;
+  const principal = e.tdcVivo[parPrincipal];
   const totalMXN = ctas.reduce((acc, c) => acc + (c.divisa === 'MXN' ? c.saldo : (cotizar({ origen: c.divisa, destino: 'MXN', monto: c.saldo, ladoFijo: 'pagas', pares: e.tdcVivo })?.recibe ?? 0)), 0);
 
   return {
+    arquetipo: e.arquetipo,
+    empresa: arq.empresa,
     posiciones: vistaPos,
-    nuevo: e.datos.loNuevo ? { monto: e.datos.loNuevo.monto, divisa: e.datos.loNuevo.divisa, de: e.datos.loNuevo.de, meta: `Hoy ${e.datos.loNuevo.hora} · ${e.datos.loNuevo.banco} · Ref. ${e.datos.loNuevo.referencia}` } : null,
+    nuevo: e.datos.loNuevo ? { id: e.datos.loNuevo.id, cuentaId: e.datos.loNuevo.cuentaId, monto: e.datos.loNuevo.monto, divisa: e.datos.loNuevo.divisa, de: e.datos.loNuevo.de, meta: `Hoy ${e.datos.loNuevo.hora} · ${e.datos.loNuevo.banco} · Ref. ${e.datos.loNuevo.referencia}` } : null,
     proximos,
     totalProximos: todas.length,
     verTodos: e.verTodosLosPagos,
     realizados: [...hechas, ...pasados],
-    tdc: { par: 'USD/MXN', compra: usd.compra, venta: usd.venta, tendencia: TENDENCIA_DIA, hora: HORA_TDC, enVivo: !e.congelado, otros: [{ par: 'EUR/MXN', base: 'EUR', compra: eurmxn.compra, venta: eurmxn.venta }] },
+    tdc: { par: parPrincipal, compra: principal.compra, venta: principal.venta, tendencia: arq.tendencia, hora: HORA_TDC, enVivo: !e.congelado, otros: otrosPares.map((par) => ({ par, base: par.split('/')[0] as Divisa, compra: e.tdcVivo[par].compra, venta: e.tdcVivo[par].venta })) },
     cuentas: ctas.map((c) => ({ id: c.id, nombre: c.nombre, mascara: c.mascara, saldo: c.saldo, divisa: c.divisa })),
     totalMXN,
   };
@@ -156,6 +169,28 @@ function nombreMovimiento(o: OperacionHecha): string {
   if (o.clase === 'venta') return `Venta a tu ${o.destino.nombre}`;
   return `Pasar a tu ${o.destino.nombre}`;
 }
+
+// ------------------------------------------------------ Pantalla inicial
+export interface VistaArquetipo {
+  id: ArquetipoId;
+  href: string;
+  empresa: string;
+  persona: string;
+  iniciales: string;
+  contexto: string[];
+  cta: string;
+}
+
+/** Tarjetas de la pantalla inicial: una por empresa de ejemplo, con su contexto y el CTA "Entrar como …". */
+export function vistaArquetipos(): VistaArquetipo[] {
+  return ARQUETIPO_IDS.map((id) => {
+    const a = arquetipoDe(id);
+    return { id, href: `/${id}`, empresa: a.empresa, persona: `${a.usuario.nombre} · ${a.usuario.rol}`, iniciales: a.usuario.iniciales, contexto: a.contexto, cta: `Entrar como ${a.usuario.nombre}` };
+  });
+}
+
+/** El estado base de un arquetipo (para calcular contexto fuera de la app, p. ej. en tests). */
+export const estadoBaseDe = (id: ArquetipoId) => estadoInicial('faltante', {}, id);
 
 // ------------------------------------------------------------------ Panel
 export interface VistaOpcionOrigen {

@@ -301,6 +301,9 @@ html, body { font-family: var(--font-sans); color: var(--fg-1); }
   --app-tour-pad:        8px;
   --app-radio:           20px;
   --app-dot:             8px;
+  --app-dot-sm:          6px;   /* viñeta de las líneas de contexto (pantalla inicial) */
+  --app-avatar:          40px;  /* avatar con iniciales (pantalla inicial) */
+  --app-arquetipo-w:     360px; /* tarjeta de arquetipo (pantalla inicial) */
   --app-icon-xs:         14px;
   --app-icon-sm:         16px;
   --app-icon-md:         18px;

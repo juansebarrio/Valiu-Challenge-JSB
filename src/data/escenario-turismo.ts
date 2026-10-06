@@ -1,6 +1,7 @@
 // src/data/escenario-turismo.ts — datos del flujo secundario (challenge 2 · turismo), frames S01–S08.
 // Misma forma que la importadora (src/data/escenario.ts). Marcado "inventado": no viene del brief; se eligió para completar la pantalla.
 import { centavos } from '@/lib/dinero';
+import * as fmt from '@/lib/format';
 import type { TablaPares } from '@/lib/fx';
 import { HOY, type Arquetipo, type Cobro, type Cuenta, type Destinatario, type PagoFuturo, type Realizado } from './escenario';
 
@@ -61,4 +62,9 @@ export const TURISMO: Arquetipo = {
   ordenPosiciones: ['eur', 'usd', 'mxn'],
   pagoPrincipal: 't-p1',
   entradaCobro: 'pago',
+  contexto: [
+    `La ${CUENTAS[2].nombre} está en cero: faltan ${fmt.monto(PAGOS[1].monto, 'EUR')}`,
+    `Cobra ${fmt.monto(LO_NUEVO.monto, 'MXN')} de ${LO_NUEVO.de} y paga al ${PAGOS[1].destinatario} el viernes`,
+    `Cierra hoy el precio; el dinero sale el ${fmt.diaCorto(PAGOS[1].fecha)}`,
+  ],
 };

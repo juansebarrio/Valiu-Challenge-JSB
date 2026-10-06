@@ -30,7 +30,12 @@ const TAMANOS: Record<TamanoBoton, string> = {
   'xl-14': 'min-h-(--app-button-h-xl) px-4 py-2 text-body-tall',
 };
 
-export const Boton: FC<BotonProps> = ({ variante = 'primary', tamano = 'large', className, type = 'button', ...rest }) => {
+/** Clases de un botón del DS, para aplicarlas a un enlace que navega (next/link) sin duplicar el componente. */
+export const clasesBoton = (variante: VarianteBoton = 'primary', tamano: TamanoBoton = 'large', className?: string) => {
   const esTexto = variante === 'link' || variante === 'link-caption' || variante === 'fila';
-  return <button type={type} className={[BASE, VARIANTES[variante], esTexto ? '' : TAMANOS[tamano], className].filter(Boolean).join(' ')} {...rest} />;
+  return [BASE, VARIANTES[variante], esTexto ? '' : TAMANOS[tamano], className].filter(Boolean).join(' ');
 };
+
+export const Boton: FC<BotonProps> = ({ variante = 'primary', tamano = 'large', className, type = 'button', ...rest }) => (
+  <button type={type} className={clasesBoton(variante, tamano, className)} {...rest} />
+);

@@ -1,7 +1,8 @@
 // src/state/escenarios.ts — estados iniciales por escenario (?escenario=) y los frames de /tablero/alta.
 import { estadoInicial, aplicar, pagoPorId, type Accion, type EstadoApp, type OpcionesInicio } from './estado';
 import { destinoDeDestinatario, ordenDePago } from './derivados';
-import type { EscenarioNombre } from '@/data/escenario';
+import type { ArquetipoId, EscenarioNombre } from '@/data/escenario';
+import { arquetipoDe } from '@/data/arquetipos';
 
 const JUE8 = new Date(2026, 9, 8);
 const VIE9 = new Date(2026, 9, 9);
@@ -13,11 +14,14 @@ const precio: Accion[] = [{ tipo: 'pedirPrecio' }];
 const TOKEN: Accion[] = [{ tipo: 'token', token: '123456' }, { tipo: 'confirmar' }, { tipo: 'confirmado', hora: HORA }];
 const vencer = (): Accion[] => Array.from({ length: 120 }, () => ({ tipo: 'tick' as const }));
 
-/** Estado inicial de cada escenario. "resuelta" y "pactada" parten del base y aplican el pago a Shenzhen. */
-export function estadoDeEscenario(nombre: EscenarioNombre, opciones: OpcionesInicio = {}): EstadoApp {
-  const base = estadoInicial(nombre, { ...opciones, recorrido: nombre === 'faltante' && opciones.recorrido });
-  if (nombre === 'resuelta') return aplicar([...abrirShenzhen(base), ...revision, ...precio, ...TOKEN, { tipo: 'volverInicio' }], base);
-  if (nombre === 'pactada') return aplicar([...abrirShenzhen(base), ...revision, { tipo: 'fechaValor', fecha: JUE8 }, ...precio, ...TOKEN, { tipo: 'volverInicio' }], base);
+/** Estado inicial de cada escenario. "resuelta" y "pactada" parten del base y pagan el pago principal del arquetipo desde la cuenta en pesos (hoy o en su vencimiento). */
+export function estadoDeEscenario(nombre: EscenarioNombre, opciones: OpcionesInicio = {}, arquetipo: ArquetipoId = 'importadora'): EstadoApp {
+  const base = estadoInicial(nombre, { ...opciones, recorrido: nombre === 'faltante' && opciones.recorrido }, arquetipo);
+  const pago = pagoPorId(base, arquetipoDe(arquetipo).pagoPrincipal);
+  if (!pago) return base;
+  const abrir: Accion[] = [{ tipo: 'abrirPanel', orden: ordenDePago(pago), origenId: 'mxn' }];
+  if (nombre === 'resuelta') return aplicar([...abrir, ...revision, ...precio, ...TOKEN, { tipo: 'volverInicio' }], base);
+  if (nombre === 'pactada') return aplicar([...abrir, ...revision, { tipo: 'fechaValor', fecha: pago.fecha }, ...precio, ...TOKEN, { tipo: 'volverInicio' }], base);
   return base;
 }
 
