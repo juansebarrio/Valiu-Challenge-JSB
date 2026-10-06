@@ -2,14 +2,14 @@
 // Recargar reinicia el escenario; /tablero/alta construye cada frame aplicando acciones sobre el estado inicial.
 import type { Centavos, TdcMicro } from '@/lib/dinero';
 import { leerCentavos } from '@/lib/dinero';
-import { cotizar, deducir, ejecutable, fechasLiquidacion, mismoDia, siguienteHabil, tdcDe, type Divisa, type TablaPares } from '@/lib/fx';
+import { cotizar, deducir, ejecutable, esFinDeSemana, fechasLiquidacion, mismoDia, siguienteHabil, tdcDe, type Divisa, type TablaPares } from '@/lib/fx';
 import { neto } from '@/lib/posicion';
 import * as fmt from '@/lib/format';
-import { HOY, DURACION_PRECIO_S, TDC_BASE, TOKEN_INCORRECTO, datosEscenario, type CuentaId, type Datos, type EscenarioNombre, type PagoFuturo } from '@/data/escenario';
-import { claseDe, cuentaPorId, cuentasActuales, motivoPorDefecto, ordenDePago, posicionesPorDivisa } from './derivados';
+import { AGENDAR_DIAS, HOY, DURACION_PRECIO_S, MOTIVOS, TDC_BASE, TOKEN_INCORRECTO, datosEscenario, type CuentaId, type Datos, type EscenarioNombre, type PagoFuturo } from '@/data/escenario';
+import { claseDe, cuentaPorId, cuentasActuales, finDeSemana, motivoPorDefecto, movimientoDe, ordenDePago, posicionesPorDivisa } from './derivados';
 
 export type Pestana = 'posicion' | 'operar';
-export type PasoPanel = 'destino' | 'origen' | 'revision' | 'precio' | 'confirmacion';
+export type PasoPanel = 'destino' | 'origen' | 'revision' | 'precio' | 'confirmacion' | 'cancelar';
 export type Precio = { estado: 'indicativo' } | { estado: 'fijo'; tdc: TdcMicro; venceEn: number } | { estado: 'vencido'; tdc: TdcMicro };
 
 export interface Destino {
@@ -35,10 +35,27 @@ export interface Orden {
   referencia: string;
 }
 
+/** Pago que se agenda desde el "+" de Movimientos: destino → datos → confirmación. */
+export interface Agenda {
+  destino: Destino | null;
+  montoTexto: string;
+  fecha: Date | null;
+  motivo: string | null;
+  referencia: string;
+  /** Id del pago creado al confirmar. */
+  creado: string | null;
+}
+
 export interface Panel {
   abierto: boolean;
-  tipo: 'pago' | 'depositar';
+  /** pago: flujo principal · depositar: CLABE · detalle: una fila de Movimientos · agendar: pago nuevo. */
+  tipo: 'pago' | 'depositar' | 'detalle' | 'agendar';
   paso: PasoPanel;
+  /** Fila de Movimientos abierta en el detalle (id del pago cargado, de la operación o del realizado). */
+  movimientoId: string | null;
+  /** Cancelación de una pactada en curso ("Cancelando…"). */
+  cancelando: boolean;
+  agenda: Agenda;
   orden: Orden | null;
   origenId: CuentaId | null;
   fechaValor: Date;
@@ -64,10 +81,12 @@ export interface OperacionHecha {
   recibe: Centavos;
   tdc: TdcMicro | null;
   fechaValor: Date;
-  estado: 'En proceso' | 'Pactada';
+  estado: 'En proceso' | 'Pactada' | 'Cancelada';
   motivo: string | null;
   referencia: string;
   hora: string;
+  /** Hora en que se canceló la pactada. */
+  cancelada?: string;
 }
 
 export type TipoOperar = 'comprar' | 'vender' | 'transferir';
@@ -123,7 +142,8 @@ export interface EstadoApp {
 export const ONBOARDING_PASOS = 4;
 export const VENCE_EN_DEMO = 5;
 
-const PANEL_CERRADO: Panel = { abierto: false, tipo: 'pago', paso: 'origen', orden: null, origenId: null, fechaValor: HOY, precio: { estado: 'indicativo' }, token: '', tokenError: null, confirmando: false, busquedaDestino: '' };
+const AGENDA_VACIA: Agenda = { destino: null, montoTexto: '', fecha: null, motivo: null, referencia: '', creado: null };
+const PANEL_CERRADO: Panel = { abierto: false, tipo: 'pago', paso: 'origen', movimientoId: null, cancelando: false, agenda: AGENDA_VACIA, orden: null, origenId: null, fechaValor: HOY, precio: { estado: 'indicativo' }, token: '', tokenError: null, confirmando: false, busquedaDestino: '' };
 
 export const OPERAR_INICIAL: Operar = {
   tipo: 'comprar', par: 'USD/MXN', parAbierto: false, montoIzq: '', montoDer: '', ladoActivo: null, editando: null,
@@ -189,6 +209,19 @@ export type Accion =
   | { tipo: 'confirmar' }
   | { tipo: 'confirmado'; hora: string }
   | { tipo: 'volverInicio' }
+  // Detalle de movimiento y cancelación de pactadas
+  | { tipo: 'abrirDetalle'; id: string }
+  | { tipo: 'cancelarPactada' }
+  | { tipo: 'confirmarCancelacion' }
+  | { tipo: 'pactadaCancelada'; hora: string }
+  // Agendar un pago
+  | { tipo: 'abrirAgendar' }
+  | { tipo: 'agendaDestino'; destino: Destino }
+  | { tipo: 'agendaMonto'; texto: string }
+  | { tipo: 'agendaFecha'; fecha: Date | null }
+  | { tipo: 'agendaMotivo'; motivo: string }
+  | { tipo: 'agendaReferencia'; referencia: string }
+  | { tipo: 'agendar' }
   // Onboarding
   | { tipo: 'onboardingIniciar' }
   | { tipo: 'onboardingSiguiente' }
@@ -305,6 +338,39 @@ export function avisoDe(e: EstadoApp, op: OperacionHecha): Aviso {
   if (op.clase === 'compra') return { tipo: 'success', texto: `Compraste ${recibe}.${alcanza}` };
   if (op.clase === 'venta') return { tipo: 'success', texto: `Vendiste ${fmt.monto(op.pagas, cuentaPorId(e, op.origenId)!.divisa)}.${alcanza}` };
   return { tipo: 'success', texto: `Pasaste ${recibe} a tu ${op.destino.nombre}.${alcanza}` };
+}
+
+/** Aviso del inicio al cancelar una pactada: el pago cargado vuelve a Próximos; una operación a cuenta propia simplemente no sale. */
+function avisoCancelacion(e: EstadoApp, op: OperacionHecha): Aviso {
+  const recibe = fmt.monto(op.recibe, op.destino.divisa);
+  if (op.pagoId) return { tipo: 'info', texto: `${fmt.oracion(`Cancelaste el pago pactado a ${op.destino.nombre}`)} Vuelve a Próximos como pendiente.` };
+  if (op.clase === 'compra') return { tipo: 'info', texto: `Cancelaste la compra pactada de ${recibe}. No sale dinero de tu ${cuentaPorId(e, op.origenId)!.nombre}.` };
+  if (op.clase === 'venta') return { tipo: 'info', texto: `Cancelaste la venta pactada de ${fmt.monto(op.pagas, cuentaPorId(e, op.origenId)!.divisa)}. No sale dinero de tu ${cuentaPorId(e, op.origenId)!.nombre}.` };
+  return { tipo: 'info', texto: `Cancelaste el paso pactado de ${recibe} a tu ${op.destino.nombre}. No sale dinero de tu ${cuentaPorId(e, op.origenId)!.nombre}.` };
+}
+
+const inicioDelDia = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+
+/** Última fecha de vencimiento que acepta "Agendar un pago". */
+export const fechaMaximaAgendable = () => { const d = inicioDelDia(HOY); d.setDate(d.getDate() + AGENDAR_DIAS); return d; };
+
+/** Un vencimiento se puede agendar si es un día hábil entre hoy y AGENDAR_DIAS días después. */
+export function fechaAgendable(f: Date): 'ok' | 'fin-de-semana' | 'fuera-de-rango' {
+  const dia = inicioDelDia(f).getTime();
+  if (dia < inicioDelDia(HOY).getTime() || dia > fechaMaximaAgendable().getTime()) return 'fuera-de-rango';
+  return esFinDeSemana(f) ? 'fin-de-semana' : 'ok';
+}
+
+/** El pago que crearía "Agendar" con lo cargado, o null si falta algo. */
+export function pagoAgendado(e: Pick<EstadoApp, 'datos' | 'panel'>): PagoFuturo | null {
+  const { destino, montoTexto, fecha, motivo, referencia } = e.panel.agenda;
+  const monto = leerCentavos(montoTexto);
+  if (!destino || destino.tipo !== 'tercero' || monto == null || monto <= 0 || !fecha || !motivo || fechaAgendable(fecha) !== 'ok') return null;
+  const n = e.datos.pagosFuturos.filter((p) => p.id.startsWith('a')).length + 1;
+  return {
+    id: `a${n}`, destinatarioId: destino.id, destinatario: destino.nombre, monto, divisa: destino.divisa, fecha: inicioDelDia(fecha), referencia: referencia.trim(), motivo,
+    cuentaDestino: { divisa: destino.divisa, banco: destino.banco, mascara: destino.mascara },
+  };
 }
 
 const ERROR_TOKEN = 'El código no coincide. Revisa tu token y vuelve a intentarlo.';
@@ -425,9 +491,56 @@ export function reducer(e: EstadoApp, a: Accion): EstadoApp {
       return { ...e, operaciones: [hecha, ...e.operaciones], panel: { ...e.panel, paso: 'confirmacion', precio: { estado: 'indicativo' }, token: '', tokenError: null, confirmando: false } };
     }
     case 'volverInicio': {
+      if (e.panel.tipo === 'agendar') {
+        const pago = e.panel.agenda.creado ? pagoPorId(e, e.panel.agenda.creado) : null;
+        const aviso: Aviso | null = pago ? { tipo: 'info', texto: `Agendaste el pago a ${pago.destinatario} por ${fmt.monto(pago.monto, pago.divisa)} para el ${fmt.diaCorto(pago.fecha)}.` } : e.aviso;
+        return { ...e, panel: PANEL_CERRADO, aviso, pestana: 'posicion' };
+      }
+      if (e.panel.tipo !== 'pago') return { ...e, panel: PANEL_CERRADO, pestana: 'posicion' };
       const ultima = e.operaciones[0];
       const aviso = ultima && e.panel.paso === 'confirmacion' ? avisoDe(e, ultima) : e.aviso;
       return { ...e, panel: PANEL_CERRADO, aviso, pestana: 'posicion' };
+    }
+
+    // ------------------------------------- Detalle de movimiento y cancelación
+    case 'abrirDetalle':
+      return { ...e, onboarding: { ...e.onboarding, activo: false }, operar: cerrarSelectores(e.operar), panel: { ...PANEL_CERRADO, abierto: true, tipo: 'detalle', paso: 'origen', movimientoId: a.id } };
+    case 'cancelarPactada': {
+      const mov = e.panel.tipo === 'detalle' && e.panel.movimientoId ? movimientoDe(e, e.panel.movimientoId) : null;
+      return mov?.tipo === 'operacion' && mov.op.estado === 'Pactada' ? { ...e, panel: { ...e.panel, paso: 'cancelar', cancelando: false } } : e;
+    }
+    case 'confirmarCancelacion':
+      return e.panel.tipo === 'detalle' && e.panel.paso === 'cancelar' && !e.panel.cancelando ? { ...e, panel: { ...e.panel, cancelando: true } } : e;
+    case 'pactadaCancelada': {
+      const mov = e.panel.cancelando && e.panel.movimientoId ? movimientoDe(e, e.panel.movimientoId) : null;
+      if (mov?.tipo !== 'operacion' || mov.op.estado !== 'Pactada') return { ...e, panel: { ...e.panel, cancelando: false } };
+      const operaciones = e.operaciones.map((o) => (o.id === mov.op.id ? { ...o, estado: 'Cancelada' as const, cancelada: a.hora } : o));
+      return { ...e, operaciones, panel: PANEL_CERRADO, aviso: avisoCancelacion(e, mov.op), pestana: 'posicion' };
+    }
+
+    // ------------------------------------------------------ Agendar un pago
+    case 'abrirAgendar':
+      return { ...e, onboarding: { ...e.onboarding, activo: false }, operar: cerrarSelectores(e.operar), pestana: 'posicion', panel: { ...PANEL_CERRADO, abierto: true, tipo: 'agendar', paso: 'destino' } };
+    case 'agendaDestino':
+      return { ...e, panel: { ...e.panel, paso: 'revision', busquedaDestino: '', agenda: { ...e.panel.agenda, destino: a.destino, motivo: e.panel.agenda.motivo ?? MOTIVOS[0] } } };
+    case 'agendaMonto':
+      return { ...e, panel: { ...e.panel, agenda: { ...e.panel.agenda, montoTexto: a.texto.replace(/[^\d.,]/g, '') } } };
+    case 'agendaFecha':
+      return { ...e, panel: { ...e.panel, agenda: { ...e.panel.agenda, fecha: a.fecha } } };
+    case 'agendaMotivo':
+      return { ...e, panel: { ...e.panel, agenda: { ...e.panel.agenda, motivo: a.motivo } } };
+    case 'agendaReferencia':
+      return { ...e, panel: { ...e.panel, agenda: { ...e.panel.agenda, referencia: a.referencia } } };
+    case 'agendar': {
+      const pago = e.panel.tipo === 'agendar' ? pagoAgendado(e) : null;
+      if (!pago) return e;
+      const fueraDeLaSemana = pago.fecha.getTime() > finDeSemana(HOY).getTime();
+      return {
+        ...e,
+        datos: { ...e.datos, pagosFuturos: [...e.datos.pagosFuturos, pago] },
+        verTodosLosPagos: e.verTodosLosPagos || fueraDeLaSemana,
+        panel: { ...e.panel, paso: 'confirmacion', agenda: { ...e.panel.agenda, creado: pago.id } },
+      };
     }
 
     // ----------------------------------------------------------- Onboarding

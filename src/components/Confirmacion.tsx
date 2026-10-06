@@ -3,6 +3,7 @@ import type { VistaConfirmacion } from '@/state/vistas';
 import { Badge } from './ui/Badge';
 import { Alerta } from './ui/Alerta';
 import { Icono } from './ui/Icono';
+import { ListaDetalle } from './ui/ListaDetalle';
 
 /** "Pago en proceso" + badge En proceso + detalle · pactada: "Pago pactado" + badge Pactada + texto del pacto + aviso de fondeo. */
 export const Confirmacion: FC<{ vista: VistaConfirmacion }> = ({ vista: v }) => (
@@ -13,14 +14,7 @@ export const Confirmacion: FC<{ vista: VistaConfirmacion }> = ({ vista: v }) => 
       {v.estado === 'pactada' ? <Badge tono="pactada">Pactada</Badge> : <Badge tono="warning">En proceso</Badge>}
     </div>
     {v.texto ? <p className="text-pretty text-center text-body tabular-nums">{v.texto}</p> : null}
-    <dl className="flex flex-col rounded-sm border border-app-divider px-4 py-1 tabular-nums">
-      {v.detalle.map((d) => (
-        <div key={d.k} className="flex justify-between gap-4 border-b border-app-divider py-2.5 last:border-b-0">
-          <dt className="text-body text-app-ink-2">{d.k}</dt>
-          <dd className="text-right text-body font-semibold">{d.v}</dd>
-        </div>
-      ))}
-    </dl>
+    <ListaDetalle filas={v.detalle} />
     {v.fondeo ? (
       <Alerta tono="info"><span className="text-pretty text-body text-app-ink tabular-nums">{v.fondeo}</span></Alerta>
     ) : (

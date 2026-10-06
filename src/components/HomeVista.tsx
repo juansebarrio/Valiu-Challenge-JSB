@@ -21,6 +21,8 @@ import { CajaTdcValiu } from './CajaTdcValiu';
 import { PrecioEjecutable } from './PrecioEjecutable';
 import { CampoToken } from './CampoToken';
 import { Confirmacion } from './Confirmacion';
+import { DetalleMovimiento } from './DetalleMovimiento';
+import { AgendarPago } from './AgendarPago';
 import { SelectorDestino } from './SelectorDestino';
 import { PasoOnboarding, PASOS_ONBOARDING } from './PasoOnboarding';
 import { Boton } from './ui/Boton';
@@ -29,6 +31,7 @@ import { Alerta } from './ui/Alerta';
 import { Icono } from './ui/Icono';
 import { Toast } from './ui/Toast';
 import { CampoSelector, CampoTexto, OpcionLista } from './ui/Campo';
+import { ListaDetalle } from './ui/ListaDetalle';
 
 export interface HomeVistaProps {
   estado: EstadoApp;
@@ -135,8 +138,9 @@ export const HomeVista: FC<HomeVistaProps> = ({ estado, dispatch, modo = 'app', 
                   totalProximos={home.totalProximos}
                   verTodos={home.verTodos}
                   onVerTodos={(valor) => dispatch({ tipo: 'verTodosLosPagos', valor })}
-                  proximos={home.proximos.map((p) => ({ fecha: p.fecha, nombre: p.nombre, detalle: p.detalle, monto: p.monto, divisa: p.divisa, estado: p.badge, onPagar: p.orden ? () => dispatch({ tipo: 'abrirPanel', orden: p.orden! }) : undefined }))}
-                  realizados={home.realizados.map((r) => ({ fecha: r.fecha, nombre: r.nombre, detalle: r.detalle, monto: r.monto, divisa: r.divisa, estado: r.badge }))}
+                  onAgendar={() => dispatch({ tipo: 'abrirAgendar' })}
+                  proximos={home.proximos.map((p) => ({ fecha: p.fecha, nombre: p.nombre, detalle: p.detalle, monto: p.monto, divisa: p.divisa, estado: p.badge, onPagar: p.orden ? () => dispatch({ tipo: 'abrirPanel', orden: p.orden! }) : undefined, onAbrir: () => dispatch({ tipo: 'abrirDetalle', id: p.id }) }))}
+                  realizados={home.realizados.map((r) => ({ fecha: r.fecha, nombre: r.nombre, detalle: r.detalle, monto: r.monto, divisa: r.divisa, estado: r.badge, onAbrir: () => dispatch({ tipo: 'abrirDetalle', id: r.id }) }))}
                 />
               </div>
               <div className="flex min-w-0 flex-col gap-5">
@@ -171,6 +175,7 @@ const PanelContenido: FC<{ vista: VistaPanel; estado: EstadoApp; dispatch: (a: A
   const [motivoAbierto, setMotivoAbierto] = useState(false);
   const noDisponible = () => dispatch({ tipo: 'toast', texto: AVISO_FUERA_DEL_PROTOTIPO });
   const cerrar = () => dispatch(v.paso === 'confirmacion' ? { tipo: 'volverInicio' } : { tipo: 'cerrarPanel' });
+  const pagar = () => { if (v.detalle?.orden) dispatch({ tipo: 'abrirPanel', orden: v.detalle.orden }); };
   const primario = () => {
     if (!v.primario.habilitado) return;
     switch (v.primario.accion) {
@@ -179,6 +184,9 @@ const PanelContenido: FC<{ vista: VistaPanel; estado: EstadoApp; dispatch: (a: A
       case 'confirmar': dispatch({ tipo: 'confirmar' }); break;
       case 'volverInicio': dispatch({ tipo: 'volverInicio' }); break;
       case 'cerrar': dispatch({ tipo: 'cerrarPanel' }); break;
+      case 'pagar': pagar(); break;
+      case 'agendar': dispatch({ tipo: 'agendar' }); break;
+      case 'confirmarCancelacion': dispatch({ tipo: 'confirmarCancelacion' }); break;
     }
   };
   const secundario = v.secundario
@@ -191,6 +199,8 @@ const PanelContenido: FC<{ vista: VistaPanel; estado: EstadoApp; dispatch: (a: A
           case 'volverDestino': dispatch({ tipo: 'irPaso', paso: 'destino' }); break;
           case 'cancelar': dispatch({ tipo: 'cerrarPanel' }); break;
           case 'comprobante': noDisponible(); break;
+          case 'cancelarPactada': dispatch({ tipo: 'cancelarPactada' }); break;
+          case 'pagar': pagar(); break;
         }
       },
     }
@@ -201,23 +211,23 @@ const PanelContenido: FC<{ vista: VistaPanel; estado: EstadoApp; dispatch: (a: A
       {v.depositar ? (
         <>
           <p className="text-body text-app-ink-2">Transfiere desde cualquier banco a esta cuenta. El dinero se acredita el mismo día hábil.</p>
-          <dl className="flex flex-col rounded-sm border border-app-divider px-4 py-1 tabular-nums">
-            <div className="flex justify-between gap-4 border-b border-app-divider py-2.5"><dt className="text-body text-app-ink-2">Cuenta</dt><dd className="text-body font-semibold">{v.depositar.cuenta}</dd></div>
-            <div className="flex justify-between gap-4 border-b border-app-divider py-2.5"><dt className="text-body text-app-ink-2">Banco</dt><dd className="text-body font-semibold">{v.depositar.banco}</dd></div>
-            <div className="flex justify-between gap-4 py-2.5"><dt className="text-body text-app-ink-2">CLABE</dt><dd className="text-body font-semibold">{v.depositar.clabe.replace(/(\d{4})(?=\d)/g, '$1 ')}</dd></div>
-          </dl>
+          <ListaDetalle filas={[{ k: 'Cuenta', v: v.depositar.cuenta }, { k: 'Banco', v: v.depositar.banco }, { k: 'CLABE', v: v.depositar.clabe.replace(/(\d{4})(?=\d)/g, '$1 ') }]} />
           <Boton variante="secondary" tamano="large" className="self-start" onClick={() => { navigator.clipboard?.writeText(v.depositar!.clabe).then(() => dispatch({ tipo: 'toast', texto: 'CLABE copiada.' })).catch(() => dispatch({ tipo: 'toast', texto: 'No se pudo copiar la CLABE.' })); }}>Copiar CLABE</Boton>
         </>
       ) : null}
 
       {v.paso === 'destino' && v.destino ? (
         <>
-          <h3 className="text-h3 font-semibold">¿A quién le pagas?</h3>
-          <SelectorDestino modo="lista" grupos={v.destino.grupos} busqueda={v.destino.busqueda} onBusqueda={(t) => dispatch({ tipo: 'busquedaDestino', texto: t })} onElegir={(d) => dispatch({ tipo: 'elegirDestino', destino: d.destino, pago: d.pago })} onAgregar={noDisponible} />
+          <h3 className="text-h3 font-semibold">{v.destino.titulo}</h3>
+          <SelectorDestino modo="lista" grupos={v.destino.grupos} busqueda={v.destino.busqueda} onBusqueda={(t) => dispatch({ tipo: 'busquedaDestino', texto: t })} onElegir={(d) => dispatch(v.tipo === 'agendar' ? { tipo: 'agendaDestino', destino: d.destino } : { tipo: 'elegirDestino', destino: d.destino, pago: d.pago })} onAgregar={noDisponible} />
         </>
       ) : null}
 
-      {v.paso === 'origen' && !v.depositar ? (
+      {v.tipo === 'detalle' && v.detalle ? <DetalleMovimiento vista={v.detalle} /> : null}
+      {v.tipo === 'agendar' && v.paso === 'revision' && v.agenda ? <AgendarPago vista={v.agenda} dispatch={dispatch} /> : null}
+      {v.tipo === 'agendar' && v.paso === 'confirmacion' && v.detalle ? <DetalleMovimiento vista={v.detalle} /> : null}
+
+      {v.tipo === 'pago' && v.paso === 'origen' ? (
         <>
           <h3 className="text-h3 font-semibold">¿Desde qué cuenta pagas?</h3>
           <GrupoOrigen opciones={v.origenes.map((o) => ({ id: o.id, cuenta: o.nombre, saldo: o.saldo, pagas: o.pagas, consecuencia: o.consecuencia, seleccionada: o.seleccionada }))} valor={estado.panel.origenId} onCambiar={(id) => dispatch({ tipo: 'elegirOrigen', origenId: id as CuentaId })} />

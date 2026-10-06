@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { aplicar, estadoInicial, pagoPorId, type Accion } from './estado';
-import { ordenDePago } from './derivados';
+import { destinoDeDestinatario, ordenDePago } from './derivados';
 import { estadoDeEscenario } from './escenarios';
 import { vistaHome, vistaPanel, vistaOperar } from './vistas';
 import { centavos } from '@/lib/dinero';
@@ -371,5 +371,151 @@ describe('onboarding y tipo de cambio en vivo', () => {
   it('congelar fija el indicativo', () => {
     const e = estadoInicial('faltante', { congelado: true });
     expect(aplicar([{ tipo: 'tdcVivo', pares: { ...e.tdcVivo, 'USD/MXN': { compra: 18_095_000, venta: 18_035_000 } } }], e).tdcVivo['USD/MXN'].compra).toBe(18_091_183);
+  });
+});
+
+describe('detalle de movimiento en el panel', () => {
+  it('fila de un pago pendiente: datos del pago, equivalente en pesos y "Pagar" que abre el flujo', () => {
+    const e = aplicar([{ tipo: 'abrirDetalle', id: 'p1' }], base);
+    const p = vistaPanel(e)!;
+    expect(p.tipo).toBe('detalle');
+    expect(p.titulo).toBe('Shenzhen Parts Co.');
+    expect(p.sub).toBe('1,500.00 USD · vence jue 8 · Factura 0457');
+    expect(p.detalle?.titulo).toBe('Pago pendiente');
+    expect(p.detalle?.filas).toEqual([
+      { k: 'Destinatario', v: 'Shenzhen Parts Co. · HSBC Hong Kong **** 4410' },
+      { k: 'Monto', v: '1,500.00 USD' },
+      { k: 'Vence', v: 'jueves 8 de octubre' },
+      { k: 'Motivo', v: 'Pago a proveedores' },
+      { k: 'Referencia', v: 'Factura 0457' },
+      { k: 'Con pesos, hoy', v: '≈ 27,136.77 MXN' },
+    ]);
+    expect(p.primario).toEqual({ label: 'Pagar', habilitado: true, accion: 'pagar' });
+    const pago = aplicar([{ tipo: 'abrirPanel', orden: p.detalle!.orden! }], e);
+    expect(vistaPanel(pago)).toMatchObject({ tipo: 'pago', paso: 'origen', titulo: 'Pagar a Shenzhen Parts Co.' });
+  });
+  it('fila de un realizado: cobro de Comercial Norte con comprobante', () => {
+    const p = vistaPanel(aplicar([{ tipo: 'abrirDetalle', id: 'r1' }], base))!;
+    expect(p.titulo).toBe('Cobro de Comercial Norte');
+    expect(p.sub).toBe('Hoy 10:42 · BBVA México **** 5678');
+    expect(p.detalle).toMatchObject({ clase: 'cobro', titulo: 'Cobro confirmado', badge: { texto: 'Confirmada', tono: 'success' }, monto: centavos(180_000) });
+    expect(p.detalle?.filas.map((f) => f.k)).toEqual(['De', 'Monto', 'Fecha', 'Referencia', 'A', 'Estado']);
+    expect(p.secundario).toEqual({ label: 'Descargar comprobante', accion: 'comprobante' });
+    expect(p.primario.accion).toBe('cerrar');
+  });
+  it('fila de un pago en proceso (escenario resuelta)', () => {
+    const p = vistaPanel(aplicar([{ tipo: 'abrirDetalle', id: 'op1' }], estadoDeEscenario('resuelta')))!;
+    expect(p.titulo).toBe('Shenzhen Parts Co.');
+    expect(p.detalle).toMatchObject({ clase: 'proceso', titulo: 'Pago en proceso', monto: centavos(-27_138.62), divisa: 'MXN' });
+    expect(p.detalle?.filas).toContainEqual({ k: 'TDC', v: '18.092415' });
+  });
+  it('Esc / Cerrar vuelve al inicio sin tocar nada', () => {
+    const e = aplicar([{ tipo: 'abrirDetalle', id: 'p1' }, { tipo: 'cerrarPanel' }], base);
+    expect(e.panel.abierto).toBe(false);
+    expect(vistaHome(e)).toEqual(vistaHome(base));
+  });
+});
+
+describe('cancelar un pago pactado', () => {
+  const pactada = estadoDeEscenario('pactada');
+  const detalle = aplicar([{ tipo: 'abrirDetalle', id: 'p1' }], pactada);
+  it('el detalle de la pactada ofrece "Cancelar pacto" y muestra el fondeo', () => {
+    const p = vistaPanel(detalle)!;
+    expect(p.sub).toBe('27,138.62 MXN · sale el jue 8 · Factura 0457');
+    expect(p.detalle).toMatchObject({ clase: 'pactada', titulo: 'Pago pactado', badge: { texto: 'Pactada', tono: 'pactada' } });
+    expect(p.detalle?.fondeo).toBe('Ten 27,138.62 MXN en tu Cuenta Principal MXN el jue 8 para que el pago salga.');
+    expect(p.secundario).toEqual({ label: 'Cancelar pacto', accion: 'cancelarPactada' });
+  });
+  it('pregunta antes de cancelar y "Cancelando…" mientras confirma', () => {
+    const q = aplicar([{ tipo: 'cancelarPactada' }], detalle);
+    const p = vistaPanel(q)!;
+    expect(p.paso).toBe('cancelar');
+    expect(p.detalle?.pregunta).toEqual({ titulo: '¿Cancelar el pago pactado?', texto: 'Se libera el precio de 18.092415 que cerraste hoy. El pago a Shenzhen Parts Co. vuelve a Próximos como pendiente y no sale dinero de tu Cuenta Principal MXN el jue 8.' });
+    expect(p.primario).toEqual({ label: 'Sí, cancelar', habilitado: true, accion: 'confirmarCancelacion' });
+    expect(vistaPanel(aplicar([{ tipo: 'confirmarCancelacion' }], q))!.primario).toEqual({ label: 'Cancelando…', habilitado: false, accion: 'confirmarCancelacion' });
+    expect(vistaPanel(aplicar([{ tipo: 'irPaso', paso: 'origen' }], q))!.paso).toBe('origen');
+  });
+  it('al cancelar, el pago vuelve a Próximos, MXN deja de tener pactadas y queda el aviso', () => {
+    const e = aplicar([{ tipo: 'cancelarPactada' }, { tipo: 'confirmarCancelacion' }, { tipo: 'pactadaCancelada', hora: '10:44' }], detalle);
+    expect(e.panel.abierto).toBe(false);
+    expect(e.aviso).toEqual({ tipo: 'info', texto: 'Cancelaste el pago pactado a Shenzhen Parts Co. Vuelve a Próximos como pendiente.' });
+    const h = vistaHome(e);
+    expect(h.proximos[0].nombre).toBe('Shenzhen Parts Co.');
+    expect(h.proximos[0].badge).toBeUndefined();
+    expect(h.proximos[0].orden?.pagoId).toBe('p1');
+    expect(pos(e, 'USD').resultado).toEqual({ tipo: 'faltan', monto: centavos(1000) });
+    expect(pos(e, 'MXN').pactadasLiquidar).toBeNull();
+    expect(pos(e, 'MXN').saldo).toBe(centavos(1_180_000));
+    expect(h.realizados[0]).toMatchObject({ nombre: 'Shenzhen Parts Co.', badge: { texto: 'Cancelada', tono: 'neutral' } });
+    const d = vistaPanel(aplicar([{ tipo: 'abrirDetalle', id: 'op1' }], e))!;
+    expect(d.detalle).toMatchObject({ clase: 'cancelada', titulo: 'Pago cancelado' });
+    expect(d.detalle?.filas).toContainEqual({ k: 'Cancelada', v: 'Hoy 10:44' });
+  });
+  it('no se puede cancelar lo que no está pactado', () => {
+    const e = aplicar([{ tipo: 'abrirDetalle', id: 'p1' }, { tipo: 'cancelarPactada' }], base);
+    expect(e.panel.paso).toBe('origen');
+    expect(aplicar([{ tipo: 'confirmarCancelacion' }, { tipo: 'pactadaCancelada', hora: '10:44' }], e).operaciones).toEqual([]);
+  });
+});
+
+describe('agendar un pago desde el "+" de Movimientos', () => {
+  const asia = destinoDeDestinatario(base.datos.destinatarios.find((d) => d.id === 'ap')!);
+  const VIE9 = new Date(2026, 9, 9);
+  const abierto = aplicar([{ tipo: 'abrirAgendar' }], base);
+  it('empieza en el selector de destino, solo con destinatarios', () => {
+    const p = vistaPanel(abierto)!;
+    expect(p).toMatchObject({ tipo: 'agendar', paso: 'destino', titulo: 'Agendar un pago' });
+    expect(p.destino?.grupos.map((g) => g.titulo)).toEqual(['Destinatarios']);
+    expect(p.primario.habilitado).toBe(false);
+  });
+  it('"Agendar" se habilita solo con monto, fecha hábil y motivo', () => {
+    const conDestino = aplicar([{ tipo: 'agendaDestino', destino: asia }], abierto);
+    expect(vistaPanel(conDestino)!.agenda).toMatchObject({ destinatario: 'Asia Packaging', divisa: 'USD', motivo: 'Pago a proveedores', fechaMin: '2026-10-06', fechaMax: '2027-01-04' });
+    expect(vistaPanel(conDestino)!.primario).toEqual({ label: 'Agendar', habilitado: false, accion: 'agendar' });
+    const sabado = aplicar([{ tipo: 'agendaMonto', texto: '250' }, { tipo: 'agendaFecha', fecha: new Date(2026, 9, 10) }], conDestino);
+    expect(vistaPanel(sabado)!.agenda?.fechaError).toBe('Elige un día hábil.');
+    expect(vistaPanel(sabado)!.primario.habilitado).toBe(false);
+    const ayer = aplicar([{ tipo: 'agendaFecha', fecha: new Date(2026, 9, 5) }], sabado);
+    expect(vistaPanel(ayer)!.agenda?.fechaError).toBe('Elige una fecha entre hoy y el lunes 4 de enero.');
+    const cero = aplicar([{ tipo: 'agendaMonto', texto: '0' }, { tipo: 'agendaFecha', fecha: VIE9 }], sabado);
+    expect(vistaPanel(cero)!.agenda?.montoError).toBe('Escribe un monto mayor a 0.');
+    const listo = aplicar([{ tipo: 'agendaMonto', texto: '250' }], cero);
+    expect(vistaPanel(listo)!.agenda?.resumen).toBe('Vence el viernes 9 de octubre. Lo verás en Próximos y podrás pagarlo cuando quieras.');
+    expect(vistaPanel(listo)!.primario.habilitado).toBe(true);
+    expect(aplicar([{ tipo: 'agendar' }], cero).datos.pagosFuturos).toHaveLength(10);
+  });
+  const lleno = aplicar([{ tipo: 'agendaDestino', destino: asia }, { tipo: 'agendaMonto', texto: '250' }, { tipo: 'agendaFecha', fecha: VIE9 }, { tipo: 'agendaReferencia', referencia: 'Pedido AP-121' }], abierto);
+  it('al agendar, el pago entra a Próximos, mueve la posición y la confirmación ofrece "Pagar ahora"', () => {
+    const e = aplicar([{ tipo: 'agendar' }], lleno);
+    const p = vistaPanel(e)!;
+    expect(p).toMatchObject({ tipo: 'agendar', paso: 'confirmacion', sub: '250.00 USD · vence vie 9 · Pedido AP-121' });
+    expect(p.detalle).toMatchObject({ clase: 'agendado', titulo: 'Pago agendado', badge: { texto: 'Pendiente', tono: 'neutral' } });
+    expect(p.primario).toEqual({ label: 'Volver al inicio', habilitado: true, accion: 'volverInicio' });
+    expect(p.secundario).toEqual({ label: 'Pagar ahora', accion: 'pagar' });
+    expect(p.detalle?.orden).toMatchObject({ pagoId: 'a1', monto: centavos(250), conFactura: true });
+    const inicio = aplicar([{ tipo: 'volverInicio' }], e);
+    expect(inicio.aviso).toEqual({ tipo: 'info', texto: 'Agendaste el pago a Asia Packaging por 250.00 USD para el vie 9.' });
+    const h = vistaHome(inicio);
+    expect(h.proximos.map((f) => f.nombre)).toEqual(['Shenzhen Parts Co.', 'Logística Pacífico', 'Asia Packaging', 'Asia Packaging']);
+    expect(h.totalProximos).toBe(11);
+    expect(pos(inicio, 'USD').resultado).toEqual({ tipo: 'faltan', monto: centavos(1250) });
+    expect(pos(inicio, 'USD').proyeccion?.serie).toEqual([2000, 2000, 500, -1250].map(centavos));
+    const pagoAhora = aplicar([{ tipo: 'abrirPanel', orden: p.detalle!.orden! }], e);
+    expect(vistaPanel(pagoAhora)).toMatchObject({ tipo: 'pago', paso: 'origen', titulo: 'Pagar a Asia Packaging', sub: '250.00 USD · vence vie 9 · Pedido AP-121' });
+  });
+  it('un vencimiento fuera de la semana despliega "Ver los N pagos futuros" y se abre desde su fila', () => {
+    const e = aplicar([{ tipo: 'agendaFecha', fecha: new Date(2026, 9, 21) }, { tipo: 'agendar' }, { tipo: 'volverInicio' }], lleno);
+    expect(e.verTodosLosPagos).toBe(true);
+    const h = vistaHome(e);
+    expect(h.proximos.at(-1)).toMatchObject({ id: 'a1', nombre: 'Asia Packaging', fecha: 'mié 21' });
+    expect(pos(e, 'USD').pagosFuturos).toEqual({ cantidad: 4, total: centavos(3250) });
+    expect(vistaPanel(aplicar([{ tipo: 'abrirDetalle', id: 'a1' }], e))!.detalle).toMatchObject({ clase: 'agendado', titulo: 'Pago agendado' });
+  });
+  it('el "+" cierra el onboarding y Cancelar no deja rastro', () => {
+    const conRecorrido = aplicar([{ tipo: 'onboardingIniciar' }, { tipo: 'abrirAgendar' }], base);
+    expect(conRecorrido.onboarding.activo).toBe(false);
+    const e = aplicar([{ tipo: 'agendaDestino', destino: asia }, { tipo: 'agendaMonto', texto: '250' }, { tipo: 'cerrarPanel' }], abierto);
+    expect(e.datos.pagosFuturos).toHaveLength(10);
+    expect(vistaPanel(e)).toBeNull();
   });
 });

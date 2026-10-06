@@ -3,7 +3,7 @@
 import type { Centavos } from '@/lib/dinero';
 import { deducir, type Divisa } from '@/lib/fx';
 import { agregar, diasSemana, posicion, proyeccion, type Movimiento, type Posicion } from '@/lib/posicion';
-import { HOY, type Cuenta, type CuentaId, type Destinatario, type PagoFuturo } from '@/data/escenario';
+import { HOY, type Cuenta, type CuentaId, type Destinatario, type PagoFuturo, type Realizado } from '@/data/escenario';
 import type { Destino, EstadoApp, OperacionHecha, Orden } from './estado';
 
 export interface CuentaActual extends Cuenta {
@@ -31,7 +31,7 @@ export interface PagoPendiente extends PagoFuturo {
 export function pagosPendientes(e: Pick<EstadoApp, 'datos' | 'operaciones'>): PagoPendiente[] {
   return e.datos.pagosFuturos
     .map((p) => {
-      const op = e.operaciones.find((o) => o.pagoId === p.id) ?? null;
+      const op = e.operaciones.find((o) => o.pagoId === p.id && o.estado !== 'Cancelada') ?? null;
       if (op?.estado === 'En proceso') return null;
       return { ...p, pactada: op };
     })
@@ -40,6 +40,29 @@ export function pagosPendientes(e: Pick<EstadoApp, 'datos' | 'operaciones'>): Pa
 }
 
 export const pactadas = (e: Pick<EstadoApp, 'operaciones'>) => e.operaciones.filter((o) => o.estado === 'Pactada');
+
+/** Lo que hay detrás de una fila de Movimientos: un pago cargado (pendiente), una operación hecha (en proceso, pactada o cancelada) o un realizado del escenario. */
+export type MovimientoDetalle =
+  | { tipo: 'pago'; pago: PagoPendiente }
+  | { tipo: 'operacion'; op: OperacionHecha }
+  | { tipo: 'realizado'; realizado: Realizado };
+
+/** La fila de un pago pactado lleva el id del pago cargado; la de una operación propia o cancelada, el id de la operación. */
+export function movimientoDe(e: Pick<EstadoApp, 'datos' | 'operaciones'>, id: string): MovimientoDetalle | null {
+  const op = e.operaciones.find((o) => o.id === id) ?? e.operaciones.find((o) => o.pagoId === id && o.estado !== 'Cancelada') ?? null;
+  if (op) return { tipo: 'operacion', op };
+  const pago = pagosPendientes(e).find((p) => p.id === id);
+  if (pago) return { tipo: 'pago', pago };
+  const r = e.datos.realizados.find((x) => x.id === id);
+  return r ? { tipo: 'realizado', realizado: r } : null;
+}
+
+/** Último día (23:59:59) de la semana hábil de HOY: hasta ahí llega "Próximos" sin desplegar el resto. */
+export function finDeSemana(hoy: Date): Date {
+  const d = new Date(hoy);
+  d.setDate(d.getDate() + Math.max(0, 5 - d.getDay()));
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59);
+}
 
 /** Posición = saldo + pactadas por recibir − pagos futuros pendientes − pactadas por liquidar. */
 export function posiciones(e: Pick<EstadoApp, 'datos' | 'operaciones'>): Record<CuentaId, Posicion> {

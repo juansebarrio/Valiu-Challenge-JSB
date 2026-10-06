@@ -48,10 +48,19 @@ export interface PagoFuturo {
 }
 
 export interface Realizado {
+  id: string;
   fecha: Date;
   nombre: string;
   monto: Centavos;
   divisa: Divisa;
+  /** Datos del comprobante que muestra el detalle del movimiento (ficticios). */
+  tipo: 'cobro' | 'pago';
+  hora: string;
+  banco: string;
+  mascara: string;
+  referencia: string;
+  motivo?: string;
+  estado: 'Confirmada' | 'Enviada';
 }
 
 export interface Datos {
@@ -117,13 +126,14 @@ const PAGOS_MXN: PagoFuturo[] = [
 ];
 // 12,400 + 9,850.50 + 15,000 + 7,600 + 18,500 + 6,000 + 11,000 = 80,350.50 (brief)
 
-const LO_NUEVO: Datos['loNuevo'] = { monto: centavos(180_000), divisa: 'MXN', de: 'Comercial Norte', hora: '10:42', banco: 'BBVA México', referencia: 'factura 2231' };
-
+/** Realizados del frame 01; hora, banco, cuenta y referencia son ficticios (los muestra el detalle del movimiento). */
 const REALIZADOS: Realizado[] = [
-  { fecha: HOY, nombre: 'Comercial Norte', monto: centavos(180_000), divisa: 'MXN' },
-  { fecha: new Date(2026, 9, 4), nombre: 'Logística y Abastecimiento', monto: centavos(-1_250.5), divisa: 'MXN' },
-  { fecha: new Date(2026, 9, 1), nombre: 'Distribuidora Norte', monto: centavos(50_000), divisa: 'MXN' },
+  { id: 'r1', fecha: HOY, nombre: 'Comercial Norte', monto: centavos(180_000), divisa: 'MXN', tipo: 'cobro', hora: '10:42', banco: 'BBVA México', mascara: '5678', referencia: 'factura 2231', estado: 'Confirmada' },
+  { id: 'r2', fecha: new Date(2026, 9, 4), nombre: 'Logística y Abastecimiento', monto: centavos(-1_250.5), divisa: 'MXN', tipo: 'pago', hora: '12:15', banco: 'Banorte', mascara: '3340', referencia: 'Servicio OCT-01', motivo: 'Pago de servicios', estado: 'Enviada' },
+  { id: 'r3', fecha: new Date(2026, 9, 1), nombre: 'Distribuidora Norte', monto: centavos(50_000), divisa: 'MXN', tipo: 'cobro', hora: '09:05', banco: 'Santander', mascara: '7781', referencia: 'factura 2198', estado: 'Confirmada' },
 ];
+
+const LO_NUEVO: Datos['loNuevo'] = { monto: REALIZADOS[0].monto, divisa: REALIZADOS[0].divisa, de: REALIZADOS[0].nombre, hora: REALIZADOS[0].hora, banco: REALIZADOS[0].banco, referencia: REALIZADOS[0].referencia };
 
 /** Datos del escenario pedido. "resuelta" y "pactada" parten del base y aplican el pago a Shenzhen (src/state/escenarios.ts). */
 export function datosEscenario(nombre: EscenarioNombre): Datos {
@@ -165,3 +175,6 @@ export const PARES_SELECTOR: { titulo: string; items: { par: string; nombre: str
 export const AVISO_PAR_SIN_PROTOTIPO = 'Este par no está en el prototipo.';
 export const AVISO_FUERA_DEL_PROTOTIPO = 'Esta sección no está en el prototipo.';
 export const ANCHO_MINIMO = 1200;
+
+/** Agendar un pago: la fecha de vencimiento va de hoy hasta AGENDAR_DIAS días después. */
+export const AGENDAR_DIAS = 90;

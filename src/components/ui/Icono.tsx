@@ -9,6 +9,7 @@ import UilWhatsapp from '@iconscout/react-unicons/icons/uil-whatsapp';
 import UilBell from '@iconscout/react-unicons/icons/uil-bell';
 import UilSignout from '@iconscout/react-unicons/icons/uil-signout';
 import UilTimes from '@iconscout/react-unicons/icons/uil-times';
+import UilTimesCircle from '@iconscout/react-unicons/icons/uil-times-circle';
 import UilLock from '@iconscout/react-unicons/icons/uil-lock';
 import UilInfoCircle from '@iconscout/react-unicons/icons/uil-info-circle';
 import UilCheckCircle from '@iconscout/react-unicons/icons/uil-check-circle';
@@ -38,6 +39,7 @@ export const ICONOS = {
   lock: UilLock,
   'info-circle': UilInfoCircle,
   'check-circle': UilCheckCircle,
+  'times-circle': UilTimesCircle,
   'calendar-alt': UilCalendarAlt,
   'clock-ten': UilClockTen,
   search: UilSearch,

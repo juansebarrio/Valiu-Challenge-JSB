@@ -24,7 +24,7 @@ function opcionesDeUrl() {
 /**
  * Estado vivo del prototipo, todo en memoria (recargar reinicia el escenario):
  * reloj del escenario (10:42 + tiempo real), indicativo oscilando ±0.002 % cada 3–5 s, cuenta regresiva del precio,
- * "Confirmando…" de 800 ms y parámetros de URL: ?escenario= · ?congelar=1 · ?demo=1 · ?recorrido=0.
+ * "Confirmando…" y "Cancelando…" de 800 ms y parámetros de URL: ?escenario= · ?congelar=1 · ?demo=1 · ?recorrido=0.
  */
 export function HomeApp() {
   const [estado, dispatch] = useReducer(reducer, ESTADO_INICIAL);
@@ -66,6 +66,13 @@ export function HomeApp() {
     const id = window.setTimeout(() => dispatch({ tipo: 'confirmado', hora: horaEscenario(inicioRef.current) }), CONFIRMANDO_MS);
     return () => window.clearTimeout(id);
   }, [confirmandoPanel]);
+
+  const cancelando = estado.panel.cancelando;
+  useEffect(() => {
+    if (!cancelando) return;
+    const id = window.setTimeout(() => dispatch({ tipo: 'pactadaCancelada', hora: horaEscenario(inicioRef.current) }), CONFIRMANDO_MS);
+    return () => window.clearTimeout(id);
+  }, [cancelando]);
 
   const confirmandoOperar = estado.operar.confirmando;
   useEffect(() => {

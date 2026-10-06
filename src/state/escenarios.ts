@@ -1,9 +1,10 @@
 // src/state/escenarios.ts — estados iniciales por escenario (?escenario=) y los frames de /tablero/alta.
 import { estadoInicial, aplicar, pagoPorId, type Accion, type EstadoApp, type OpcionesInicio } from './estado';
-import { ordenDePago } from './derivados';
+import { destinoDeDestinatario, ordenDePago } from './derivados';
 import type { EscenarioNombre } from '@/data/escenario';
 
 const JUE8 = new Date(2026, 9, 8);
+const VIE9 = new Date(2026, 9, 9);
 const HORA = '10:43';
 
 const abrirShenzhen = (e: EstadoApp): Accion[] => [{ tipo: 'abrirPanel', orden: ordenDePago(pagoPorId(e, 'p1')!) }];
@@ -49,6 +50,9 @@ export function filasTablero(): FilaTablero[] {
   const e06B = aplicar(TOKEN, e04B);
   const e07B = aplicar([{ tipo: 'volverInicio' }], e06B);
 
+  const pactadaInicio = estadoDeEscenario('pactada');
+  const agendaLlena = aplicar([{ tipo: 'abrirAgendar' }, { tipo: 'agendaDestino', destino: destinoDeDestinatario(base.datos.destinatarios.find((d) => d.id === 'ap')!) }, { tipo: 'agendaMonto', texto: '250' }, { tipo: 'agendaFecha', fecha: VIE9 }, { tipo: 'agendaReferencia', referencia: 'Pedido AP-121' }], base);
+
   const operar = aplicar([{ tipo: 'pestana', pestana: 'operar' }], base);
   const compraLlena = aplicar([{ tipo: 'opMonto', lado: 'izq', valor: '1000' }, { tipo: 'opMontoEditando', lado: null }, { tipo: 'opOrigen', origenId: 'mxn' }, { tipo: 'opDestino', destinoId: 'usd' }, { tipo: 'opMotivo', motivo: 'Compra de divisas' }, { tipo: 'opReferencia', referencia: 'Cobertura pagos USD' }], operar);
   const precioOp = aplicar([{ tipo: 'opPedirPrecio' }, { tipo: 'opToken', token: '47' }], compraLlena);
@@ -93,6 +97,21 @@ export function filasTablero(): FilaTablero[] {
         { n: '14', titulo: 'Operar clásico · Transferir, selector de destino', nota: 'Destino con buscador y grupos; el mismo componente que el paso Destino del panel.', estado: aplicar([{ tipo: 'opDestinoBusqueda', texto: 'Logí' }], transfer) },
         { n: '15', titulo: 'Operar clásico · Transferencia lista, token', nota: 'Transferencia en la misma divisa: sin TDC ni precio; el token se pide al confirmar.', estado: aplicar([{ tipo: 'opDestino', destinoId: 'log' }, { tipo: 'opMonto', lado: 'izq', valor: '1000' }, { tipo: 'opMontoEditando', lado: null }, { tipo: 'opMotivo', motivo: 'Pago a proveedores' }, { tipo: 'opReferencia', referencia: 'Flete OCT-02' }, { tipo: 'opContinuar' }], transfer) },
         { n: '16', titulo: 'Operar clásico · Mercado cerrado', nota: 'Escenario mercado-cerrado: formulario editable y "Pedir precio" deshabilitado. Sin horario mientras el dato no esté confirmado.', estado: cerrado },
+      ],
+    },
+    {
+      titulo: 'Movimientos · Detalle, agendar y cancelar',
+      nota: 'Cada fila de Movimientos abre su detalle en el panel; el "+" junto al título agenda un pago nuevo; una pactada se puede cancelar desde su detalle',
+      frames: [
+        { n: 'D1', titulo: 'Detalle · Pago pendiente', nota: 'Fila de Shenzhen Parts Co.: destinatario, vencimiento, motivo, referencia y el equivalente en pesos de hoy. "Pagar" abre el flujo de siempre.', estado: aplicar([{ tipo: 'abrirDetalle', id: 'p1' }], base) },
+        { n: 'D2', titulo: 'Detalle · Cobro realizado', nota: 'Fila de Comercial Norte en Realizados: de quién, cuándo, referencia, cuenta en la que entró y estado.', estado: aplicar([{ tipo: 'abrirDetalle', id: 'r1' }], base) },
+        { n: 'D3', titulo: 'Detalle · Pago pactado', nota: 'Desde el escenario pactada: el pacto, el día en que sale el dinero, el aviso de fondeo y "Cancelar pacto" como acción secundaria.', estado: aplicar([{ tipo: 'abrirDetalle', id: 'p1' }], pactadaInicio) },
+        { n: 'D4', titulo: 'Detalle · ¿Cancelar el pago pactado?', nota: 'Pregunta antes de cancelar: se libera el precio y el pago vuelve a Próximos como pendiente. "Sí, cancelar" pasa 800 ms en "Cancelando…".', estado: aplicar([{ tipo: 'abrirDetalle', id: 'p1' }, { tipo: 'cancelarPactada' }], pactadaInicio) },
+        { n: 'D5', titulo: 'Inicio con el pacto cancelado', nota: 'Aviso de cancelación, Shenzhen otra vez pendiente con "Pagar", la pactada cancelada queda en Realizados y MXN ya no tiene pactadas por liquidar.', estado: aplicar([{ tipo: 'abrirDetalle', id: 'p1' }, { tipo: 'cancelarPactada' }, { tipo: 'confirmarCancelacion' }, { tipo: 'pactadaCancelada', hora: '10:44' }], pactadaInicio) },
+        { n: 'A1', titulo: 'Agendar · Destinatario', nota: 'El "+" de Movimientos abre el panel con el mismo selector de destino, solo con destinatarios.', estado: aplicar([{ tipo: 'abrirAgendar' }], base) },
+        { n: 'A2', titulo: 'Agendar · Datos', nota: 'Monto en la divisa del destinatario, vencimiento (día hábil, hasta 90 días), motivo y referencia; "Agendar" se habilita con todo completo.', estado: agendaLlena },
+        { n: 'A3', titulo: 'Agendar · Confirmación', nota: '"Pago agendado": ya está en Próximos como pendiente; "Pagar ahora" entra al flujo de pago con ese pago.', estado: aplicar([{ tipo: 'agendar' }], agendaLlena) },
+        { n: 'A4', titulo: 'Inicio con el pago agendado', nota: 'El pago nuevo del vie 9 entra en Próximos de la semana y la proyección en USD lo descuenta: faltan 1,250.00 USD.', estado: aplicar([{ tipo: 'agendar' }, { tipo: 'volverInicio' }], agendaLlena) },
       ],
     },
     {
