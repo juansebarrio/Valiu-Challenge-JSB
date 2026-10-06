@@ -34,6 +34,11 @@ Correcciones aplicadas sobre el export de Claude Design (`docs/handoff/prototipo
 
 | C-28 | "Ver más" (Secondary) al final del bloque Movimientos del inicio y la entrada "Movimientos" del menú lateral abren la sección completa (todos los próximos con sus totales por divisa, todos los realizados, "Agendar un pago" y "Pagar" en el encabezado); `?seccion=movimientos` la abre por URL. | Pedido posterior al handoff; la sección reutiliza ListaMovimientos en modo completo y la columna derecha del inicio. |
 | C-29 | Sin scroll horizontal: `overflow-x: hidden` en el documento, el pie se parte en dos líneas si no entra, la pantalla inicial encoge sus tarjetas y por debajo de 1200 px el shell de la app se oculta detrás del aviso de pantalla mínima. | Pedido posterior al handoff. `/sistema` y `/tablero/alta` siguen siendo de escritorio. |
+| C-30 | Las entradas del menú Control de operaciones, Destinatarios y Monitoreo de divisas son vistas reales dentro del home (misma columna derecha de tipo de cambio y cuentas); "Operaciones recientes" del clásico lleva a Control. | Pedido posterior al handoff ("realiza los pendientes"); reutilizan FilaMovimiento, TarjetaTipoDeCambio y el motor de fx. |
+| C-31 | La campana abre un panel de notificaciones derivadas del estado (cobro de hoy, faltantes, en proceso, pactadas, vencimientos de la semana); cada aviso abre su movimiento. Punto rojo en la campana cuando hay avisos. | Sin backend: los avisos se calculan, no se guardan. |
+| C-32 | "Ver todas mis cuentas" abre el panel "Tus cuentas" (saldo, banco, máscara, CLABE, "Pasar dinero a esta cuenta", "Ver datos para depositar"). | Antes mostraba el toast. |
+| C-33 | "Agregar destinatario" (paso Destino, Destinatarios y clásico) abre el alta: nombre, divisa, banco y cuenta o CLABE (se guarda la máscara). Desde el paso Destino, "Guardar y pagar" sigue con el pago al destinatario nuevo; desde los otros lugares solo guarda y avisa. | En memoria, sin validación bancaria. |
+| C-34 | Una cuenta en la divisa del pago con saldo menor al monto queda deshabilitada ("No alcanza el saldo", además de "Sin saldo" con 0) y, si el monto se escribe después, la revisión bloquea con un error. | Una transferencia no tiene fecha valor para fondear. Cierra el hueco que quedaba abierto. |
 
 ## Flujo secundario (turismo) y pantalla inicial
 

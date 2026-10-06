@@ -24,14 +24,16 @@ export interface AppShellProps {
   activo?: number;
   /** Secciones fuera del prototipo: muestran un aviso breve en lugar de navegar. */
   onNoDisponible?: () => void;
-  /** Inicio (0) y Movimientos (1) son secciones reales: cambian la vista dentro de la app. */
+  /** Las cinco entradas del menú son secciones reales: cambian la vista dentro de la app. */
   onNavegar?: (indice: number) => void;
+  /** Campana: cantidad de avisos y qué abre. */
+  campana?: { cantidad: number; onClick: () => void };
 }
 
 const ITEM = 'flex h-(--app-nav-item-h) cursor-pointer items-center gap-2.5 rounded-sm px-2.5 text-body whitespace-nowrap transition-colors hover:bg-app-accent-bg @max-lg/shell:w-(--app-nav-item-w-min) @max-lg/shell:justify-center @max-lg/shell:px-0';
 
 /** Sidebar 240 · header 48 · main 24 32 32 · footer 40 (README · Layout del AppShell). */
-export const AppShell: FC<AppShellProps> = ({ children, capas, modo = 'app', raizRef, activo = 0, onNoDisponible, onNavegar }) => {
+export const AppShell: FC<AppShellProps> = ({ children, capas, modo = 'app', raizRef, activo = 0, onNoDisponible, onNavegar, campana }) => {
   const esApp = modo === 'app';
   const noDisponible = (e: React.MouseEvent) => { e.preventDefault(); onNoDisponible?.(); };
   return (
@@ -44,7 +46,7 @@ export const AppShell: FC<AppShellProps> = ({ children, capas, modo = 'app', rai
         </div>
         <nav aria-label="Principal" className="flex flex-col gap-1 @max-lg/shell:items-center">
           {NAV.map((it, i) => (
-            <a key={it.label} href="#" onClick={onNavegar && i <= 1 ? (e) => { e.preventDefault(); onNavegar(i); } : i === activo ? (e) => e.preventDefault() : noDisponible} aria-current={i === activo ? 'page' : undefined} title={it.label} className={[ITEM, i === activo ? 'bg-app-accent-bg font-semibold text-app-accent' : 'font-medium text-app-ink'].join(' ')}>
+            <a key={it.label} href="#" onClick={onNavegar ? (e) => { e.preventDefault(); onNavegar(i); } : i === activo ? (e) => e.preventDefault() : noDisponible} aria-current={i === activo ? 'page' : undefined} title={it.label} className={[ITEM, i === activo ? 'bg-app-accent-bg font-semibold text-app-accent' : 'font-medium text-app-ink'].join(' ')}>
               <Icono nombre={it.icono} tamano="md" />
               <span className="@max-lg/shell:sr-only">{it.label}</span>
             </a>
@@ -71,8 +73,9 @@ export const AppShell: FC<AppShellProps> = ({ children, capas, modo = 'app', rai
             <Icono nombre="whatsapp" tamano="sm" />
             Contáctanos
           </a>
-          <button type="button" onClick={onNoDisponible} aria-label="Notificaciones" className="flex cursor-pointer items-center rounded-xs bg-transparent text-app-ink">
+          <button type="button" onClick={campana ? campana.onClick : onNoDisponible} aria-label={campana?.cantidad ? `Notificaciones (${campana.cantidad})` : 'Notificaciones'} aria-haspopup={campana ? 'dialog' : undefined} className="relative flex cursor-pointer items-center rounded-xs bg-transparent text-app-ink">
             <Icono nombre="bell" tamano="xl" />
+            {campana?.cantidad ? <span aria-hidden className="absolute -right-0.5 -top-0.5 size-(--app-dot) rounded-full bg-app-danger" /> : null}
           </button>
         </header>
 

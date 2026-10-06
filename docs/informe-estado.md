@@ -18,10 +18,10 @@ Todo corre en el navegador, con estado en memoria (recargar reinicia el escenari
 | `/` | Pantalla inicial: elegir con qué empresa se entra (dos tarjetas con contexto, Tab/Enter). |
 | `/importadora` | Home del flujo principal. |
 | `/turismo` | Home del flujo secundario. |
-| `/tablero/alta` | Todos los frames (01–07, 03B–07B, Estados, 08–16, D1–D5, A1–A4, S01–S08 con S07H/S08H, 17–20) renderizados desde el estado del reducer a 1280 px. `/tablero` redirige acá. |
+| `/tablero/alta` | Todos los frames (01–07, 03B–07B, Estados, 08–16, D1–D5, A1–A4, S01–S08 con S07H/S08H, N1–N6, 17–20) renderizados desde el estado del reducer a 1280 px. `/tablero` redirige acá. |
 | `/sistema` | Guía viva: tokens del design system y cada componente en sus estados. |
 
-Parámetros: `?escenario=faltante|resuelta|pactada|sin-saldo|mercado-cerrado`, `?congelar=1` (tipo de cambio fijo), `?demo=1` (vencer precio, ver recorrido, reiniciar), `?recorrido=0`, `?pago=<id>`, `?cobro=<id>`, `?seccion=movimientos`. Tecla P: pausa el indicativo y la cuenta regresiva (nunca desde un campo).
+Parámetros: `?escenario=faltante|resuelta|pactada|sin-saldo|mercado-cerrado`, `?congelar=1` (tipo de cambio fijo), `?demo=1` (vencer precio, ver recorrido, reiniciar), `?recorrido=0`, `?pago=<id>`, `?cobro=<id>`, `?seccion=movimientos|control|destinatarios|monitoreo`. Tecla P: pausa el indicativo y la cuenta regresiva (nunca desde un campo).
 
 ## 2. Qué se desarrolló, en orden
 
@@ -58,6 +58,13 @@ Parámetros: `?escenario=faltante|resuelta|pactada|sin-saldo|mercado-cerrado`, `
 5. Tecla P: nunca se dispara con el foco en un campo.
 6. "Concepto" opcional en lugar de "Motivo de pago" (panel y Agendar; el clásico conserva "Motivo de pago"); "Comprobante" de Lo nuevo abre el detalle del cobro y las descargas de comprobante generan un .html real. Los estados de token incorrecto, origen sin saldo y pactada sin saldo quedaron como estaban.
 
+### Etapa 7 · Pendientes del prototipo
+- Alta de destinatario ("Agregar destinatario" en el paso Destino, en Destinatarios y en el clásico): nombre, divisa, banco y cuenta o CLABE; desde el paso Destino, "Guardar y pagar" sigue con el pago.
+- Secciones del menú como vistas reales: Control de operaciones (pactadas, en proceso, canceladas y realizadas, con detalle), Destinatarios (cuenta, pendientes, "Pagar" sin monto) y Monitoreo de divisas (pares con sus dos lados, el ejecutable y la tendencia). "Operaciones recientes" del clásico lleva a Control.
+- Campana con notificaciones derivadas del estado; "Ver todas mis cuentas" abre el panel de cuentas con CLABE, "Pasar dinero" y "Ver datos para depositar".
+- Transferencia con saldo insuficiente: la cuenta queda deshabilitada ("No alcanza el saldo") y la revisión bloquea si el monto escrito supera el saldo.
+- `?seccion=control|destinatarios|monitoreo`; frames N1–N6 en `/tablero/alta`.
+
 ## 3. Estado actual por área
 
 ### Flujos que funcionan de punta a punta
@@ -65,7 +72,7 @@ Parámetros: `?escenario=faltante|resuelta|pactada|sin-saldo|mercado-cerrado`, `
 - Pago desde la cuenta de la misma divisa (transferencia sin TDC).
 - Compra o venta a cuenta propia desde "Comprar X", desde el "Pagar" del encabezado o desde "Pagar a otro destinatario", con montos "Recibe" / "Pagas" editables.
 - Entrada desde el cobro ("Usar para pagar"): en turismo, paso "¿Qué pagas con este cobro?"; en la importadora, paso Destino.
-- Detalle de movimientos, agendar pagos, cancelar pactadas, comprobantes descargables, sección Movimientos.
+- Detalle de movimientos, agendar pagos, cancelar pactadas, comprobantes descargables, sección Movimientos, Control de operaciones, Destinatarios (con alta), Monitoreo de divisas, notificaciones y panel de cuentas.
 - Operar clásico (Comprar, Vender, Transferir) con el mismo motor, aviso de par sin prototipo, mercado cerrado por escenario.
 - Onboarding, modo demo, escenarios por URL, TDC en vivo con pausa.
 
@@ -75,18 +82,17 @@ Parámetros: `?escenario=faltante|resuelta|pactada|sin-saldo|mercado-cerrado`, `
 - `src/state/estado.ts` (reducer puro), `derivados.ts`, `vistas.ts` (selectores), `escenarios.ts` (escenarios y frames).
 
 ### Calidad
-- 106 tests de Vitest (motor, posición y el flujo frame por frame con los números del brief), `npm run lint`, `tsc --noEmit` y `next build` limpios.
+- 112 tests de Vitest (motor, posición y el flujo frame por frame con los números del brief), `npm run lint`, `tsc --noEmit` y `next build` limpios.
 - Recorridos con Playwright del flujo principal, movimientos, arquetipos, turismo y sección 7 con cero errores de consola; capturas en `docs/design/verificacion/` y de los prototipos en `docs/design/frames/`.
 - Accesibilidad: diálogo con foco atrapado y Esc, radiogroups con flechas (saltan deshabilitadas), cuenta regresiva con aria-live, estados siempre en badge con texto, foco visible, es-MX con tuteo.
 
 ### Documentación
-- `README.md` (cómo correr, rutas, parámetros, estructura, decisiones), `docs/decisiones.md` (C-01 a C-29), `docs/diferencias-cc-vs-diseno.md` (turismo y sección 7), `docs/handoff/` y `docs/handoff-turismo/` (paquetes de diseño tal como llegaron).
+- `README.md` (cómo correr, rutas, parámetros, estructura, decisiones), `docs/decisiones.md` (C-01 a C-34), `docs/diferencias-cc-vs-diseno.md` (turismo y sección 7), `docs/handoff/` y `docs/handoff-turismo/` (paquetes de diseño tal como llegaron).
 
 ## 4. Pendiente y límites conocidos
 
-- Alta de destinatario nuevo ("Agregar destinatario" muestra el toast).
-- Secciones del menú distintas de Inicio y Movimientos (Control de operaciones, Destinatarios, Monitoreo de divisas), notificaciones, "Subir documento", "Ver todas mis cuentas", "Horarios de operación" y "Operaciones recientes": toast.
-- Pago en la misma divisa con saldo insuficiente pero mayor a cero: el panel muestra "Hoy no alcanza" y deja continuar sin fecha valor (estado que se dejó como estaba por pedido).
+- "Subir documento" (no hay OCR ni factura real) y "Horarios de operación" (el horario es un dato sin confirmar): toast.
+- El alta de destinatario no valida contra el banco y vive en memoria, como todo el estado.
 - Errores de red o de precio, reintentos de token, horario real de mercado, pago parcial o múltiple, pagos MXN dentro de la semana en la gráfica, persistencia entre recargas, móvil: fuera del alcance actual.
 - Diferencias con el archivo de diseño del flujo secundario (precio ejecutable por factor, banda del TDC, tarjeta de tipo de cambio compacta, copys del panel, orden de OpcionPago): registradas en `docs/diferencias-cc-vs-diseno.md`, el código manda.
 - Vercel: producción sigue atada a la rama `claude/determined-thompson-n0zgns`; al mergear a `main` conviene cambiar la rama de producción. Las URLs `.vercel.app` tienen protección SSO.

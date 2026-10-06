@@ -1,6 +1,7 @@
 // src/state/derivados.ts — datos derivados del estado: cuentas, pagos pendientes, posiciones y proyecciones.
 // Los usan el reducer (avisos, fecha por defecto) y los selectores de vista.
 import type { Centavos } from '@/lib/dinero';
+import { monto as fmtMonto, diaCorto } from '@/lib/format';
 import { deducir, type Divisa } from '@/lib/fx';
 import { agregar, diasSemana, evaluarPagoConCobro, posicion, proyeccion, type Movimiento, type PagoEvaluado, type Posicion } from '@/lib/posicion';
 import { HOY, type Cobro, type Cuenta, type CuentaId, type Destinatario, type PagoFuturo, type Realizado } from '@/data/escenario';
@@ -128,6 +129,11 @@ export function ordenDePago(p: PagoFuturo): Orden {
   return { destino: { tipo: 'tercero', id: p.destinatarioId, nombre: p.destinatario, divisa: p.divisa, banco: p.cuentaDestino.banco, mascara: p.cuentaDestino.mascara }, pagoId: p.id, vence: p.fecha, monto: p.monto, ladoFijo: 'recibe', conFactura: true, motivo: p.motivo, referencia: p.referencia };
 }
 
+/** Orden a un destinatario sin pago cargado (sección Destinatarios → "Pagar"): el monto se escribe en la revisión. */
+export function ordenADestinatario(d: Destinatario): Orden {
+  return { destino: destinoDeDestinatario(d), monto: 0, ladoFijo: 'recibe', conFactura: false, motivo: null, referencia: '' };
+}
+
 /** Orden a una cuenta propia (TarjetaPosicion → "Comprar 1,000 USD"): monto fijo del lado que recibes, editable. */
 export function ordenACuenta(c: Cuenta, monto: Centavos): Orden {
   // Concepto opcional (brief): sin factura queda vacío; el tipo de operación se deduce de origen y destino al cotizar.
@@ -164,3 +170,33 @@ export function opcionesDelCobro(e: Pick<EstadoApp, 'datos' | 'operaciones' | 't
 
 /** El pago que viene seleccionado al entrar desde el cobro: el primero (por fecha) que cubre un faltante; si no hay, ninguno. */
 export const pagoPorDefectoDelCobro = (e: Pick<EstadoApp, 'datos' | 'operaciones' | 'tdcVivo'>, cobro: Cobro) => opcionesDelCobro(e, cobro).find((o) => o.consecuencia.tono === 'ok')?.pago.id ?? null;
+
+export interface Notificacion {
+  id: string;
+  texto: string;
+  /** Fila de Movimientos que abre (detalle), si corresponde. */
+  movimientoId: string | null;
+  tono: 'info' | 'warn' | 'ok';
+}
+
+/** Campana: lo que pasó hoy y lo que vence esta semana, derivado del estado (sin backend). */
+export function notificaciones(e: Pick<EstadoApp, 'datos' | 'operaciones' | 'tdcVivo'>): Notificacion[] {
+  const out: Notificacion[] = [];
+  const cobro = e.datos.loNuevo;
+  if (cobro) out.push({ id: `cobro-${cobro.id}`, texto: `Entró el cobro de ${cobro.de}: ${fmtMonto(cobro.monto, cobro.divisa)} (${cobro.hora}).`, movimientoId: cobro.id, tono: 'ok' });
+  const pos = posicionesPorDivisa(e);
+  const pend = pagosPendientes(e).filter((p) => !p.pactada);
+  for (const [divisa, p] of Object.entries(pos)) {
+    if (p?.resultado.tipo === 'faltan') {
+      const primero = pend.find((x) => x.divisa === divisa);
+      out.push({ id: `faltan-${divisa}`, texto: `Faltan ${fmtMonto(p.resultado.monto, divisa)} para los pagos de la semana.`, movimientoId: primero?.id ?? null, tono: 'warn' });
+    }
+  }
+  for (const o of e.operaciones) {
+    if (o.estado === 'En proceso') out.push({ id: `op-${o.id}`, texto: `En proceso: ${o.clase === 'pago' ? `pago a ${o.destino.nombre}` : `${o.clase} a tu ${o.destino.nombre}`} por ${fmtMonto(o.recibe, o.destino.divisa)}.`, movimientoId: o.id, tono: 'info' });
+    if (o.estado === 'Pactada') out.push({ id: `op-${o.id}`, texto: `Pactado: ${fmtMonto(o.pagas, e.datos.cuentas.find((c) => c.id === o.origenId)!.divisa)} salen el ${diaCorto(o.fechaValor)} para ${o.destino.tipo === 'propia' ? `tu ${o.destino.nombre}` : o.destino.nombre}.`, movimientoId: o.pagoId ?? o.id, tono: 'info' });
+  }
+  const fin = finDeSemana(HOY);
+  for (const p of pend.filter((x) => x.fecha.getTime() <= fin.getTime())) out.push({ id: `vence-${p.id}`, texto: `Vence el ${diaCorto(p.fecha)}: ${p.destinatario}, ${fmtMonto(p.monto, p.divisa)}.`, movimientoId: p.id, tono: 'info' });
+  return out;
+}

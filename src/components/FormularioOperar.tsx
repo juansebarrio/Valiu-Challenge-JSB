@@ -20,6 +20,8 @@ export interface FormularioOperarProps {
   onNoDisponible?: () => void;
   /** "Descargar comprobante" de la confirmación. */
   onComprobante?: (confirmacion: VistaConfirmacion) => void;
+  /** "Agregar destinatario" del selector de destino. */
+  onAgregarDestinatario?: () => void;
 }
 
 /** Split Compras / Pagas: lado activo con borde 1.5 px #0086FF, error 1 px #B40909 con mensaje inline. */
@@ -58,7 +60,7 @@ const CampoMontoDoble: FC<{ v: VistaOperar; dispatch: (a: Accion) => void }> = (
 };
 
 /** El formulario Operar clásico con el mismo motor que el panel: cotización, precio ejecutable, cuenta regresiva, token y vencimiento. */
-export const FormularioOperar: FC<FormularioOperarProps> = ({ vista: v, dispatch, onNoDisponible, onComprobante }) => {
+export const FormularioOperar: FC<FormularioOperarProps> = ({ vista: v, dispatch, onNoDisponible, onComprobante, onAgregarDestinatario }) => {
   const onCta = () => {
     if (!v.cta.habilitado) return;
     if (v.cta.accion === 'pedirPrecio') dispatch({ tipo: 'opPedirPrecio' });
@@ -135,7 +137,7 @@ export const FormularioOperar: FC<FormularioOperarProps> = ({ vista: v, dispatch
             onBusqueda={(t) => dispatch({ tipo: 'opDestinoBusqueda', texto: t })}
             grupos={v.destino.grupos}
             onElegir={(d) => dispatch({ tipo: 'opDestino', destinoId: d.id })}
-            onAgregar={onNoDisponible}
+            onAgregar={onAgregarDestinatario ?? onNoDisponible}
             vacio={v.tipo === 'transferir' && !v.origen.valor ? 'Primero elige la cuenta de origen.' : 'Sin resultados.'}
           />
         </div>

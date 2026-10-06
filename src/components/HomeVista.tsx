@@ -3,7 +3,10 @@ import { useMemo, useState, type FC, type RefObject } from 'react';
 import * as fmt from '@/lib/format';
 import { AVISO_FUERA_DEL_PROTOTIPO, HOY, type CuentaId } from '@/data/escenario';
 import { ONBOARDING_PASOS, type Accion, type EstadoApp } from '@/state/estado';
-import { vistaHome, vistaOperar, vistaPanel, type VistaFila, type VistaPanel } from '@/state/vistas';
+import { vistaControl, vistaDestinatarios, vistaHome, vistaMonitoreo, vistaOperar, vistaPanel, type VistaFila, type VistaPanel } from '@/state/vistas';
+import { notificaciones } from '@/state/derivados';
+import { SeccionControl, SeccionDestinatarios, SeccionMonitoreo } from './Secciones';
+import { FormularioDestinatario, ListaCuentas, ListaNotificaciones } from './PanelExtras';
 import { AppShell, type ModoShell } from './AppShell';
 import { AvisoResultado } from './AvisoResultado';
 import { TarjetaPosicion } from './TarjetaPosicion';
@@ -30,7 +33,7 @@ import { Pestanas } from './ui/Pestanas';
 import { Alerta } from './ui/Alerta';
 import { Icono } from './ui/Icono';
 import { Toast } from './ui/Toast';
-import { CampoTexto } from './ui/Campo';
+import { CampoTexto, MensajeError } from './ui/Campo';
 import { descargarComprobante, htmlComprobante } from './comprobante';
 import { arquetipoDe } from '@/data/arquetipos';
 import { ListaDetalle } from './ui/ListaDetalle';
@@ -51,6 +54,9 @@ export const HomeVista: FC<HomeVistaProps> = ({ estado, dispatch, modo = 'app', 
   const noDisponible = () => dispatch({ tipo: 'toast', texto: AVISO_FUERA_DEL_PROTOTIPO });
   const paso = estado.onboarding.activo ? PASOS_ONBOARDING[estado.onboarding.paso] : null;
   const enMovimientos = estado.seccion === 'movimientos';
+  const SECCIONES = ['inicio', 'movimientos', 'control', 'destinatarios', 'monitoreo'] as const;
+  const indiceSeccion = SECCIONES.indexOf(estado.seccion);
+  const avisos = useMemo(() => notificaciones(estado).length, [estado]);
   // Una fila de Movimientos: "Pagar" abre el flujo con el pago cargado; el resto de la fila abre su detalle.
   const fila = (f: VistaFila) => ({ fecha: f.fecha, nombre: f.nombre, detalle: f.detalle, monto: f.monto, divisa: f.divisa, estado: f.badge, onPagar: f.orden ? () => dispatch({ tipo: 'abrirPanel', orden: f.orden! }) : undefined, onAbrir: () => dispatch({ tipo: 'abrirDetalle', id: f.id }) });
 
@@ -59,9 +65,10 @@ export const HomeVista: FC<HomeVistaProps> = ({ estado, dispatch, modo = 'app', 
       <AppShell
         modo={modo}
         raizRef={raizRef}
-        activo={enMovimientos ? 1 : 0}
+        activo={indiceSeccion}
         onNoDisponible={noDisponible}
-        onNavegar={(i) => dispatch({ tipo: 'seccion', seccion: i === 1 ? 'movimientos' : 'inicio' })}
+        onNavegar={(i) => dispatch({ tipo: 'seccion', seccion: SECCIONES[i] ?? 'inicio' })}
+        campana={{ cantidad: avisos, onClick: () => dispatch({ tipo: 'abrirNotificaciones' }) }}
         capas={
           <>
             {panel ? <PanelContenido vista={panel} estado={estado} dispatch={dispatch} modo={modo} /> : null}
@@ -83,9 +90,11 @@ export const HomeVista: FC<HomeVistaProps> = ({ estado, dispatch, modo = 'app', 
           </>
         }
       >
-        {estado.aviso && (enMovimientos || estado.pestana === 'posicion') ? <AvisoResultado tipo={estado.aviso.tipo} texto={estado.aviso.texto} onCerrar={() => dispatch({ tipo: 'cerrarAviso' })} /> : null}
+        {estado.aviso && (estado.seccion !== 'inicio' || estado.pestana === 'posicion') ? <AvisoResultado tipo={estado.aviso.tipo} texto={estado.aviso.texto} onCerrar={() => dispatch({ tipo: 'cerrarAviso' })} /> : null}
 
-        {enMovimientos ? (
+        {estado.seccion === 'control' || estado.seccion === 'destinatarios' || estado.seccion === 'monitoreo' ? (
+          <SeccionGenerica estado={estado} dispatch={dispatch} home={home} noDisponible={noDisponible} />
+        ) : enMovimientos ? (
           <>
             <div className="flex items-start justify-between gap-6">
               <div className="flex flex-col gap-0.5">
@@ -103,7 +112,7 @@ export const HomeVista: FC<HomeVistaProps> = ({ estado, dispatch, modo = 'app', 
               </div>
               <div className="flex min-w-0 flex-col gap-5">
                 <TarjetaTipoDeCambio {...home.tdc} />
-                <ModuloCuentas cuentas={home.cuentas} onVerTodas={noDisponible} />
+                <ModuloCuentas cuentas={home.cuentas} onVerTodas={() => dispatch({ tipo: 'abrirCuentas' })} />
               </div>
             </div>
           </>
@@ -177,7 +186,7 @@ export const HomeVista: FC<HomeVistaProps> = ({ estado, dispatch, modo = 'app', 
               </div>
               <div className="flex min-w-0 flex-col gap-5">
                 <TarjetaTipoDeCambio tour="tdc" {...home.tdc} />
-                <ModuloCuentas cuentas={home.cuentas} onVerTodas={noDisponible} />
+                <ModuloCuentas cuentas={home.cuentas} onVerTodas={() => dispatch({ tipo: 'abrirCuentas' })} />
               </div>
             </div>
           </div>
@@ -188,12 +197,12 @@ export const HomeVista: FC<HomeVistaProps> = ({ estado, dispatch, modo = 'app', 
               <span className="text-body text-app-ink-2">¿Qué quieres hacer hoy?</span>
               <div className="flex gap-5">
                 <Boton variante="link-caption" onClick={noDisponible}>Horarios de operación</Boton>
-                <Boton variante="link-caption" onClick={noDisponible}>Operaciones recientes</Boton>
+                <Boton variante="link-caption" onClick={() => dispatch({ tipo: 'seccion', seccion: 'control' })}>Operaciones recientes</Boton>
               </div>
             </div>
             <div className="grid grid-cols-3 items-start gap-6">
-              <div className="col-span-2 min-w-0"><FormularioOperar vista={operar} dispatch={dispatch} onNoDisponible={noDisponible} onComprobante={(c) => descargarComprobante(`comprobante-${estado.operar.ultima?.id ?? 'operacion'}`, htmlComprobante({ titulo: c.titulo, sub: `${c.destino} · ${c.referencia || '—'}`, empresa: home.empresa, filas: c.detalle, nota: c.texto ?? c.fondeo }))} /></div>
-              <ModuloCuentas cuentas={home.cuentas} onVerTodas={noDisponible} className="self-start" />
+              <div className="col-span-2 min-w-0"><FormularioOperar vista={operar} dispatch={dispatch} onNoDisponible={noDisponible} onAgregarDestinatario={() => dispatch({ tipo: 'abrirDestinatarioNuevo' })} onComprobante={(c) => descargarComprobante(`comprobante-${estado.operar.ultima?.id ?? 'operacion'}`, htmlComprobante({ titulo: c.titulo, sub: `${c.destino} · ${c.referencia || '—'}`, empresa: home.empresa, filas: c.detalle, nota: c.texto ?? c.fondeo }))} /></div>
+              <ModuloCuentas cuentas={home.cuentas} onVerTodas={() => dispatch({ tipo: 'abrirCuentas' })} className="self-start" />
             </div>
           </div>
         )}
@@ -230,6 +239,7 @@ const PanelContenido: FC<{ vista: VistaPanel; estado: EstadoApp; dispatch: (a: A
       case 'pagar': pagar(); break;
       case 'agendar': dispatch({ tipo: 'agendar' }); break;
       case 'confirmarCancelacion': dispatch({ tipo: 'confirmarCancelacion' }); break;
+      case 'guardarDestinatario': dispatch({ tipo: 'guardarDestinatario' }); break;
     }
   };
   const secundario = v.secundario
@@ -263,7 +273,7 @@ const PanelContenido: FC<{ vista: VistaPanel; estado: EstadoApp; dispatch: (a: A
       {v.paso === 'destino' && v.destino ? (
         <>
           <h3 className="text-h3 font-semibold">{v.destino.titulo}</h3>
-          <SelectorDestino modo="lista" grupos={v.destino.grupos} busqueda={v.destino.busqueda} onBusqueda={(t) => dispatch({ tipo: 'busquedaDestino', texto: t })} onElegir={(d) => dispatch(v.tipo === 'agendar' ? { tipo: 'agendaDestino', destino: d.destino } : { tipo: 'elegirDestino', destino: d.destino, pago: d.pago })} onAgregar={noDisponible} />
+          <SelectorDestino modo="lista" grupos={v.destino.grupos} busqueda={v.destino.busqueda} onBusqueda={(t) => dispatch({ tipo: 'busquedaDestino', texto: t })} onElegir={(d) => dispatch(v.tipo === 'agendar' ? { tipo: 'agendaDestino', destino: d.destino } : { tipo: 'elegirDestino', destino: d.destino, pago: d.pago })} onAgregar={() => (v.tipo === 'agendar' ? noDisponible() : dispatch({ tipo: 'abrirDestinatarioNuevo' }))} />
         </>
       ) : null}
 
@@ -275,6 +285,10 @@ const PanelContenido: FC<{ vista: VistaPanel; estado: EstadoApp; dispatch: (a: A
           <Boton variante="link" className="self-start" onClick={() => dispatch({ tipo: 'otroDestinatario' })}>{v.pago.otro.label}</Boton>
         </>
       ) : null}
+
+      {v.tipo === 'notificaciones' && v.notificaciones ? <ListaNotificaciones items={v.notificaciones} dispatch={dispatch} /> : null}
+      {v.tipo === 'cuentas' && v.cuentas ? <ListaCuentas items={v.cuentas} dispatch={dispatch} /> : null}
+      {v.tipo === 'destinatario' && v.destinatario ? <FormularioDestinatario vista={v.destinatario} dispatch={dispatch} /> : null}
 
       {v.tipo === 'detalle' && v.detalle ? <DetalleMovimiento vista={v.detalle} /> : null}
       {v.tipo === 'agendar' && v.paso === 'revision' && v.agenda ? <AgendarPago vista={v.agenda} dispatch={dispatch} /> : null}
@@ -295,6 +309,7 @@ const PanelContenido: FC<{ vista: VistaPanel; estado: EstadoApp; dispatch: (a: A
           <div className="flex flex-col gap-1.5">
             <p className="text-pretty text-body font-medium tabular-nums">{v.revision.texto}</p>
             {v.revision.ayuda ? <span className="flex items-center gap-2 text-caption text-app-ink-2"><Icono nombre="info-circle" tamano="xs" /><span>{v.revision.ayuda}</span></span> : null}
+            {v.revision.error ? <MensajeError>{v.revision.error}</MensajeError> : null}
           </div>
           {v.revision.tdc != null ? <CajaTdcValiu sinBorde tdc={v.revision.tdc} tipo="Precio indicativo" className="self-start" /> : null}
           <div className="grid grid-cols-2 gap-3">
@@ -318,5 +333,45 @@ const PanelContenido: FC<{ vista: VistaPanel; estado: EstadoApp; dispatch: (a: A
 
       {v.paso === 'confirmacion' && v.confirmacion ? <Confirmacion vista={v.confirmacion} /> : null}
     </PanelOperar>
+  );
+};
+
+const TITULOS: Record<'control' | 'destinatarios' | 'monitoreo', string> = { control: 'Control de operaciones', destinatarios: 'Destinatarios', monitoreo: 'Monitoreo de divisas' };
+
+/** Secciones del menú: encabezado como el inicio, contenido propio y la columna de tipo de cambio y cuentas (salvo en Monitoreo). */
+const SeccionGenerica: FC<{ estado: EstadoApp; dispatch: (a: Accion) => void; home: ReturnType<typeof vistaHome>; noDisponible: () => void }> = ({ estado, dispatch, home, noDisponible }) => {
+  const seccion = estado.seccion as 'control' | 'destinatarios' | 'monitoreo';
+  const control = useMemo(() => (seccion === 'control' ? vistaControl(estado) : null), [estado, seccion]);
+  const destinatarios = useMemo(() => (seccion === 'destinatarios' ? vistaDestinatarios(estado) : null), [estado, seccion]);
+  const monitoreo = useMemo(() => (seccion === 'monitoreo' ? vistaMonitoreo(estado) : null), [estado, seccion]);
+  void noDisponible;
+  return (
+    <>
+      <div className="flex items-start justify-between gap-6">
+        <div className="flex flex-col gap-0.5">
+          <h1 className="text-h1 font-bold">{TITULOS[seccion]}</h1>
+          <span className="text-body text-app-ink-2">{home.empresa} · {fmt.fechaLarga(HOY)}{destinatarios ? ` · ${destinatarios.resumen}` : ''}</span>
+        </div>
+        <div className="flex gap-3">
+          {seccion === 'destinatarios' ? <Boton variante="secondary" tamano="large" onClick={() => dispatch({ tipo: 'abrirDestinatarioNuevo' })}>Agregar destinatario</Boton> : null}
+          {seccion === 'control' ? <Boton variante="secondary" tamano="large" onClick={() => dispatch({ tipo: 'seccion', seccion: 'movimientos' })}>Ver movimientos</Boton> : null}
+          <Boton variante="secondary" tamano="large" onClick={() => dispatch({ tipo: 'abrirPanel', orden: null })}>Pagar</Boton>
+        </div>
+      </div>
+      {monitoreo ? (
+        <SeccionMonitoreo estado={monitoreo.estado} hora={monitoreo.hora} pares={monitoreo.pares} />
+      ) : (
+        <div className="grid grid-cols-3 items-start gap-6">
+          <div className="col-span-2 flex min-w-0 flex-col gap-5">
+            {control ? <SeccionControl vista={control} dispatch={dispatch} /> : null}
+            {destinatarios ? <SeccionDestinatarios items={destinatarios.items} dispatch={dispatch} /> : null}
+          </div>
+          <div className="flex min-w-0 flex-col gap-5">
+            <TarjetaTipoDeCambio {...home.tdc} />
+            <ModuloCuentas cuentas={home.cuentas} onVerTodas={() => dispatch({ tipo: 'abrirCuentas' })} />
+          </div>
+        </div>
+      )}
+    </>
   );
 };

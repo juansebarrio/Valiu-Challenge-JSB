@@ -1,13 +1,13 @@
 // src/state/vistas.ts — selectores puros: del estado a los props de cada componente.
 import type { Centavos, TdcMicro } from '@/lib/dinero';
-import { cotizar, deducir, fechasLiquidacion, mismoDia, PARES, tdcDe, type Divisa } from '@/lib/fx';
+import { cotizar, deducir, ejecutable, fechasLiquidacion, mismoDia, PARES, tdcDe, type Divisa } from '@/lib/fx';
 import * as fmt from '@/lib/format';
 import { evaluarOrigen, type Posicion, type Tono } from '@/lib/posicion';
 import { HOY, HORARIO, HORA_TDC, MOTIVOS, NOMBRE_DIVISA, PARES_SELECTOR, AVISO_PAR_SIN_PROTOTIPO, type ArquetipoId, type Cuenta, type CuentaId, type Destinatario, type PagoFuturo, type Realizado } from '@/data/escenario';
 import { ARQUETIPO_IDS, arquetipoDe } from '@/data/arquetipos';
 import { leerCentavos } from '@/lib/dinero';
-import { cuentaPorId, cuentasActuales, destinoDeCuenta, destinoDeDestinatario, finDeSemana, movimientoDe, opcionesDelCobro, ordenACuenta, ordenDePago, pactadas, pagosPendientes, posiciones, posicionesPorDivisa, proyecciones } from './derivados';
-import { cotizacionPanel, divisasOperar, estadoInicial, fechaAgendable, fechaMaximaAgendable, origenDeshabilitado, pagoAgendado, type Clase, type Destino, type EstadoApp, type OperacionHecha, type Orden } from './estado';
+import { cuentaPorId, cuentasActuales, destinoDeCuenta, destinoDeDestinatario, finDeSemana, movimientoDe, notificaciones, opcionesDelCobro, ordenACuenta, ordenDePago, pactadas, pagosPendientes, posiciones, posicionesPorDivisa, proyecciones } from './derivados';
+import { cotizacionPanel, divisasOperar, erroresDestinatario, estadoInicial, fechaAgendable, fechaMaximaAgendable, origenDeshabilitado, pagoAgendado, type Clase, type Destino, type EstadoApp, type OperacionHecha, type Orden } from './estado';
 
 
 export type TonoBadge = 'success' | 'warning' | 'error' | 'neutral' | 'pactada' | 'info';
@@ -182,6 +182,83 @@ function nombreMovimiento(o: OperacionHecha): string {
   return `Pasar a tu ${o.destino.nombre}`;
 }
 
+// ------------------------------------------------- Secciones del menú lateral
+export interface VistaControl {
+  resumen: string;
+  grupos: { titulo: string; filas: VistaFila[]; vacio: string }[];
+}
+
+/** Control de operaciones: todo lo operado en la sesión por estado, más lo realizado antes de hoy. */
+export function vistaControl(e: EstadoApp): VistaControl {
+  const h = vistaHome(e);
+  const filaDe = (o: OperacionHecha): VistaFila => {
+    const origen = cuentaPorId(e, o.origenId)!;
+    return {
+      id: o.id, fecha: o.estado === 'Pactada' ? fmt.diaCorto(o.fechaValor) : 'Hoy', nombre: nombreMovimiento(o), monto: -o.pagas, divisa: origen.divisa, estaSemana: true,
+      detalle: o.tdc != null ? `${fmt.monto(o.recibe, o.destino.divisa)} a ${fmt.tdc(o.tdc)}` : undefined,
+      badge: o.estado === 'Pactada' ? { texto: 'Pactada', tono: 'pactada' } : o.estado === 'Cancelada' ? { texto: 'Cancelada', tono: 'neutral' } : { texto: 'En proceso', tono: 'warning' },
+    };
+  };
+  const pact = e.operaciones.filter((o) => o.estado === 'Pactada').map(filaDe);
+  const proc = e.operaciones.filter((o) => o.estado === 'En proceso').map(filaDe);
+  const canc = e.operaciones.filter((o) => o.estado === 'Cancelada').map(filaDe);
+  const previas = h.realizados.filter((f) => f.fecha !== 'Hoy' || !e.operaciones.some((o) => o.id === f.id)).filter((f) => !e.operaciones.some((o) => o.id === f.id));
+  const n = e.operaciones.length;
+  return {
+    resumen: n ? `${n} ${n === 1 ? 'operación' : 'operaciones'} hoy · ${proc.length} en proceso · ${pact.length} ${pact.length === 1 ? 'pactada' : 'pactadas'} · ${canc.length} ${canc.length === 1 ? 'cancelada' : 'canceladas'}` : 'Todavía no operaste hoy.',
+    grupos: [
+      { titulo: `Pactadas (${pact.length})`, filas: pact, vacio: 'Sin pagos pactados. Al elegir otra fecha en la revisión, la operación queda acá hasta que salga el dinero.' },
+      { titulo: `En proceso (${proc.length})`, filas: proc, vacio: 'Nada en proceso.' },
+      { titulo: `Canceladas (${canc.length})`, filas: canc, vacio: 'Ninguna cancelada.' },
+      { titulo: `Realizadas (${previas.length})`, filas: previas, vacio: 'Sin movimientos anteriores.' },
+    ],
+  };
+}
+
+export interface VistaDestinatario {
+  id: string;
+  nombre: string;
+  divisa: Divisa;
+  cuenta: string;
+  pendientes: string | null;
+}
+
+/** Destinatarios: la lista con su cuenta y lo que tienen pendiente; "Pagar" abre el panel sin monto. */
+export function vistaDestinatarios(e: EstadoApp): { resumen: string; items: VistaDestinatario[] } {
+  const pend = pagosPendientes(e).filter((p) => !p.pactada);
+  const items = e.datos.destinatarios.map((d) => {
+    const suyos = pend.filter((p) => p.destinatarioId === d.id);
+    const total = suyos.reduce((acc, p) => acc + p.monto, 0);
+    return { id: d.id, nombre: d.nombre, divisa: d.divisa, cuenta: `${d.banco} · **** ${d.mascara}`, pendientes: suyos.length ? `${suyos.length} ${suyos.length === 1 ? 'pago pendiente' : 'pagos pendientes'} · ${fmt.monto(total, d.divisa)}` : null };
+  });
+  return { resumen: `${items.length} destinatarios`, items };
+}
+
+export interface VistaParMonitoreo {
+  par: string;
+  base: Divisa;
+  cotizada: Divisa;
+  compra: TdcMicro;
+  venta: TdcMicro;
+  /** Ejecutables con los factores de fx.ts, para que se vea el spread sobre el indicativo. */
+  ejecutableCompra: TdcMicro;
+  ejecutableVenta: TdcMicro;
+  tendencia: number[] | null;
+  enPosiciones: boolean;
+}
+
+/** Monitoreo de divisas: los pares operables con sus dos lados y el ejecutable que saldría ahora mismo. */
+export function vistaMonitoreo(e: EstadoApp): { estado: 'vivo' | 'congelado' | 'pausa'; hora: string; pares: VistaParMonitoreo[] } {
+  const arq = arquetipoDe(e.arquetipo);
+  const operables = Object.keys(PARES).filter((par) => !PARES[par].sinPrototipo);
+  const pares = [...arq.paresTarjeta, ...operables.filter((p) => !arq.paresTarjeta.includes(p))].map((par) => {
+    const [base, cotizada] = par.split('/') as [Divisa, Divisa];
+    const t = e.tdcVivo[par];
+    return { par, base, cotizada, compra: t.compra, venta: t.venta, ejecutableCompra: ejecutable(t.compra, 'comprar'), ejecutableVenta: ejecutable(t.venta, 'vender'), tendencia: par === arq.paresTarjeta[0] ? arq.tendencia : null, enPosiciones: arq.paresTarjeta.includes(par) };
+  });
+  return { estado: e.pausado ? 'pausa' : e.congelado ? 'congelado' : 'vivo', hora: HORA_TDC, pares };
+}
+
 // ------------------------------------------------------ Pantalla inicial
 export interface VistaArquetipo {
   id: ArquetipoId;
@@ -234,14 +311,14 @@ export interface GrupoDestino {
 }
 
 export interface VistaPanel {
-  tipo: 'pago' | 'depositar' | 'detalle' | 'agendar';
+  tipo: 'pago' | 'depositar' | 'detalle' | 'agendar' | 'notificaciones' | 'cuentas' | 'destinatario';
   titulo: string;
   sub: string;
   paso: EstadoApp['panel']['paso'];
   sinTdc: boolean;
   mercadoCerrado: boolean;
   /** pagar: abre el flujo de pago con `orden` (detalle de un pendiente o "Pagar ahora" tras agendar) · continuarPago: del paso Pago al Origen. */
-  primario: { label: string; habilitado: boolean; accion: 'continuar' | 'continuarPago' | 'pedirPrecio' | 'confirmar' | 'volverInicio' | 'cerrar' | 'pagar' | 'agendar' | 'confirmarCancelacion' | 'ninguna' };
+  primario: { label: string; habilitado: boolean; accion: 'continuar' | 'continuarPago' | 'pedirPrecio' | 'confirmar' | 'volverInicio' | 'cerrar' | 'pagar' | 'agendar' | 'confirmarCancelacion' | 'guardarDestinatario' | 'ninguna' };
   secundario: { label: string; accion: 'cancelar' | 'volver' | 'volverOrigen' | 'comprobante' | 'volverDestino' | 'volverPago' | 'cancelarPactada' | 'pagar' } | null;
   destino: { titulo: string; busqueda: string; grupos: GrupoDestino[] } | null;
   /** Paso "¿Qué pagas con este cobro?" (entrada desde "Usar para pagar", D-30). */
@@ -253,6 +330,8 @@ export interface VistaPanel {
     pagas: Centavos; pagasDivisa: Divisa; recibe: Centavos; recibeDivisa: Divisa; ladoFijo: 'recibe' | 'pagas'; destinatario: string;
     fechas: VistaFecha[]; fechaEsHoy: boolean; fechaDia: string; hoyNoAlcanza: boolean;
     texto: string; ayuda: string | null; efecto: string; posVencimiento: string | null;
+    /** Transferencia con saldo insuficiente: no se puede continuar. */
+    error: string | null;
     tdc: TdcMicro | null; concepto: string; referencia: string;
   } | null;
   precio: {
@@ -266,6 +345,9 @@ export interface VistaPanel {
   detalle: VistaDetalle | null;
   /** Paso de datos de "Agendar un pago". */
   agenda: VistaAgenda | null;
+  notificaciones: { id: string; texto: string; movimientoId: string | null; tono: TonoBadge }[] | null;
+  cuentas: { id: CuentaId; nombre: string; divisa: Divisa; banco: string; mascara: string; saldo: string; clabe: string | null }[] | null;
+  destinatario: { nombre: string; divisa: Divisa; divisas: Divisa[]; banco: string; cuenta: string; errores: Partial<Record<'nombre' | 'banco' | 'cuenta', string>>; valido: boolean; volverA: 'destino' | null } | null;
 }
 
 export interface VistaDetalle {
@@ -336,10 +418,29 @@ export function gruposDestino(e: EstadoApp, busqueda: string, opciones: { conPag
 export function vistaPanel(e: EstadoApp): VistaPanel | null {
   const { panel } = e;
   if (!panel.abierto) return null;
-  const vacio: VistaPanel = { tipo: panel.tipo, titulo: 'Pagar', sub: '', paso: panel.paso, sinTdc: false, mercadoCerrado: e.datos.mercado === 'cerrado', primario: { label: 'Continuar', habilitado: false, accion: 'ninguna' }, secundario: { label: 'Cancelar', accion: 'cancelar' }, destino: null, pago: null, origenes: [], revision: null, precio: null, confirmacion: null, depositar: null, detalle: null, agenda: null };
+  const vacio: VistaPanel = { tipo: panel.tipo, titulo: 'Pagar', sub: '', paso: panel.paso, sinTdc: false, mercadoCerrado: e.datos.mercado === 'cerrado', primario: { label: 'Continuar', habilitado: false, accion: 'ninguna' }, secundario: { label: 'Cancelar', accion: 'cancelar' }, destino: null, pago: null, origenes: [], revision: null, precio: null, confirmacion: null, depositar: null, detalle: null, agenda: null, notificaciones: null, cuentas: null, destinatario: null };
 
   if (panel.tipo === 'detalle') return vistaDetallePanel(e, vacio);
   if (panel.tipo === 'agendar') return vistaAgendarPanel(e, vacio);
+  if (panel.tipo === 'notificaciones') {
+    const items = notificaciones(e).map((n) => ({ id: n.id, texto: n.texto, movimientoId: n.movimientoId, tono: tonoBadge[n.tono === 'warn' ? 'warn' : n.tono === 'ok' ? 'ok' : 'neutro'] as TonoBadge }));
+    return { ...vacio, tipo: 'notificaciones', titulo: 'Notificaciones', sub: items.length ? `${items.length} ${items.length === 1 ? 'aviso' : 'avisos'} de hoy y de la semana` : 'Nada nuevo por ahora.', primario: { label: 'Cerrar', habilitado: true, accion: 'cerrar' }, secundario: null, notificaciones: items };
+  }
+  if (panel.tipo === 'cuentas') {
+    const items = cuentasActuales(e).map((c) => ({ id: c.id, nombre: c.nombre, divisa: c.divisa, banco: c.banco, mascara: c.mascara, saldo: fmt.monto(c.saldo, c.divisa), clabe: c.clabe ?? null }));
+    return { ...vacio, tipo: 'cuentas', titulo: 'Tus cuentas', sub: `${items.length} cuentas en Banco BASE`, primario: { label: 'Cerrar', habilitado: true, accion: 'cerrar' }, secundario: null, cuentas: items };
+  }
+  if (panel.tipo === 'destinatario') {
+    const d = panel.destinatarioNuevo;
+    const errores = erroresDestinatario(d);
+    const mostrar = { nombre: d.nombre ? errores.nombre : undefined, banco: d.banco ? errores.banco : undefined, cuenta: d.cuenta ? errores.cuenta : undefined };
+    return {
+      ...vacio, tipo: 'destinatario', titulo: 'Agregar destinatario', sub: panel.volverA === 'destino' ? 'Después sigues con el pago a este destinatario.' : 'Queda en tu lista de destinatarios.',
+      primario: { label: panel.volverA === 'destino' ? 'Guardar y pagar' : 'Guardar', habilitado: Object.keys(errores).length === 0, accion: 'guardarDestinatario' },
+      secundario: panel.volverA === 'destino' ? { label: 'Volver', accion: 'volverDestino' } : { label: 'Cancelar', accion: 'cancelar' },
+      destinatario: { nombre: d.nombre, divisa: d.divisa, divisas: ['MXN', 'USD', 'EUR'], banco: d.banco, cuenta: d.cuenta, errores: mostrar, valido: Object.keys(errores).length === 0, volverA: panel.volverA },
+    };
+  }
 
   if (panel.tipo === 'depositar') {
     const mxn = e.datos.cuentas.find((c) => c.clabe);
@@ -371,9 +472,10 @@ export function vistaPanel(e: EstadoApp): VistaPanel | null {
   const recibeNombre = orden.destino.tipo === 'propia' ? `Tu ${orden.destino.nombre} recibe` : `${orden.destino.nombre} recibe`;
   const titulo = tituloDe(orden.destino);
   const montoRecibe = cotInd ? cotInd.recibe : orden.ladoFijo === 'recibe' ? orden.monto : 0;
+  // Sin monto todavía (destinatario o cuenta propia sin pago cargado) el subtítulo lleva la cuenta de destino, no "0.00".
   const sub = orden.destino.tipo === 'propia'
-    ? `${fmt.monto(montoRecibe, orden.destino.divisa)} · ${orden.destino.banco} **** ${orden.destino.mascara}`
-    : [fmt.monto(montoRecibe, orden.destino.divisa), orden.vence ? `vence ${fmt.diaCorto(orden.vence)}` : null, orden.referencia || null].filter(Boolean).join(' · ');
+    ? [montoRecibe > 0 ? fmt.monto(montoRecibe, orden.destino.divisa) : null, `${orden.destino.banco} **** ${orden.destino.mascara}`].filter(Boolean).join(' · ')
+    : [montoRecibe > 0 ? fmt.monto(montoRecibe, orden.destino.divisa) : `${orden.destino.banco} **** ${orden.destino.mascara}`, orden.vence ? `vence ${fmt.diaCorto(orden.vence)}` : null, orden.referencia || null].filter(Boolean).join(' · ');
   const ultima = e.operaciones[0] ?? null;
 
   const cobro = panel.cobroId && e.datos.loNuevo?.id === panel.cobroId ? e.datos.loNuevo : null;
@@ -383,11 +485,13 @@ export function vistaPanel(e: EstadoApp): VistaPanel | null {
       const ev = evaluarOrigen({ origen: c, monto: montoRecibe, divisaDestino: orden.destino.divisa, destinoPropio: orden.destino.tipo === 'propia', pagoCargado: !!orden.pagoId, posiciones: pos, proyecciones: proy, pares: e.tdcVivo });
       const deshabilitada = origenDeshabilitado(c, orden);
       const saldo = `Saldo ${fmt.monto(c.saldo, c.divisa)}${cobro && cobro.cuentaId === c.id ? ' · incluye el cobro de hoy' : ''}`;
-      const consecuencia = deshabilitada ? { texto: 'Sin saldo', tono: 'neutral' as const } : { texto: ev.consecuencia.texto, tono: tonoBadge[ev.consecuencia.tono], ayuda: ev.consecuencia.ayuda };
+      const consecuencia = deshabilitada ? { texto: c.saldo <= 0 ? 'Sin saldo' : 'No alcanza el saldo', tono: 'neutral' as const } : { texto: ev.consecuencia.texto, tono: tonoBadge[ev.consecuencia.tono], ayuda: ev.consecuencia.ayuda };
       return { id: c.id, nombre: c.nombre, saldo, pagas: montoRecibe > 0 ? ev.pagasTexto : 'El monto se elige después', consecuencia, seleccionada: c.id === panel.origenId, deshabilitada };
     });
 
   const hoyNoAlcanza = !!origen && !!cotInd && cotInd.pagas > origen.saldo;
+  // Una transferencia (misma divisa) no tiene fecha valor para fondear: con saldo insuficiente no se puede continuar.
+  const saldoInsuficiente = !!origen && !!cotInd && sinTdc && orden.destino.tipo === 'tercero' && cotInd.pagas > origen.saldo;
   const fechasBase = fechasLiquidacion(HOY, orden.vence);
   const fechas: VistaFecha[] = fechasBase.map((f) => ({ ...f, seleccionada: mismoDia(f.fecha, panel.fechaValor), deshabilitada: hoyNoAlcanza && f.etiqueta === 'Hoy', motivo: hoyNoAlcanza && f.etiqueta === 'Hoy' ? 'Hoy no alcanza el saldo' : undefined }));
   const fechaEsHoy = mismoDia(panel.fechaValor, HOY);
@@ -416,6 +520,7 @@ export function vistaPanel(e: EstadoApp): VistaPanel | null {
       editable: !orden.conFactura,
       pagas: cotInd.pagas, pagasDivisa: origen.divisa, recibe: cotInd.recibe, recibeDivisa: orden.destino.divisa, ladoFijo: orden.ladoFijo, destinatario: recibeNombre,
       fechas: sinTdc ? [] : fechas, fechaEsHoy, fechaDia, hoyNoAlcanza, texto, ayuda, efecto, posVencimiento: sinTdc ? null : posVencimiento,
+      error: saldoInsuficiente ? `No alcanza el saldo de tu ${origen.nombre} (${fmt.monto(origen.saldo, origen.divisa)}).` : null,
       tdc: sinTdc ? null : tdcInd, concepto: orden.motivo ?? '', referencia: orden.referencia,
     };
   }
@@ -441,7 +546,7 @@ export function vistaPanel(e: EstadoApp): VistaPanel | null {
   const mercadoCerrado = e.datos.mercado === 'cerrado';
   // Sin factura el monto se elige en la revisión, así que desde Origen se puede continuar con monto 0; para pedir precio sí hace falta un monto.
   const puedeContinuar = !!origen && !!cotInd && (cotInd.recibe > 0 || !orden.conFactura);
-  const puedePedir = !!origen && !!cotInd && cotInd.recibe > 0;
+  const puedePedir = !!origen && !!cotInd && cotInd.recibe > 0 && !saldoInsuficiente;
   const primario: VistaPanel['primario'] =
     panel.paso === 'origen' ? { label: 'Continuar', habilitado: puedeContinuar, accion: 'continuar' }
       : panel.paso === 'revision' ? (sinTdc ? { label: 'Continuar', habilitado: puedePedir, accion: 'pedirPrecio' } : { label: 'Pedir precio', habilitado: puedePedir && !mercadoCerrado, accion: 'pedirPrecio' })

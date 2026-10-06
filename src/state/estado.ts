@@ -7,11 +7,11 @@ import { neto } from '@/lib/posicion';
 import * as fmt from '@/lib/format';
 import { AGENDAR_DIAS, HOY, DURACION_PRECIO_S, TOKEN_INCORRECTO, datosEscenario, type ArquetipoId, type CuentaId, type Datos, type EscenarioNombre, type PagoFuturo } from '@/data/escenario';
 import { arquetipoDe } from '@/data/arquetipos';
-import { claseDe, cuentaPorId, cuentasActuales, finDeSemana, motivoPorDefecto, movimientoDe, opcionesDelCobro, ordenDePago, pagoPorDefectoDelCobro, posicionesPorDivisa } from './derivados';
+import { claseDe, cuentaPorId, cuentasActuales, destinoDeDestinatario, finDeSemana, motivoPorDefecto, movimientoDe, opcionesDelCobro, ordenADestinatario, ordenDePago, pagoPorDefectoDelCobro, posicionesPorDivisa } from './derivados';
 
 export type Pestana = 'posicion' | 'operar';
 /** Sección del menú lateral: Inicio o Movimientos (la lista completa). */
-export type Seccion = 'inicio' | 'movimientos';
+export type Seccion = 'inicio' | 'movimientos' | 'control' | 'destinatarios' | 'monitoreo';
 export type PasoPanel = 'pago' | 'destino' | 'origen' | 'revision' | 'precio' | 'confirmacion' | 'cancelar';
 export type Precio = { estado: 'indicativo' } | { estado: 'fijo'; tdc: TdcMicro; venceEn: number } | { estado: 'vencido'; tdc: TdcMicro };
 
@@ -49,10 +49,18 @@ export interface Agenda {
   creado: string | null;
 }
 
+export interface DestinatarioNuevo {
+  nombre: string;
+  divisa: Divisa;
+  banco: string;
+  /** Número de cuenta o CLABE; se guarda la máscara (últimos 4 dígitos). */
+  cuenta: string;
+}
+
 export interface Panel {
   abierto: boolean;
-  /** pago: flujo principal · depositar: CLABE · detalle: una fila de Movimientos · agendar: pago nuevo. */
-  tipo: 'pago' | 'depositar' | 'detalle' | 'agendar';
+  /** pago: flujo principal · depositar: CLABE · detalle: una fila de Movimientos · agendar: pago nuevo · notificaciones · cuentas: todas las cuentas · destinatario: alta de destinatario. */
+  tipo: 'pago' | 'depositar' | 'detalle' | 'agendar' | 'notificaciones' | 'cuentas' | 'destinatario';
   paso: PasoPanel;
   /** Fila de Movimientos abierta en el detalle (id del pago cargado, de la operación o del realizado). */
   movimientoId: string | null;
@@ -63,6 +71,10 @@ export interface Panel {
   cobroId: string | null;
   /** Pago elegido en el paso "¿Qué pagas con este cobro?". */
   pagoElegidoId: string | null;
+  /** Alta de destinatario ("Agregar destinatario"). */
+  destinatarioNuevo: DestinatarioNuevo;
+  /** Desde dónde se abrió el alta: 'destino' vuelve al flujo de pago con el destinatario nuevo elegido. */
+  volverA: 'destino' | null;
   orden: Orden | null;
   origenId: CuentaId | null;
   fechaValor: Date;
@@ -157,7 +169,8 @@ export const ONBOARDING_PASOS = 4;
 export const VENCE_EN_DEMO = 5;
 
 const AGENDA_VACIA: Agenda = { destino: null, montoTexto: '', fecha: null, motivo: null, referencia: '', creado: null };
-const PANEL_CERRADO: Panel = { abierto: false, tipo: 'pago', paso: 'origen', movimientoId: null, cancelando: false, agenda: AGENDA_VACIA, cobroId: null, pagoElegidoId: null, orden: null, origenId: null, fechaValor: HOY, precio: { estado: 'indicativo' }, token: '', tokenError: null, confirmando: false, busquedaDestino: '' };
+const DESTINATARIO_VACIO: DestinatarioNuevo = { nombre: '', divisa: 'MXN', banco: '', cuenta: '' };
+const PANEL_CERRADO: Panel = { abierto: false, tipo: 'pago', paso: 'origen', movimientoId: null, cancelando: false, agenda: AGENDA_VACIA, cobroId: null, pagoElegidoId: null, destinatarioNuevo: DESTINATARIO_VACIO, volverA: null, orden: null, origenId: null, fechaValor: HOY, precio: { estado: 'indicativo' }, token: '', tokenError: null, confirmando: false, busquedaDestino: '' };
 
 export const OPERAR_INICIAL: Operar = {
   tipo: 'comprar', par: 'USD/MXN', parAbierto: false, montoIzq: '', montoDer: '', ladoActivo: null, editando: null,
@@ -220,6 +233,13 @@ export type Accion =
   | { tipo: 'elegirPago'; pagoId: string }
   | { tipo: 'continuarPago' }
   | { tipo: 'otroDestinatario' }
+  // Secciones del menú, notificaciones, cuentas y alta de destinatario
+  | { tipo: 'abrirNotificaciones' }
+  | { tipo: 'abrirCuentas' }
+  | { tipo: 'pagarA'; destinatarioId: string }
+  | { tipo: 'abrirDestinatarioNuevo' }
+  | { tipo: 'destinatarioCampo'; campo: keyof DestinatarioNuevo; valor: string }
+  | { tipo: 'guardarDestinatario' }
   | { tipo: 'abrirDepositar' }
   | { tipo: 'cerrarPanel' }
   | { tipo: 'busquedaDestino'; texto: string }
@@ -375,8 +395,22 @@ function avisoCancelacion(e: EstadoApp, op: OperacionHecha): Aviso {
   return { tipo: 'info', texto: `Cancelaste el paso pactado de ${recibe} a tu ${op.destino.nombre}. No sale dinero de tu ${cuentaPorId(e, op.origenId)!.nombre}.` };
 }
 
-/** Una cuenta sin saldo en la divisa del pago no se puede elegir: sería una transferencia sin fondos, sin precio que cerrar ni fecha para fondear (D-31). */
-export const origenDeshabilitado = (cuenta: { divisa: Divisa; saldo: Centavos }, orden: Orden | null) => !!orden && cuenta.divisa === orden.destino.divisa && orden.destino.tipo === 'tercero' && cuenta.saldo <= 0;
+/**
+ * Una cuenta en la divisa del pago sin saldo suficiente no se puede elegir: sería una transferencia sin fondos, sin precio que cerrar
+ * ni fecha para fondear (D-31). Con monto 0 (todavía no elegido) la cuenta sigue elegible.
+ */
+export const origenDeshabilitado = (cuenta: { divisa: Divisa; saldo: Centavos }, orden: Orden | null) =>
+  !!orden && cuenta.divisa === orden.destino.divisa && orden.destino.tipo === 'tercero' && (cuenta.saldo <= 0 || (orden.monto > 0 && cuenta.saldo < orden.monto));
+
+/** Errores del alta de destinatario por campo (vacío = válido). */
+export function erroresDestinatario(d: DestinatarioNuevo): Partial<Record<keyof DestinatarioNuevo, string>> {
+  const errores: Partial<Record<keyof DestinatarioNuevo, string>> = {};
+  if (d.nombre.trim().length < 2) errores.nombre = 'Escribe el nombre del destinatario.';
+  if (d.banco.trim().length < 2) errores.banco = 'Escribe el banco.';
+  const digitos = d.cuenta.replace(/\D/g, '');
+  if (digitos.length < 4) errores.cuenta = 'Escribe al menos los últimos 4 dígitos de la cuenta o CLABE.';
+  return errores;
+}
 
 const inicioDelDia = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
 
@@ -493,6 +527,35 @@ export function reducer(e: EstadoApp, a: Accion): EstadoApp {
       if (!cobro || e.panel.paso !== 'pago') return e;
       return { ...e, panel: { ...e.panel, paso: 'destino', orden: null, origenId: cobro.cuentaId, busquedaDestino: '' } };
     }
+    case 'abrirNotificaciones':
+      return { ...e, onboarding: { ...e.onboarding, activo: false }, operar: cerrarSelectores(e.operar), panel: { ...PANEL_CERRADO, abierto: true, tipo: 'notificaciones', paso: 'origen' } };
+    case 'abrirCuentas':
+      return { ...e, onboarding: { ...e.onboarding, activo: false }, operar: cerrarSelectores(e.operar), panel: { ...PANEL_CERRADO, abierto: true, tipo: 'cuentas', paso: 'origen' } };
+    case 'pagarA': {
+      const d = e.datos.destinatarios.find((x) => x.id === a.destinatarioId);
+      return d ? reducer(e, { tipo: 'abrirPanel', orden: ordenADestinatario(d) }) : e;
+    }
+    case 'abrirDestinatarioNuevo': {
+      // Desde el paso Destino se vuelve al flujo con el destinatario nuevo ya elegido; desde Destinatarios o el clásico solo se guarda.
+      const desdeDestino = e.panel.abierto && e.panel.tipo === 'pago' && e.panel.paso === 'destino';
+      const base = desdeDestino ? e.panel : { ...PANEL_CERRADO, abierto: true };
+      return { ...e, onboarding: { ...e.onboarding, activo: false }, operar: cerrarSelectores(e.operar), panel: { ...base, tipo: 'destinatario', paso: 'revision', destinatarioNuevo: DESTINATARIO_VACIO, volverA: desdeDestino ? 'destino' : null } };
+    }
+    case 'destinatarioCampo':
+      return e.panel.tipo === 'destinatario' ? { ...e, panel: { ...e.panel, destinatarioNuevo: { ...e.panel.destinatarioNuevo, [a.campo]: a.valor } } } : e;
+    case 'guardarDestinatario': {
+      if (e.panel.tipo !== 'destinatario') return e;
+      const d = e.panel.destinatarioNuevo;
+      if (Object.keys(erroresDestinatario(d)).length) return e;
+      const digitos = d.cuenta.replace(/\D/g, '');
+      const nuevo = { id: `d${e.datos.destinatarios.filter((x) => x.id.startsWith('d')).length + 1}`, nombre: d.nombre.trim(), divisa: d.divisa, banco: d.banco.trim(), mascara: digitos.slice(-4) };
+      const conNuevo: EstadoApp = { ...e, datos: { ...e.datos, destinatarios: [...e.datos.destinatarios, nuevo] } };
+      if (e.panel.volverA === 'destino') {
+        const vuelto: EstadoApp = { ...conNuevo, panel: { ...e.panel, tipo: 'pago', paso: 'destino', volverA: null, destinatarioNuevo: DESTINATARIO_VACIO } };
+        return reducer(vuelto, { tipo: 'elegirDestino', destino: destinoDeDestinatario(nuevo) });
+      }
+      return { ...conNuevo, panel: PANEL_CERRADO, aviso: { tipo: 'success', texto: `Agregaste a ${nuevo.nombre} (${nuevo.banco} **** ${nuevo.mascara}, ${nuevo.divisa}).` } };
+    }
     case 'continuarPago': {
       const cobro = e.datos.loNuevo;
       const opcion = cobro && e.panel.paso === 'pago' ? opcionesDelCobro(e, cobro).find((o) => o.pago.id === e.panel.pagoElegidoId) : null;
@@ -517,7 +580,8 @@ export function reducer(e: EstadoApp, a: Accion): EstadoApp {
     }
     case 'elegirOrigen': {
       const orden = e.panel.orden;
-      const cuenta = cuentaPorId(e, a.origenId);
+      // El saldo que cuenta es el actual (después de lo operado hoy), no el del escenario.
+      const cuenta = cuentasActuales(e).find((c) => c.id === a.origenId);
       if (!cuenta || origenDeshabilitado(cuenta, orden)) return e;
       const motivo = orden && !orden.conFactura ? motivoPorDefecto(cuentaPorId(e, a.origenId)?.divisa ?? null, orden) : orden?.motivo ?? null;
       return { ...e, panel: sinPrecio({ ...e.panel, origenId: a.origenId, fechaValor: HOY, orden: orden ? { ...orden, motivo } : null }) };

@@ -20,6 +20,7 @@ Node 22, Next 16 (App Router), React 19, TypeScript, Tailwind 4, `@iconscout/rea
 | `/` | Pantalla inicial: elegir con qué empresa de ejemplo se entra (tipo login de demo). Tab recorre los CTA, Enter entra; "Cerrar sesión" vuelve acá. |
 | `/importadora` | Servicios Corporativos KAAX (flujo principal): faltan dólares para los pagos de la semana y se pagan con pesos. |
 | `/turismo` | Viajes Altavista (flujo secundario, S01–S08): el cobro en pesos de hoy paga en euros al hotel; la Cuenta EUR está en cero. "Usar para pagar" abre "¿Qué pagas con este cobro?". |
+| Secciones del menú | Dentro de cada home: Inicio, Movimientos (lista completa), Control de operaciones (lo operado por estado), Destinatarios (lista, "Pagar" y alta) y Monitoreo de divisas (pares con sus dos lados y el ejecutable). La campana abre las notificaciones derivadas del estado y "Ver todas mis cuentas" el panel de cuentas. |
 | `/tablero/alta` | Frames 01–07, 03B–07B, Estados, 08–16, D1–D5 (detalle y cancelación), A1–A4 (agendar), S01–S08 (turismo, con S07H/S08H para la variante Hoy) y 17–20 a 1280 px, renderizados con los mismos componentes en estados fijos (`src/state/escenarios.ts`). `/tablero` redirige acá. |
 | `/sistema` | Guía viva: tokens del design system y cada componente en sus estados. |
 
@@ -30,7 +31,7 @@ Parámetros de `/importadora` y `/turismo`:
 - `?demo=1` muestra un control flotante con "Vencer precio" (deja la cuenta en 0:05), "Ver recorrido" y "Reiniciar escenario".
 - `?recorrido=0` apaga el onboarding.
 - `?pago=<id>` abre el panel en Origen con ese pago cargado; `?cobro=<id>` entra desde el cobro de hoy (en turismo, al paso "¿Qué pagas con este cobro?").
-- `?seccion=movimientos` abre la sección Movimientos del menú (la lista completa de próximos y realizados).
+- `?seccion=movimientos|control|destinatarios|monitoreo` abre esa sección del menú.
 
 Estado en memoria: recargar reinicia el escenario (nada de localStorage). Solo escritorio: con menos de 1200 px el shell se oculta y queda solo el aviso, y el documento nunca tiene scroll horizontal.
 
@@ -91,6 +92,7 @@ Los selectores (`vistas.ts`) derivan todo lo demás: posiciones y proyección a 
 - **"Pagar" del encabezado y "Pagar a otro destinatario"**: abren el paso Destino, construido con el selector del frame 14 (grupos "Pagos próximos", "Tus cuentas" y "Destinatarios"); una cuenta propia en otra divisa es una compra o una venta por el mismo panel, y el monto se escribe en la revisión ("Recibe" y "Pagas", el que escribes queda fijo). Pagar desde la cuenta de la misma divisa es una transferencia: sin tipo de cambio ni fecha valor, con el token al confirmar. "Agregar destinatario" avisa que no está en el prototipo.
 - **Arquetipos**: `/` elige la empresa; cada home recibe su `Arquetipo` (datos, tipo de cambio base, par de la decisión, orden de las tarjetas, pago principal y cómo entra desde el cobro). Nada se persiste: la ruta lleva el arquetipo y el recorrido se muestra una vez por arquetipo dentro de la sesión.
 - **Flujo secundario (turismo)**: "Usar para pagar" abre el paso "¿Qué pagas con este cobro?" (OpcionPago: cuánto del cobro usa cada pago y su consecuencia, el faltante preseleccionado, D-30); Continuar sigue el panel de siempre con la cuenta del cobro preseleccionada; la cuenta sin saldo en la divisa del pago se muestra deshabilitada ("Sin saldo", D-31); la divisa con faltante va primera y no se mueve (D-34). Las diferencias con el archivo de diseño están en `docs/diferencias-cc-vs-diseno.md`.
+- **Secciones y paneles**: Control de operaciones, Destinatarios y Monitoreo de divisas son vistas del mismo `HomeApp` (`seccion` en el estado); las notificaciones (`notificaciones()` en `derivados.ts`), todas las cuentas y el alta de destinatario viven en el panel. Un destinatario nuevo se guarda en memoria con la máscara de su cuenta; desde el paso Destino, "Guardar y pagar" sigue con el pago. Una transferencia (misma divisa) con saldo insuficiente no se puede elegir ("No alcanza el saldo") ni continuar.
 - **Movimientos**: cada fila abre su detalle en el mismo panel (`abrirDetalle`); el "+" agenda un pago (`abrirAgendar` → `agendar`) que se suma a `datos.pagosFuturos` y mueve la posición como cualquier pago cargado; una pactada se cancela desde el detalle (`cancelarPactada` → `confirmarCancelacion` → `pactadaCancelada`) y queda en el historial como Cancelada sin tocar saldos.
 - **Onboarding**: aparece al entrar por primera vez al escenario base, no vuelve dentro de la sesión y sí al recargar (estado en memoria); `?recorrido=0` lo apaga y `?demo=1` lo repite desde "Ver recorrido". Mide el elemento objetivo en runtime (`getBoundingClientRect`) y funciona también escalado en `/tablero/alta`.
 - **Panel**: en la app queda fijo al viewport (overlay, foco inicial, Esc, devuelve el foco al cerrar); en los frames es absoluto dentro del frame de 1280 px.
@@ -103,6 +105,5 @@ Los selectores (`vistas.ts`) derivan todo lo demás: posiciones y proyección a 
 ## Pendiente (del handoff)
 
 - Export del ícono custom de IA desde Figma (node 4345:745); placeholder `lightbulb-alt`.
-- Alta de un destinatario nuevo ("Agregar destinatario").
 - Entrada "Ayuda" para repetir el recorrido desde la UI (hoy solo con `?demo=1`).
-- "Subir documento", "Ver todas mis cuentas", "Horarios de operación", "Operaciones recientes" y las secciones del menú distintas de Inicio y Movimientos muestran "Esta sección no está en el prototipo".
+- "Subir documento" (no hay OCR ni factura real) y "Horarios de operación" (el horario es un dato sin confirmar) muestran "Esta sección no está en el prototipo".

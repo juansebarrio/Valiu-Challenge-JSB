@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { aplicar, estadoInicial, pagoPorId, type Accion } from './estado';
-import { destinoDeCuenta, destinoDeDestinatario, ordenDePago } from './derivados';
+import { destinoDeCuenta, destinoDeDestinatario, notificaciones, ordenDePago } from './derivados';
 import { estadoDeEscenario } from './escenarios';
-import { vistaHome, vistaPanel, vistaOperar } from './vistas';
+import { vistaControl, vistaDestinatarios, vistaHome, vistaMonitoreo, vistaPanel, vistaOperar } from './vistas';
 import { centavos } from '@/lib/dinero';
 import * as fmt from '@/lib/format';
 
@@ -710,5 +710,74 @@ describe('sección 7 del brief · destino propio sin monto y transferencia por e
     expect(p.secundario).toEqual({ label: 'Volver', accion: 'volverPago' });
     expect(e.panel.origenId).toBe('mxn');
     expect(vistaPanel(aplicar([{ tipo: 'irPaso', paso: 'pago' }], e))!.paso).toBe('pago');
+  });
+});
+
+describe('pendientes: destinatario nuevo, secciones del menú, notificaciones y transferencia sin saldo', () => {
+  it('"Agregar destinatario" desde el paso Destino guarda y sigue con el pago a ese destinatario', () => {
+    const abierto = aplicar([{ tipo: 'abrirPanel', orden: null }, { tipo: 'abrirDestinatarioNuevo' }], base);
+    let p = vistaPanel(abierto)!;
+    expect(p).toMatchObject({ tipo: 'destinatario', titulo: 'Agregar destinatario', primario: { label: 'Guardar y pagar', habilitado: false } });
+    const lleno = aplicar([{ tipo: 'destinatarioCampo', campo: 'nombre', valor: 'Maderas del Sur' }, { tipo: 'destinatarioCampo', campo: 'divisa', valor: 'USD' }, { tipo: 'destinatarioCampo', campo: 'banco', valor: 'Banorte' }, { tipo: 'destinatarioCampo', campo: 'cuenta', valor: '12' }], abierto);
+    p = vistaPanel(lleno)!;
+    expect(p.destinatario?.errores.cuenta).toBe('Escribe al menos los últimos 4 dígitos de la cuenta o CLABE.');
+    expect(p.primario.habilitado).toBe(false);
+    const ok = aplicar([{ tipo: 'destinatarioCampo', campo: 'cuenta', valor: '072180000123456789' }, { tipo: 'guardarDestinatario' }], lleno);
+    expect(ok.datos.destinatarios.at(-1)).toEqual({ id: 'd1', nombre: 'Maderas del Sur', divisa: 'USD', banco: 'Banorte', mascara: '6789' });
+    expect(vistaPanel(ok)).toMatchObject({ tipo: 'pago', paso: 'origen', titulo: 'Pagar a Maderas del Sur' });
+    expect(vistaPanel(ok)!.origenes.map((o) => o.pagas)).toEqual(['El monto se elige después', 'El monto se elige después', 'El monto se elige después']);
+  });
+  it('desde Destinatarios el alta solo guarda y avisa; "Pagar" de la lista abre el panel sin monto', () => {
+    const e = aplicar([{ tipo: 'seccion', seccion: 'destinatarios' }, { tipo: 'abrirDestinatarioNuevo' }, { tipo: 'destinatarioCampo', campo: 'nombre', valor: 'Textiles Oaxaca' }, { tipo: 'destinatarioCampo', campo: 'banco', valor: 'HSBC México' }, { tipo: 'destinatarioCampo', campo: 'cuenta', valor: '4410' }, { tipo: 'guardarDestinatario' }], base);
+    expect(e.panel.abierto).toBe(false);
+    expect(e.aviso).toEqual({ tipo: 'success', texto: 'Agregaste a Textiles Oaxaca (HSBC México **** 4410, MXN).' });
+    const d = vistaDestinatarios(e);
+    expect(d.items.at(-1)).toMatchObject({ nombre: 'Textiles Oaxaca', cuenta: 'HSBC México · **** 4410', pendientes: null });
+    expect(d.items[0]).toMatchObject({ nombre: 'Shenzhen Parts Co.', pendientes: '1 pago pendiente · 1,500.00 USD' });
+    const pagar = aplicar([{ tipo: 'pagarA', destinatarioId: 'sz' }], e);
+    expect(vistaPanel(pagar)).toMatchObject({ tipo: 'pago', paso: 'origen', titulo: 'Pagar a Shenzhen Parts Co.' });
+    expect(pagar.panel.orden).toMatchObject({ monto: 0, conFactura: false });
+  });
+  it('Control de operaciones agrupa por estado y Monitoreo lista los pares con su ejecutable', () => {
+    const c = vistaControl(estadoDeEscenario('pactada'));
+    expect(c.resumen).toBe('1 operación hoy · 0 en proceso · 1 pactada · 0 canceladas');
+    expect(c.grupos.map((g) => [g.titulo, g.filas.length])).toEqual([['Pactadas (1)', 1], ['En proceso (0)', 0], ['Canceladas (0)', 0], ['Realizadas (3)', 3]]);
+    expect(c.grupos[0].filas[0]).toMatchObject({ nombre: 'Shenzhen Parts Co.', badge: { texto: 'Pactada', tono: 'pactada' }, detalle: '1,500.00 USD a 18.092415' });
+    const m = vistaMonitoreo(base);
+    expect(m.pares.map((p) => p.par)).toEqual(['USD/MXN', 'EUR/MXN', 'EUR/USD']);
+    expect(fmt.tdc(m.pares[0].ejecutableCompra)).toBe('18.092415');
+    expect(m.pares[2]).toMatchObject({ compra: 1_175_000, venta: 1_171_000, enPosiciones: false });
+  });
+  it('las notificaciones salen del estado y abren el movimiento', () => {
+    const n = notificaciones(base);
+    expect(n.map((x) => x.texto)).toEqual([
+      'Entró el cobro de Comercial Norte: 180,000.00 MXN (10:42).',
+      'Faltan 1,000.00 USD para los pagos de la semana.',
+      'Vence el jue 8: Shenzhen Parts Co., 1,500.00 USD.',
+      'Vence el vie 9: Logística Pacífico, 1,000.00 USD.',
+      'Vence el vie 9: Asia Packaging, 500.00 USD.',
+    ]);
+    expect(n[0].movimientoId).toBe('r1');
+    const p = vistaPanel(aplicar([{ tipo: 'abrirNotificaciones' }], base))!;
+    expect(p).toMatchObject({ tipo: 'notificaciones', sub: '5 avisos de hoy y de la semana' });
+    expect(notificaciones(estadoDeEscenario('pactada')).map((x) => x.texto)).toContain('Pactado: 27,138.62 MXN salen el jue 8 para Shenzhen Parts Co..');
+  });
+  it('transferencia con saldo insuficiente: la cuenta queda deshabilitada y la revisión no deja continuar', () => {
+    // Tras pagar a Shenzhen desde USD quedan 500.00 USD: Logística Pacífico (1,000 USD) ya no se puede pagar desde ahí.
+    const pagado = aplicar([{ tipo: 'abrirPanel', orden: shenzhen }, { tipo: 'elegirOrigen', origenId: 'usd' }, { tipo: 'irPaso', paso: 'revision' }, { tipo: 'pedirPrecio' }, ...TOKEN, { tipo: 'volverInicio' }], base);
+    const log = aplicar([{ tipo: 'abrirPanel', orden: ordenDePago(pagoPorId(pagado, 'p2')!) }], pagado);
+    const usd = vistaPanel(log)!.origenes.find((o) => o.id === 'usd')!;
+    expect(usd).toMatchObject({ deshabilitada: true, consecuencia: { texto: 'No alcanza el saldo', tono: 'neutral' } });
+    expect(aplicar([{ tipo: 'elegirOrigen', origenId: 'usd' }], log).panel.origenId).toBe('mxn');
+    // Sin monto al entrar (destinatario sin pago), la revisión avisa y bloquea cuando el monto escrito supera el saldo.
+    const sinMonto = aplicar([{ tipo: 'pagarA', destinatarioId: 'log' }, { tipo: 'elegirOrigen', origenId: 'usd' }, { tipo: 'irPaso', paso: 'revision' }, { tipo: 'monto', lado: 'recibe', valor: centavos(800) }], pagado);
+    const r = vistaPanel(sinMonto)!;
+    expect(r.revision?.error).toBe('No alcanza el saldo de tu Cuenta USD (500.00 USD).');
+    expect(r.primario.habilitado).toBe(false);
+  });
+  it('"Ver todas mis cuentas" lista las cuentas con CLABE y ?seccion= acepta las secciones nuevas', () => {
+    const p = vistaPanel(aplicar([{ tipo: 'abrirCuentas' }], base))!;
+    expect(p.cuentas?.map((c) => [c.nombre, c.saldo, c.clabe])).toEqual([['Cuenta Principal MXN', '1,180,000.00 MXN', '012180000010250014'], ['Cuenta USD', '2,000.00 USD', null], ['Cuenta EUR', '50,000.00 EUR', null]]);
+    expect(aplicar([{ tipo: 'seccion', seccion: 'monitoreo' }], base).seccion).toBe('monitoreo');
   });
 });

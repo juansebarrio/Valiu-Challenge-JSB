@@ -147,6 +147,18 @@ export function filasTablero(): FilaTablero[] {
       ],
     },
     {
+      titulo: 'Secciones del menú y paneles',
+      nota: 'Control de operaciones, Destinatarios y Monitoreo de divisas como vistas reales; notificaciones, todas las cuentas y alta de destinatario en el panel',
+      frames: [
+        { n: 'N1', titulo: 'Control de operaciones', nota: 'Lo operado en la sesión por estado (escenario pactada): pactadas, en proceso, canceladas y realizadas antes de hoy; cada fila abre su detalle.', estado: aplicar([{ tipo: 'seccion', seccion: 'control' }], pactadaInicio) },
+        { n: 'N2', titulo: 'Destinatarios', nota: 'Cuenta, divisa y pendientes de cada destinatario; "Pagar" abre el panel sin monto y "Agregar destinatario" el alta.', estado: aplicar([{ tipo: 'seccion', seccion: 'destinatarios' }], base) },
+        { n: 'N3', titulo: 'Monitoreo de divisas', nota: 'Pares operables con sus dos lados indicativos, el ejecutable que saldría ahora (fx.ts) y la tendencia del par de la decisión.', estado: aplicar([{ tipo: 'seccion', seccion: 'monitoreo' }], base) },
+        { n: 'N4', titulo: 'Panel · Notificaciones', nota: 'Avisos derivados del estado: el cobro de hoy, los faltantes de la semana, lo en proceso o pactado y los vencimientos; cada uno abre su movimiento.', estado: aplicar([{ tipo: 'abrirNotificaciones' }], base) },
+        { n: 'N5', titulo: 'Panel · Tus cuentas', nota: '"Ver todas mis cuentas": saldo, banco, máscara y CLABE; "Pasar dinero a esta cuenta" y "Ver datos para depositar".', estado: aplicar([{ tipo: 'abrirCuentas' }], base) },
+        { n: 'N6', titulo: 'Panel · Agregar destinatario', nota: 'Desde el paso Destino: nombre, divisa, banco y cuenta o CLABE; "Guardar y pagar" sigue con el pago al destinatario nuevo.', estado: aplicar([{ tipo: 'abrirPanel', orden: null }, { tipo: 'abrirDestinatarioNuevo' }, { tipo: 'destinatarioCampo', campo: 'nombre', valor: 'Maderas del Sur' }, { tipo: 'destinatarioCampo', campo: 'banco', valor: 'Banorte' }, { tipo: 'destinatarioCampo', campo: 'cuenta', valor: '072180000123456789' }], base) },
+      ],
+    },
+    {
       titulo: 'Onboarding',
       nota: 'Recorrido contextual de 4 pasos al entrar por primera vez · Atrás / Siguiente y cierre en cualquier momento · "Empezar" o × vuelven al inicio',
       frames: [0, 1, 2, 3].map((i) => ({
