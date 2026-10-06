@@ -14,7 +14,7 @@ import { ModuloCuentas } from './ModuloCuentas';
 import { AvisoVistaAnterior } from './AvisoVistaAnterior';
 import { FormularioOperar } from './FormularioOperar';
 import { PanelOperar } from './PanelOperar';
-import { GrupoOrigen } from './OpcionOrigen';
+import { GrupoOrigen, GrupoPago } from './OpcionOrigen';
 import { BloqueMonto } from './BloqueMonto';
 import { FechaLiquidacion } from './FechaLiquidacion';
 import { CajaTdcValiu } from './CajaTdcValiu';
@@ -180,6 +180,7 @@ const PanelContenido: FC<{ vista: VistaPanel; estado: EstadoApp; dispatch: (a: A
     if (!v.primario.habilitado) return;
     switch (v.primario.accion) {
       case 'continuar': dispatch({ tipo: 'irPaso', paso: 'revision' }); break;
+      case 'continuarPago': dispatch({ tipo: 'continuarPago' }); break;
       case 'pedirPrecio': dispatch({ tipo: 'pedirPrecio' }); break;
       case 'confirmar': dispatch({ tipo: 'confirmar' }); break;
       case 'volverInicio': dispatch({ tipo: 'volverInicio' }); break;
@@ -220,6 +221,16 @@ const PanelContenido: FC<{ vista: VistaPanel; estado: EstadoApp; dispatch: (a: A
         <>
           <h3 className="text-h3 font-semibold">{v.destino.titulo}</h3>
           <SelectorDestino modo="lista" grupos={v.destino.grupos} busqueda={v.destino.busqueda} onBusqueda={(t) => dispatch({ tipo: 'busquedaDestino', texto: t })} onElegir={(d) => dispatch(v.tipo === 'agendar' ? { tipo: 'agendaDestino', destino: d.destino } : { tipo: 'elegirDestino', destino: d.destino, pago: d.pago })} onAgregar={noDisponible} />
+        </>
+      ) : null}
+
+      {v.tipo === 'pago' && v.paso === 'pago' && v.pago ? (
+        <>
+          <h3 className="text-h3 font-semibold">{v.pago.titulo}</h3>
+          <GrupoPago opciones={v.pago.opciones.map((o) => ({ id: o.id, destinatario: o.destinatario, monto: o.monto, linea: o.linea, consecuencia: o.consecuencia }))} valor={estado.panel.pagoElegidoId} onCambiar={(id) => dispatch({ tipo: 'elegirPago', pagoId: id })} />
+          {v.pago.resto ? <span className="text-body text-app-ink-2 tabular-nums">{v.pago.resto}</span> : null}
+          {/* Sin destino todavía: queda deshabilitado (aria-disabled) con el motivo en el tooltip. */}
+          <Boton variante="link" aria-disabled title={v.pago.otro.motivo} onClick={noDisponible} className="cursor-not-allowed self-start text-app-ink-disabled hover:text-app-ink-disabled">{v.pago.otro.label}</Boton>
         </>
       ) : null}
 

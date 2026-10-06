@@ -157,3 +157,31 @@ export function evaluarOrigen(args: {
   }
   return { pagas, pagasTexto, consecuencia };
 }
+
+export interface PagoEvaluado {
+  /** Cuánto del cobro usaría este pago, en la divisa del cobro (null si no hay par). */
+  usa: Centavos | null;
+  /** Hay tipo de cambio de por medio: el monto es ≈. */
+  aprox: boolean;
+  consecuencia: { texto: string; tono: Tono };
+}
+
+/** Paso "¿Qué pagas con este cobro?" (D-30): cuánto del cobro usa cada pago pendiente y qué cambia en la posición. */
+export function evaluarPagoConCobro(args: {
+  cobro: { monto: Centavos; divisa: Divisa };
+  pago: { monto: Centavos; divisa: Divisa };
+  posiciones: Partial<Record<Divisa, Posicion>>;
+  /** Cuenta propia en la divisa del pago, si existe. */
+  cuentaEnDivisa: { nombre: string } | null;
+  pares: TablaPares;
+}): PagoEvaluado {
+  const { cobro, pago, posiciones, cuentaEnDivisa, pares } = args;
+  const mismaDivisa = cobro.divisa === pago.divisa;
+  const cot = cotizar({ origen: cobro.divisa, destino: pago.divisa, monto: pago.monto, ladoFijo: 'recibe', pares });
+  const usa = cot ? cot.pagas : null;
+  if (usa == null) return { usa: null, aprox: false, consecuencia: { texto: 'Sin tipo de cambio para este par', tono: 'neutro' } };
+  if (usa > cobro.monto) return { usa, aprox: !mismaDivisa, consecuencia: { texto: `El cobro no alcanza: faltan ${fmt.monto(usa - cobro.monto, cobro.divisa)}`, tono: 'warn' } };
+  if (mismaDivisa) return { usa, aprox: false, consecuencia: { texto: `Sale de tu ${cuentaEnDivisa?.nombre ?? `cuenta en ${pago.divisa}`}, sin tipo de cambio`, tono: 'neutro' } };
+  if (posiciones[pago.divisa]?.resultado.tipo === 'faltan') return { usa, aprox: true, consecuencia: { texto: `Cubre el faltante en ${pago.divisa}`, tono: 'ok' } };
+  return { usa, aprox: true, consecuencia: { texto: cuentaEnDivisa ? `Ya lo cubre tu ${cuentaEnDivisa.nombre}` : `Ya te alcanza en ${pago.divisa}`, tono: 'neutro' } };
+}

@@ -6,7 +6,7 @@ import { evaluarOrigen, type Posicion, type Tono } from '@/lib/posicion';
 import { HOY, HORARIO, HORA_TDC, MOTIVOS, NOMBRE_DIVISA, PARES_SELECTOR, AVISO_PAR_SIN_PROTOTIPO, type ArquetipoId, type Cuenta, type CuentaId, type Destinatario, type PagoFuturo, type Realizado } from '@/data/escenario';
 import { ARQUETIPO_IDS, arquetipoDe } from '@/data/arquetipos';
 import { leerCentavos } from '@/lib/dinero';
-import { cuentaPorId, cuentasActuales, destinoDeCuenta, destinoDeDestinatario, finDeSemana, movimientoDe, ordenACuenta, ordenDePago, pactadas, pagosPendientes, posiciones, posicionesPorDivisa, proyecciones } from './derivados';
+import { cuentaPorId, cuentasActuales, destinoDeCuenta, destinoDeDestinatario, finDeSemana, movimientoDe, opcionesDelCobro, ordenACuenta, ordenDePago, pactadas, pagosPendientes, posiciones, posicionesPorDivisa, proyecciones } from './derivados';
 import { cotizacionPanel, divisasOperar, estadoInicial, fechaAgendable, fechaMaximaAgendable, pagoAgendado, type Clase, type Destino, type EstadoApp, type OperacionHecha, type Orden } from './estado';
 
 
@@ -202,6 +202,16 @@ export interface VistaOpcionOrigen {
   seleccionada: boolean;
 }
 
+export interface VistaOpcionPago {
+  id: string;
+  destinatario: string;
+  monto: string;
+  /** "Vence vie 9 · Reserva 88213 · usa ≈ 89,250.00 MXN" */
+  linea: string;
+  consecuencia: { texto: string; tono: TonoBadge };
+  seleccionada: boolean;
+}
+
 export interface VistaFecha { fecha: Date; etiqueta: string; vence: boolean; seleccionada: boolean; deshabilitada: boolean; motivo?: string }
 
 export interface GrupoDestino {
@@ -216,10 +226,12 @@ export interface VistaPanel {
   paso: EstadoApp['panel']['paso'];
   sinTdc: boolean;
   mercadoCerrado: boolean;
-  /** pagar: abre el flujo de pago con `orden` (detalle de un pendiente o "Pagar ahora" tras agendar). */
-  primario: { label: string; habilitado: boolean; accion: 'continuar' | 'pedirPrecio' | 'confirmar' | 'volverInicio' | 'cerrar' | 'pagar' | 'agendar' | 'confirmarCancelacion' | 'ninguna' };
+  /** pagar: abre el flujo de pago con `orden` (detalle de un pendiente o "Pagar ahora" tras agendar) · continuarPago: del paso Pago al Origen. */
+  primario: { label: string; habilitado: boolean; accion: 'continuar' | 'continuarPago' | 'pedirPrecio' | 'confirmar' | 'volverInicio' | 'cerrar' | 'pagar' | 'agendar' | 'confirmarCancelacion' | 'ninguna' };
   secundario: { label: string; accion: 'cancelar' | 'volver' | 'volverOrigen' | 'comprobante' | 'volverDestino' | 'cancelarPactada' | 'pagar' } | null;
   destino: { titulo: string; busqueda: string; grupos: GrupoDestino[] } | null;
+  /** Paso "¿Qué pagas con este cobro?" (entrada desde "Usar para pagar", D-30). */
+  pago: { titulo: string; opciones: VistaOpcionPago[]; resto: string | null; otro: { label: string; motivo: string } } | null;
   origenes: VistaOpcionOrigen[];
   revision: {
     editable: boolean;
@@ -310,7 +322,7 @@ export function gruposDestino(e: EstadoApp, busqueda: string, opciones: { conPag
 export function vistaPanel(e: EstadoApp): VistaPanel | null {
   const { panel } = e;
   if (!panel.abierto) return null;
-  const vacio: VistaPanel = { tipo: panel.tipo, titulo: 'Pagar', sub: '', paso: panel.paso, sinTdc: false, mercadoCerrado: e.datos.mercado === 'cerrado', primario: { label: 'Continuar', habilitado: false, accion: 'ninguna' }, secundario: { label: 'Cancelar', accion: 'cancelar' }, destino: null, origenes: [], revision: null, precio: null, confirmacion: null, depositar: null, detalle: null, agenda: null };
+  const vacio: VistaPanel = { tipo: panel.tipo, titulo: 'Pagar', sub: '', paso: panel.paso, sinTdc: false, mercadoCerrado: e.datos.mercado === 'cerrado', primario: { label: 'Continuar', habilitado: false, accion: 'ninguna' }, secundario: { label: 'Cancelar', accion: 'cancelar' }, destino: null, pago: null, origenes: [], revision: null, precio: null, confirmacion: null, depositar: null, detalle: null, agenda: null };
 
   if (panel.tipo === 'detalle') return vistaDetallePanel(e, vacio);
   if (panel.tipo === 'agendar') return vistaAgendarPanel(e, vacio);
@@ -319,6 +331,8 @@ export function vistaPanel(e: EstadoApp): VistaPanel | null {
     const mxn = e.datos.cuentas.find((c) => c.clabe);
     return { ...vacio, titulo: 'Datos para depositar', sub: mxn ? `${mxn.nombre} · **** ${mxn.mascara}` : '', primario: { label: 'Listo', habilitado: true, accion: 'cerrar' }, secundario: null, depositar: mxn ? { cuenta: mxn.nombre, clabe: mxn.clabe!, banco: mxn.banco } : null };
   }
+
+  if (panel.paso === 'pago') return vistaPagoPanel(e, vacio);
 
   const orden = panel.orden;
   if (panel.paso === 'destino' || !orden) {
@@ -440,6 +454,37 @@ export function vistaConfirmacion(e: EstadoApp, o: OperacionHecha): VistaConfirm
     texto: pactada ? fmt.oracion(`Cerraste el precio en ${o.tdc != null ? fmt.tdc(o.tdc) : '—'}. El ${dia} salen ${pagas} de tu ${origen.nombre} y ${envio}`) : null,
     fondeo: pactada ? `Ten ${pagas} en tu ${origen.nombre} el ${dia} para que el pago salga.` : null,
     comprobante: pactada ? 'Descargar confirmación' : 'Descargar comprobante',
+  };
+}
+
+// ------------------------------------- Paso "¿Qué pagas con este cobro?"
+/** Entrada desde el cobro de hoy: cada pago pendiente con cuánto del cobro usa y su consecuencia; el faltante viene seleccionado (D-30). */
+function vistaPagoPanel(e: EstadoApp, vacio: VistaPanel): VistaPanel {
+  const cobro = e.datos.loNuevo;
+  if (!cobro) return { ...vacio, titulo: 'Usar el cobro', sub: 'No hay un cobro de hoy.', primario: { label: 'Cerrar', habilitado: true, accion: 'cerrar' }, secundario: null };
+  const cuenta = cuentaPorId(e, cobro.cuentaId)!;
+  const opciones = opcionesDelCobro(e, cobro);
+  const elegida = opciones.find((o) => o.pago.id === e.panel.pagoElegidoId) ?? null;
+  const vistaOpciones: VistaOpcionPago[] = opciones.map((o) => ({
+    id: o.pago.id,
+    destinatario: o.pago.destinatario,
+    monto: fmt.monto(o.pago.monto, o.pago.divisa),
+    linea: [`Vence ${fmt.diaCorto(o.pago.fecha)}`, o.pago.referencia || null, o.usa != null ? `${o === elegida ? 'usa' : 'usaría'} ${o.aprox ? '≈ ' : ''}${fmt.monto(o.usa, cobro.divisa)}` : null].filter(Boolean).join(' · '),
+    consecuencia: { texto: o.consecuencia.texto, tono: tonoBadge[o.consecuencia.tono] },
+    seleccionada: o === elegida,
+  }));
+  const resto = elegida?.usa != null
+    ? elegida.usa > cobro.monto
+      ? `El cobro no cubre este pago: faltan ${fmt.monto(elegida.usa - cobro.monto, cobro.divisa)}.`
+      : `Del cobro quedan ${elegida.aprox ? '≈ ' : ''}${fmt.monto(cobro.monto - elegida.usa, cobro.divisa)} en tu ${cuenta.nombre}.`
+    : null;
+  return {
+    ...vacio, tipo: 'pago', paso: 'pago',
+    titulo: `Usar el cobro de ${cobro.de}`,
+    sub: `${fmt.montoSigno(cobro.monto, cobro.divisa)} · Hoy ${cobro.hora} · Ref. ${cobro.referencia}`,
+    pago: { titulo: '¿Qué pagas con este cobro?', opciones: vistaOpciones, resto, otro: { label: 'Pagar a otro destinatario', motivo: 'Todavía no está en el prototipo.' } },
+    primario: { label: 'Continuar', habilitado: !!elegida && elegida.usa != null && elegida.usa <= cobro.monto, accion: 'continuarPago' },
+    secundario: { label: 'Cancelar', accion: 'cancelar' },
   };
 }
 

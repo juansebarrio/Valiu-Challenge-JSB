@@ -2,8 +2,8 @@
 // Los usan el reducer (avisos, fecha por defecto) y los selectores de vista.
 import type { Centavos } from '@/lib/dinero';
 import { deducir, type Divisa } from '@/lib/fx';
-import { agregar, diasSemana, posicion, proyeccion, type Movimiento, type Posicion } from '@/lib/posicion';
-import { HOY, type Cuenta, type CuentaId, type Destinatario, type PagoFuturo, type Realizado } from '@/data/escenario';
+import { agregar, diasSemana, evaluarPagoConCobro, posicion, proyeccion, type Movimiento, type PagoEvaluado, type Posicion } from '@/lib/posicion';
+import { HOY, type Cobro, type Cuenta, type CuentaId, type Destinatario, type PagoFuturo, type Realizado } from '@/data/escenario';
 import type { Destino, EstadoApp, OperacionHecha, Orden } from './estado';
 
 export interface CuentaActual extends Cuenta {
@@ -151,3 +151,18 @@ export function motivoPorDefecto(origen: Divisa | null, orden: Orden): string {
   const clase = claseDe(origen, orden.destino);
   return clase === 'venta' ? 'Venta de divisas' : clase === 'transferencia' ? 'Transferencia entre cuentas' : 'Compra de divisas';
 }
+
+export interface OpcionDelCobro extends PagoEvaluado {
+  pago: PagoPendiente;
+}
+
+/** Pagos pendientes que se pueden cubrir con el cobro de hoy, evaluados contra él (paso "¿Qué pagas con este cobro?"). */
+export function opcionesDelCobro(e: Pick<EstadoApp, 'datos' | 'operaciones' | 'tdcVivo'>, cobro: Cobro): OpcionDelCobro[] {
+  const pos = posicionesPorDivisa(e);
+  return pagosPendientes(e)
+    .filter((p) => !p.pactada)
+    .map((pago) => ({ pago, ...evaluarPagoConCobro({ cobro, pago, posiciones: pos, cuentaEnDivisa: e.datos.cuentas.find((c) => c.divisa === pago.divisa) ?? null, pares: e.tdcVivo }) }));
+}
+
+/** El pago que viene seleccionado al entrar desde el cobro: el primero (por fecha) que cubre un faltante; si no hay, ninguno. */
+export const pagoPorDefectoDelCobro = (e: Pick<EstadoApp, 'datos' | 'operaciones' | 'tdcVivo'>, cobro: Cobro) => opcionesDelCobro(e, cobro).find((o) => o.consecuencia.tono === 'ok')?.pago.id ?? null;

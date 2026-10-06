@@ -7,10 +7,10 @@ import { neto } from '@/lib/posicion';
 import * as fmt from '@/lib/format';
 import { AGENDAR_DIAS, HOY, DURACION_PRECIO_S, MOTIVOS, TOKEN_INCORRECTO, datosEscenario, type ArquetipoId, type CuentaId, type Datos, type EscenarioNombre, type PagoFuturo } from '@/data/escenario';
 import { arquetipoDe } from '@/data/arquetipos';
-import { claseDe, cuentaPorId, cuentasActuales, finDeSemana, motivoPorDefecto, movimientoDe, ordenDePago, posicionesPorDivisa } from './derivados';
+import { claseDe, cuentaPorId, cuentasActuales, finDeSemana, motivoPorDefecto, movimientoDe, opcionesDelCobro, ordenDePago, pagoPorDefectoDelCobro, posicionesPorDivisa } from './derivados';
 
 export type Pestana = 'posicion' | 'operar';
-export type PasoPanel = 'destino' | 'origen' | 'revision' | 'precio' | 'confirmacion' | 'cancelar';
+export type PasoPanel = 'pago' | 'destino' | 'origen' | 'revision' | 'precio' | 'confirmacion' | 'cancelar';
 export type Precio = { estado: 'indicativo' } | { estado: 'fijo'; tdc: TdcMicro; venceEn: number } | { estado: 'vencido'; tdc: TdcMicro };
 
 export interface Destino {
@@ -211,6 +211,8 @@ export type Accion =
   // Panel
   | { tipo: 'abrirPanel'; orden: Orden | null; origenId?: CuentaId | null; paso?: PasoPanel }
   | { tipo: 'abrirCobro'; cobroId: string }
+  | { tipo: 'elegirPago'; pagoId: string }
+  | { tipo: 'continuarPago' }
   | { tipo: 'abrirDepositar' }
   | { tipo: 'cerrarPanel' }
   | { tipo: 'busquedaDestino'; texto: string }
@@ -451,11 +453,34 @@ export function reducer(e: EstadoApp, a: Accion): EstadoApp {
       };
     }
     case 'abrirCobro': {
-      // "Usar para pagar": la importadora entra al paso Destino con la cuenta del cobro preseleccionada (como quedó en el código).
       const cobro = e.datos.loNuevo;
       if (!cobro || cobro.id !== a.cobroId) return e;
-      const abierto = reducer(e, { tipo: 'abrirPanel', orden: null, origenId: cobro.cuentaId });
-      return { ...abierto, panel: { ...abierto.panel, cobroId: cobro.id } };
+      if (arquetipoDe(e.arquetipo).entradaCobro === 'destino') {
+        // La importadora entra al paso Destino con la cuenta del cobro preseleccionada (como quedó en el código).
+        const abierto = reducer(e, { tipo: 'abrirPanel', orden: null, origenId: cobro.cuentaId });
+        return { ...abierto, panel: { ...abierto.panel, cobroId: cobro.id } };
+      }
+      // Paso "¿Qué pagas con este cobro?" (D-30): el único faltante viene seleccionado.
+      return {
+        ...e,
+        pestana: 'posicion',
+        onboarding: { ...e.onboarding, activo: false },
+        operar: cerrarSelectores(e.operar),
+        panel: { ...PANEL_CERRADO, abierto: true, tipo: 'pago', paso: 'pago', cobroId: cobro.id, pagoElegidoId: pagoPorDefectoDelCobro(e, cobro) },
+      };
+    }
+    case 'elegirPago': {
+      if (e.panel.tipo !== 'pago' || e.panel.paso !== 'pago' || !e.datos.loNuevo) return e;
+      const valido = opcionesDelCobro(e, e.datos.loNuevo).some((o) => o.pago.id === a.pagoId);
+      return valido ? { ...e, panel: { ...e.panel, pagoElegidoId: a.pagoId } } : e;
+    }
+    case 'continuarPago': {
+      const cobro = e.datos.loNuevo;
+      const opcion = cobro && e.panel.paso === 'pago' ? opcionesDelCobro(e, cobro).find((o) => o.pago.id === e.panel.pagoElegidoId) : null;
+      if (!cobro || !opcion) return e;
+      // Sigue el panel de siempre con el pago elegido; el origen preseleccionado es la cuenta donde entró el cobro (D-31).
+      const abierto = reducer(e, { tipo: 'abrirPanel', orden: ordenDePago(opcion.pago), origenId: cobro.cuentaId });
+      return { ...abierto, panel: { ...abierto.panel, cobroId: cobro.id, pagoElegidoId: opcion.pago.id } };
     }
     case 'abrirDepositar':
       return { ...e, panel: { ...PANEL_CERRADO, abierto: true, tipo: 'depositar', paso: 'origen' } };

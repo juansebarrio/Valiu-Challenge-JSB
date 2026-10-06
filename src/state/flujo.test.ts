@@ -519,3 +519,57 @@ describe('agendar un pago desde el "+" de Movimientos', () => {
     expect(vistaPanel(e)).toBeNull();
   });
 });
+
+describe('flujo secundario · turismo (S01–S02)', () => {
+  const t = estadoInicial('faltante', {}, 'turismo');
+  it('S01 · EUR primero con saldo 0 y faltan 4,200; USD alcanza; MXN nada pendiente con el cobro', () => {
+    const h = vistaHome(t);
+    expect(h.empresa).toBe('Viajes Altavista S.A. de C.V.');
+    expect(h.posiciones.map((p) => p.divisa)).toEqual(['EUR', 'USD', 'MXN']);
+    const eur = pos(t, 'EUR');
+    expect(eur.saldo).toBe(0);
+    expect(eur.resultado).toEqual({ tipo: 'faltan', monto: centavos(4200) });
+    expect(eur.proyeccion?.serie).toEqual([0, 0, 0, -4200].map(centavos));
+    expect(eur.proyeccion?.etiquetaCruce).toBe('faltante');
+    expect(eur.linea).toBe('≈ 89,250.00 MXN a precio de compra');
+    expect(eur.accion?.label).toBe('Comprar 4,200 EUR');
+    expect(pos(t, 'USD').resultado).toEqual({ tipo: 'sobran', monto: centavos(3500) });
+    expect(pos(t, 'USD').proyeccion?.serie).toEqual([6000, 6000, 3500, 3500].map(centavos));
+    expect(pos(t, 'MXN').resultado.tipo).toBe('nada');
+    expect(pos(t, 'MXN').linea).toBe('Incluye los 95,000.00 de Familia Ortega');
+    expect(h.nuevo).toMatchObject({ id: 't-r1', cuentaId: 'mxn', de: 'Familia Ortega', meta: 'Hoy 08:15 · BBVA México · Ref. Paquete Madrid' });
+    expect(h.proximos.map((p) => [p.fecha, p.nombre])).toEqual([['jue 8', 'Mayorista Caribe'], ['vie 9', 'Hotel Gran Vía Madrid']]);
+    expect(h.tdc).toMatchObject({ par: 'EUR/MXN', compra: 21_250_000, venta: 21_100_000, otros: [{ par: 'USD/MXN', base: 'USD', compra: 18_091_183, venta: 18_032_135 }] });
+  });
+  it('S02 · "Usar para pagar" abre "¿Qué pagas con este cobro?" con el Hotel seleccionado', () => {
+    const e = aplicar([{ tipo: 'abrirCobro', cobroId: 't-r1' }], t);
+    const p = vistaPanel(e)!;
+    expect(p).toMatchObject({ tipo: 'pago', paso: 'pago', titulo: 'Usar el cobro de Familia Ortega', sub: '+95,000.00 MXN · Hoy 08:15 · Ref. Paquete Madrid' });
+    expect(p.pago?.opciones).toEqual([
+      { id: 't-p2', destinatario: 'Mayorista Caribe', monto: '2,500.00 USD', linea: 'Vence jue 8 · Bloqueo nov-26 · usaría ≈ 45,227.96 MXN', consecuencia: { texto: 'Ya lo cubre tu Cuenta USD', tono: 'neutral' }, seleccionada: false },
+      { id: 't-p1', destinatario: 'Hotel Gran Vía Madrid', monto: '4,200.00 EUR', linea: 'Vence vie 9 · Reserva 88213 · usa ≈ 89,250.00 MXN', consecuencia: { texto: 'Cubre el faltante en EUR', tono: 'success' }, seleccionada: true },
+    ]);
+    expect(p.pago?.resto).toBe('Del cobro quedan ≈ 5,750.00 MXN en tu Cuenta Principal MXN.');
+    expect(p.primario).toEqual({ label: 'Continuar', habilitado: true, accion: 'continuarPago' });
+    expect(p.secundario).toEqual({ label: 'Cancelar', accion: 'cancelar' });
+    const otro = aplicar([{ tipo: 'elegirPago', pagoId: 't-p2' }], e);
+    expect(vistaPanel(otro)!.pago?.resto).toBe('Del cobro quedan ≈ 49,772.04 MXN en tu Cuenta Principal MXN.');
+    expect(vistaPanel(otro)!.pago?.opciones[0].linea).toContain('usa ≈ 45,227.96 MXN');
+    expect(aplicar([{ tipo: 'elegirPago', pagoId: 'no-existe' }], e).panel.pagoElegidoId).toBe('t-p1');
+  });
+  it('S02 → S03 · Continuar entra a Origen con la cuenta del cobro seleccionada y el título del pago', () => {
+    const e = aplicar([{ tipo: 'abrirCobro', cobroId: 't-r1' }, { tipo: 'continuarPago' }], t);
+    const p = vistaPanel(e)!;
+    expect(p).toMatchObject({ tipo: 'pago', paso: 'origen', titulo: 'Pagar a Hotel Gran Vía Madrid', sub: '4,200.00 EUR · vence vie 9 · Reserva 88213' });
+    expect(e.panel).toMatchObject({ cobroId: 't-r1', pagoElegidoId: 't-p1', origenId: 'mxn' });
+    expect(e.panel.orden).toMatchObject({ pagoId: 't-p1', monto: centavos(4200), conFactura: true, referencia: 'Reserva 88213' });
+  });
+  it('?cobro=<id> y "Cancelar" cierran el ciclo; la importadora sigue entrando a Destino', () => {
+    const cerrado = aplicar([{ tipo: 'abrirCobro', cobroId: 't-r1' }, { tipo: 'cerrarPanel' }], t);
+    expect(cerrado.panel.abierto).toBe(false);
+    expect(aplicar([{ tipo: 'abrirCobro', cobroId: 'otro' }], t).panel.abierto).toBe(false);
+    const imp = aplicar([{ tipo: 'abrirCobro', cobroId: 'r1' }], base);
+    expect(vistaPanel(imp)).toMatchObject({ tipo: 'pago', paso: 'destino', titulo: 'Pagar' });
+    expect(imp.panel).toMatchObject({ origenId: 'mxn', cobroId: 'r1' });
+  });
+});
