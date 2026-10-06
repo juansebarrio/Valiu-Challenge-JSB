@@ -1,0 +1,30 @@
+# Decisiones de implementación
+
+Correcciones aplicadas sobre el export de Claude Design (`docs/handoff/prototipo/`) al construir el prototipo en alta, con el motivo en una línea. Las decisiones de diseño previas (D-01 a D-29) están en `docs/handoff/docs/decisiones.md`.
+
+| # | Corrección | Motivo |
+|---|---|---|
+| C-01 | Los chips de consecuencia de cada origen salen del cálculo de posición (cubre el faltante / te faltarían X el día que cruza / te quedan X); Cuenta EUR también "Cubre el faltante en USD". | El export los escribía a mano y a EUR le ponía "Sin pagos pendientes en euros", que con estos datos es falso. |
+| C-02 | Confirmación con Hoy titulada "Pago en proceso" (y "Compra/Venta/Transferencia en proceso"). | "Pago enviado" se contradecía con el badge "En proceso" y con "Te avisamos cuando Banco BASE confirme el envío". |
+| C-03 | En 04 y 05 el botón secundario es "Volver" (regresa a la revisión y descarta el precio); la × cierra y descarta todo. | El export ofrecía "Cancelar", que cerraba el panel desde un paso intermedio. |
+| C-04 | Precio vencido con estilo informativo (alert info, badge neutral "Vencido" sobre el precio fijo que venció), sin casillas de token y única acción "Pedir precio". | Que el precio venza es esperable; el export lo trataba como error y ponía el badge sobre el indicativo. |
+| C-05 | "Motivo de pago" (lista cerrada, precargado según el caso) reemplaza a "Concepto"; "Referencia" es opcional y se precarga con la factura. | Alineado con producción y con el clásico del export. Falta `docs/ui-actual.md`: la lista se completó con Transferencia entre cuentas, Pago de servicios, Nómina y Otro. |
+| C-06 | Línea de efecto por fecha: "Tu cuenta en pesos queda en ≈ X" con Hoy y "El jue 8 tu cuenta en pesos queda en ≈ X" con otra fecha; si la fecha es posterior al vencimiento, agrega "El dinero sale después del vencimiento (jue 8)". | En 03B el export repetía la línea de Hoy, que era falsa. |
+| C-07 | La caja "TDC Valiu" del panel va sin borde de campo (en el clásico conserva el borde 2 px del DS, como en el export). | Es información; con borde parecía un input con foco. |
+| C-08 | Cuenta regresiva de 2:00 que arranca al pedir precio (el export mostraba 1:59 fijo). | El precio dura 2 minutos. |
+| C-09 | Token: un solo input con 6 casillas visuales (inputmode numeric, one-time-code, admite pegar); 800 ms de "Confirmando…"; 000000 simula "El código no coincide…" sin detener la cuenta regresiva. | Comportamiento real del control, no seis inputs. |
+| C-10 | 06B: "Descargar confirmación" en lugar de "Descargar comprobante". | Todavía no se movió dinero. |
+| C-11 | Un solo texto de fondeo: "Ten X MXN en tu Cuenta Principal MXN el jue 8 para que el pago salga." y en la tarjeta "Fondea X MXN para el jue 8"; "Ver datos para depositar" abre un panel con la CLABE ficticia y un botón para copiarla. | Unificar el copy del export y darle destino al link. |
+| C-12 | Banner al volver según la operación: "Pago en proceso." / "Compraste 1,000.00 USD." / "Pactaste la compra de 1,000.00 USD. El dinero sale el vie 9."; "Ya te alcanza…" solo si una divisa pasó de Faltan a Sobran. | El export solo cubría el pago a Shenzhen. |
+| C-13 | Acciones de texto: "Pagar" de fila en índigo sin subrayado; todas las demás (Atrás, Cancelar, Probar el nuevo flujo, Ver datos para depositar, Comprobante…) con el Link Button del DS: tinta #151522, 600, subrayado. | El export mezclaba tres tratamientos. |
+| C-14 | "Programar · Futuro" y el horario "6:30 a 16:30" no se construyen; el horario queda como dato vacío en `src/data/escenario.ts` y el aviso de mercado cerrado no lo muestra. | Contradice la restricción del brief / dato sin verificar (handoff). |
+| C-15 | Las notas del tablero que afirmaban cómo funciona hoy el producto (frames 11, 13 y 14) se reemplazan por hechos del prototipo. | Sin captura que las respalde. |
+| C-16 | Cuenta EUR como origen: "Pagas ≈ 1,388.89 EUR" con el lado vender de EUR/USD (1.080000). | Valores de tipo de cambio del handoff. |
+| C-17 | Próximos muestra solo la semana y "Ver los 10 pagos futuros" despliega el resto; "Pagos futuros (7)" de MXN cuenta los siete pagos ficticios desde el lunes 12. | Handoff; los siete pagos no cambian la gráfica ni la lista del frame 01. |
+| C-18 | Tipo de cambio: EUR/MXN en una línea con sus dos lados, debajo de USD/MXN. | La empresa tiene saldo en euros. |
+| C-19 | La gráfica muestra siempre la línea de 0 y etiqueta "faltante" el primer día bajo cero (decisión abierta 3, por defecto sí). | Handoff. |
+| C-20 | EUR sin movimientos sigue mostrando "Nada pendiente en euros" (frame 01) en lugar de "Sobran 50,000.00". | "Cero o más: Sobran" aplica cuando hay movimientos; sin ellos el export y "todo lo demás como en el frame 01" pesan más. |
+| C-21 | Vencido en el clásico: badge "Vencido" en la cotización y caja TDC apagada; el aviso es informativo. | Mismo componente y criterio que el 05 del panel. |
+| C-22 | `/tablero` redirige a `/tablero/alta`; no existe un tablero de baja fidelidad ni el selector Baja/Valiu en este repo. | El handoff asume un tablero previo que acá no está. |
+| C-23 | El onboarding no vuelve a aparecer tras cerrarlo dentro de la misma sesión, pero sí al recargar (estado en memoria, sin localStorage). | Cada participante empieza limpio. |
+| C-24 | Dinero en centavos enteros y tipo de cambio en millonésimas con redondeo half-up (BigInt); precio ejecutable = indicativo × 1.0000681 / 0.9999319. | Nada de floats para dinero; con el indicativo congelado da 18.092415. |

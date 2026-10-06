@@ -1,0 +1,167 @@
+// src/data/escenario.ts — escenario y datos del prototipo. Todos los datos son ficticios.
+// Montos en centavos (dinero.ts). Nada de montos escritos a mano en los componentes: todo sale de acá y de src/lib.
+import { centavos, type Centavos } from '@/lib/dinero';
+import { PARES, type Divisa, type TablaPares } from '@/lib/fx';
+
+/** Fecha fija del escenario: martes 6 de octubre de 2026, 10:42 hora de CDMX. Nunca se usa la fecha del sistema. */
+export const HOY = new Date(2026, 9, 6, 10, 42);
+
+export const empresa = 'Servicios Corporativos KAAX';
+
+export type EscenarioNombre = 'faltante' | 'resuelta' | 'pactada' | 'sin-saldo' | 'mercado-cerrado';
+export const ESCENARIOS: EscenarioNombre[] = ['faltante', 'resuelta', 'pactada', 'sin-saldo', 'mercado-cerrado'];
+
+export type CuentaId = 'mxn' | 'usd' | 'eur';
+
+export interface Cuenta {
+  id: CuentaId;
+  nombre: string;
+  divisa: Divisa;
+  mascara: string;
+  saldo: Centavos;
+  banco: string;
+  /** CLABE ficticia de 18 dígitos (solo la cuenta en pesos, para "Ver datos para depositar"). */
+  clabe?: string;
+}
+
+export interface CuentaDestino {
+  divisa: Divisa;
+  banco: string;
+  mascara: string;
+}
+
+export interface Destinatario extends CuentaDestino {
+  id: string;
+  nombre: string;
+}
+
+export interface PagoFuturo {
+  id: string;
+  destinatarioId: string;
+  destinatario: string;
+  monto: Centavos;
+  divisa: Divisa;
+  fecha: Date;
+  referencia: string;
+  motivo: string;
+  cuentaDestino: CuentaDestino;
+}
+
+export interface Realizado {
+  fecha: Date;
+  nombre: string;
+  monto: Centavos;
+  divisa: Divisa;
+}
+
+export interface Datos {
+  cuentas: Cuenta[];
+  destinatarios: Destinatario[];
+  pagosFuturos: PagoFuturo[];
+  loNuevo: { monto: Centavos; divisa: Divisa; de: string; hora: string; banco: string; referencia: string } | null;
+  realizados: Realizado[];
+  mercado: 'abierto' | 'cerrado';
+}
+
+/** Orden de las TarjetaPosicion en el inicio (frames 01–07): la divisa de los pagos cargados primero, después pesos y euros. */
+export const ORDEN_POSICIONES: CuentaId[] = ['usd', 'mxn', 'eur'];
+
+export const NOMBRE_DIVISA: Record<Divisa, { singular: string; plural: string; con: string }> = {
+  MXN: { singular: 'Peso', plural: 'Pesos', con: 'pesos' },
+  USD: { singular: 'Dólar', plural: 'Dólares', con: 'dólares' },
+  EUR: { singular: 'Euro', plural: 'Euros', con: 'euros' },
+  GBP: { singular: 'Libra', plural: 'Libras', con: 'libras' },
+  CAD: { singular: 'Dólar canadiense', plural: 'Dólares canadienses', con: 'dólares canadienses' },
+};
+
+const CUENTAS: Cuenta[] = [
+  { id: 'mxn', nombre: 'Cuenta Principal MXN', divisa: 'MXN', mascara: '1025', saldo: centavos(1_180_000), banco: 'Banco BASE', clabe: '012180000010250014' },
+  { id: 'usd', nombre: 'Cuenta USD', divisa: 'USD', mascara: '2024', saldo: centavos(2_000), banco: 'Banco BASE' },
+  { id: 'eur', nombre: 'Cuenta EUR', divisa: 'EUR', mascara: '3033', saldo: centavos(50_000), banco: 'Banco BASE' },
+];
+
+const DESTINATARIOS: Destinatario[] = [
+  { id: 'sz', nombre: 'Shenzhen Parts Co.', divisa: 'USD', banco: 'HSBC Hong Kong', mascara: '4410' },
+  { id: 'log', nombre: 'Logística Pacífico', divisa: 'USD', banco: 'Citibanamex', mascara: '0931' },
+  { id: 'ap', nombre: 'Asia Packaging', divisa: 'USD', banco: 'DBS Singapur', mascara: '7712' },
+  // Proveedores mexicanos ficticios de los siete pagos en MXN
+  { id: 'pin', nombre: 'Papelería Industrial del Norte', divisa: 'MXN', banco: 'BBVA México', mascara: '3301' },
+  { id: 'tgo', nombre: 'Transportes del Golfo', divisa: 'MXN', banco: 'Banorte', mascara: '8824' },
+  { id: 'emo', nombre: 'Empaques Monterrey', divisa: 'MXN', banco: 'Santander', mascara: '5190' },
+  { id: 'seb', nombre: 'Servicios Eléctricos del Bajío', divisa: 'MXN', banco: 'HSBC México', mascara: '6072' },
+  { id: 'adn', nombre: 'Aduanas Nogales', divisa: 'MXN', banco: 'Citibanamex', mascara: '2210' },
+  { id: 'tel', nombre: 'Telecom Empresarial', divisa: 'MXN', banco: 'Scotiabank', mascara: '4458' },
+  { id: 'lca', nombre: 'Limpieza Corporativa Azteca', divisa: 'MXN', banco: 'Banregio', mascara: '9913' },
+  { id: 'cn', nombre: 'Comercial Norte', divisa: 'MXN', banco: 'Banorte', mascara: '5678' },
+];
+
+const pago = (id: string, destinatarioId: string, monto: number, fecha: Date, referencia: string, motivo = 'Pago a proveedores'): PagoFuturo => {
+  const dst = DESTINATARIOS.find((x) => x.id === destinatarioId)!;
+  return { id, destinatarioId, destinatario: dst.nombre, monto: centavos(monto), divisa: dst.divisa, fecha, referencia, motivo, cuentaDestino: { divisa: dst.divisa, banco: dst.banco, mascara: dst.mascara } };
+};
+
+/** Pagos futuros en USD (brief) y los siete en MXN (ficticios, desde el lunes 12 para no mover la semana del frame 01). */
+const PAGOS_USD: PagoFuturo[] = [
+  pago('p1', 'sz', 1_500, new Date(2026, 9, 8), 'Factura 0457'),
+  pago('p2', 'log', 1_000, new Date(2026, 9, 9), 'Flete OCT-02'),
+  pago('p3', 'ap', 500, new Date(2026, 9, 9), 'Pedido AP-118'),
+];
+const PAGOS_MXN: PagoFuturo[] = [
+  pago('m1', 'pin', 12_400, new Date(2026, 9, 12), 'Factura 2290'),
+  pago('m2', 'tgo', 9_850.5, new Date(2026, 9, 13), 'Flete GOL-77'),
+  pago('m3', 'emo', 15_000, new Date(2026, 9, 14), 'Factura 0912'),
+  pago('m4', 'seb', 7_600, new Date(2026, 9, 15), 'Servicio 10-26', 'Pago de servicios'),
+  pago('m5', 'adn', 18_500, new Date(2026, 9, 16), 'Pedimento 26-4471'),
+  pago('m6', 'tel', 6_000, new Date(2026, 9, 19), 'Servicio 0921', 'Pago de servicios'),
+  pago('m7', 'lca', 11_000, new Date(2026, 9, 20), 'Factura 0344'),
+];
+// 12,400 + 9,850.50 + 15,000 + 7,600 + 18,500 + 6,000 + 11,000 = 80,350.50 (brief)
+
+const LO_NUEVO: Datos['loNuevo'] = { monto: centavos(180_000), divisa: 'MXN', de: 'Comercial Norte', hora: '10:42', banco: 'BBVA México', referencia: 'factura 2231' };
+
+const REALIZADOS: Realizado[] = [
+  { fecha: HOY, nombre: 'Comercial Norte', monto: centavos(180_000), divisa: 'MXN' },
+  { fecha: new Date(2026, 9, 4), nombre: 'Logística y Abastecimiento', monto: centavos(-1_250.5), divisa: 'MXN' },
+  { fecha: new Date(2026, 9, 1), nombre: 'Distribuidora Norte', monto: centavos(50_000), divisa: 'MXN' },
+];
+
+/** Datos del escenario pedido. "resuelta" y "pactada" parten del base y aplican el pago a Shenzhen (src/state/escenarios.ts). */
+export function datosEscenario(nombre: EscenarioNombre): Datos {
+  const base: Datos = { cuentas: CUENTAS.map((c) => ({ ...c })), destinatarios: DESTINATARIOS, pagosFuturos: [...PAGOS_USD, ...PAGOS_MXN], loNuevo: LO_NUEVO, realizados: REALIZADOS, mercado: 'abierto' };
+  if (nombre === 'sin-saldo') {
+    return { ...base, cuentas: base.cuentas.map((c) => (c.id === 'mxn' ? { ...c, saldo: centavos(20_000) } : c)), pagosFuturos: PAGOS_USD, loNuevo: null, realizados: REALIZADOS.slice(1) };
+  }
+  if (nombre === 'mercado-cerrado') return { ...base, mercado: 'cerrado' };
+  return base;
+}
+
+/** Tipo de cambio indicativo base (dos lados, sin punto medio). El "en vivo" oscila ±0.002 % alrededor de estos valores. */
+export const TDC_BASE: TablaPares = Object.fromEntries(Object.entries(PARES).map(([k, v]) => [k, { compra: v.compra, venta: v.venta }]));
+export const OSCILACION_TDC = 0.00002; // ±0.002 %
+export const OSCILACION_MS = [3000, 5000] as const; // un paso cada 3 a 5 segundos
+/** Tendencia intradía de USD/MXN, solo para la gráfica (inventado). */
+export const TENDENCIA_DIA = [18.062, 18.071, 18.068, 18.084, 18.079, 18.095, 18.088, 18.091];
+export const HORA_TDC = '10:42';
+
+/** Segundos que dura el precio ejecutable. */
+export const DURACION_PRECIO_S = 120;
+/** Milisegundos de "Confirmando…" al enviar el token. */
+export const CONFIRMANDO_MS = 800;
+/** Código que simula un token incorrecto. */
+export const TOKEN_INCORRECTO = '000000';
+
+/** Horario de operación: dato sin verificar, queda vacío; mientras esté vacío, el aviso de mercado cerrado no muestra horario. */
+export const HORARIO: { abre: string; cierra: string } = { abre: '', cierra: '' };
+
+/** Motivos de pago (lista cerrada). Los tres primeros salen del export; el resto completa la lista a falta de docs/ui-actual.md. */
+export const MOTIVOS = ['Pago a proveedores', 'Compra de divisas', 'Venta de divisas', 'Transferencia entre cuentas', 'Pago de servicios', 'Nómina', 'Otro'];
+
+/** Pares del selector de Operar clásico: primero los de tus posiciones, después el resto. */
+export const PARES_SELECTOR: { titulo: string; items: { par: string; nombre: string }[] }[] = [
+  { titulo: 'Tus posiciones', items: [{ par: 'USD/MXN', nombre: 'Dólar · Peso' }, { par: 'EUR/MXN', nombre: 'Euro · Peso' }] },
+  { titulo: 'Otros pares', items: [{ par: 'EUR/USD', nombre: 'Euro · Dólar' }, { par: 'GBP/MXN', nombre: 'Libra · Peso' }, { par: 'CAD/MXN', nombre: 'Dólar canadiense · Peso' }] },
+];
+
+export const AVISO_PAR_SIN_PROTOTIPO = 'Este par no está en el prototipo.';
+export const AVISO_FUERA_DEL_PROTOTIPO = 'Esta sección no está en el prototipo.';
+export const ANCHO_MINIMO = 1200;

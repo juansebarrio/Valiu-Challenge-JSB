@@ -1,10 +1,11 @@
 import type { FC } from 'react';
+import type { Centavos } from '@/lib/dinero';
 import * as fmt from '@/lib/format';
 import type { Divisa } from '@/lib/fx';
 import { Boton } from './ui/Boton';
 
 export interface FranjaNuevoProps {
-  monto: number;
+  monto: Centavos;
   divisa: Divisa;
   origen: string;
   meta: string;
@@ -12,7 +13,7 @@ export interface FranjaNuevoProps {
   onUsar?: () => void;
 }
 
-/** Fondo #F6FBFF, borde #DCDCDE, radio 8. "Usar para pagar" es Secondary Mid. */
+/** Fondo #F6FBFF, borde #DCDCDE, radio 8. "Usar para pagar" es Secondary Mid; "Comprobante" es Link Button. */
 export const FranjaNuevo: FC<FranjaNuevoProps> = ({ monto, divisa, origen, meta, onComprobante, onUsar }) => (
   <div data-component="FranjaNuevo" className="flex items-center gap-4 rounded-sm border border-app-ink-disabled bg-app-accent-bg px-4 py-3">
     <div className="flex min-w-0 flex-1 flex-col gap-0.5">

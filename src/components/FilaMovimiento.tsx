@@ -1,4 +1,5 @@
 import type { FC, ReactNode } from 'react';
+import type { Centavos } from '@/lib/dinero';
 import * as fmt from '@/lib/format';
 import type { Divisa } from '@/lib/fx';
 import { Badge, type TonoBadge } from './ui/Badge';
@@ -8,13 +9,13 @@ export interface FilaMovimientoProps {
   fecha: string;
   nombre: string;
   detalle?: string;
-  monto: number;
+  monto: Centavos;
   divisa: Divisa;
   estado?: { texto: string; tono: TonoBadge };
   onPagar?: () => void;
 }
 
-/** Grid 56 / 1fr / 160 / 120, min-height 44, hover #F6FBFF; "Pagar" es link de texto. `+` en verde, `−` en tinta (D-19). */
+/** Grid 56 / 1fr / 160 / 120, min-height 44, hover #F6FBFF; "Pagar" es acción de fila (índigo, sin subrayado). `+` en verde, `−` en tinta (D-19). */
 export const FilaMovimiento: FC<FilaMovimientoProps> = ({ fecha, nombre, detalle, monto, divisa, estado, onPagar }) => (
   <div
     data-component="FilaMovimiento"
@@ -29,7 +30,7 @@ export const FilaMovimiento: FC<FilaMovimientoProps> = ({ fecha, nombre, detalle
     <span className={['text-right text-body font-semibold tabular-nums', monto > 0 ? 'text-app-success' : 'text-app-ink'].join(' ')}>{fmt.montoSigno(monto, divisa)}</span>
     <div className="flex justify-end">
       {onPagar ? (
-        <Boton variante="link" className="font-bold" onClick={(e) => { e.stopPropagation(); onPagar(); }} aria-label={`Pagar a ${nombre}`}>Pagar</Boton>
+        <Boton variante="fila" onClick={(e) => { e.stopPropagation(); onPagar(); }} aria-label={`Pagar a ${nombre}`}>Pagar</Boton>
       ) : estado ? (
         <Badge tono={estado.tono}>{estado.texto}</Badge>
       ) : null}
@@ -44,17 +45,25 @@ export const RotuloLista: FC<{ children: ReactNode; className?: string }> = ({ c
 export interface ListaMovimientosProps {
   proximos: FilaMovimientoProps[];
   realizados: FilaMovimientoProps[];
+  totalProximos: number;
+  verTodos: boolean;
+  onVerTodos?: (valor: boolean) => void;
   tour?: string;
 }
 
-/** Próximos y Realizados en una sola lista, separados por "Hoy". */
-export const ListaMovimientos: FC<ListaMovimientosProps> = ({ proximos, realizados, tour }) => (
+/** Próximos de la semana (con "Ver los N pagos futuros") y Realizados, separados por "Hoy". */
+export const ListaMovimientos: FC<ListaMovimientosProps> = ({ proximos, realizados, totalProximos, verTodos, onVerTodos, tour }) => (
   <section data-tour={tour} aria-labelledby="movimientos-titulo" className="flex flex-col">
     <div className="flex items-baseline justify-between border-b border-app-divider pb-2">
       <h2 id="movimientos-titulo" className="text-h3 font-semibold">Movimientos</h2>
     </div>
     <RotuloLista className="pb-0.5 pt-2.5">Próximos</RotuloLista>
-    {proximos.length ? proximos.map((p, i) => <FilaMovimiento key={`${p.nombre}-${i}`} {...p} />) : <span className="py-3 text-body text-app-ink-2">Sin pagos cargados.</span>}
+    {proximos.length ? proximos.map((p, i) => <FilaMovimiento key={`${p.nombre}-${p.fecha}-${i}`} {...p} />) : <span className="py-3 text-body text-app-ink-2">Sin pagos cargados esta semana.</span>}
+    {totalProximos > proximos.length || verTodos ? (
+      <div className="pt-2">
+        <Boton variante="link" aria-expanded={verTodos} onClick={() => onVerTodos?.(!verTodos)}>{verTodos ? 'Ver solo esta semana' : `Ver los ${totalProximos} pagos futuros`}</Boton>
+      </div>
+    ) : null}
     <div className="flex items-center gap-3 pb-0.5 pt-3.5">
       <span className="text-caption font-bold uppercase tracking-wide-caps text-app-ink-2">Hoy</span>
       <span className="h-px flex-1 bg-app-divider" />

@@ -1,8 +1,7 @@
 'use client';
 import { useMemo, useState, type FC, type RefObject } from 'react';
 import * as fmt from '@/lib/format';
-import { cotizar } from '@/lib/fx';
-import { HOY, MOTIVOS, empresa } from '@/data/escenario-importadora';
+import { AVISO_FUERA_DEL_PROTOTIPO, HOY, empresa, type CuentaId } from '@/data/escenario';
 import { ONBOARDING_PASOS, type Accion, type EstadoApp } from '@/state/estado';
 import { vistaHome, vistaOperar, vistaPanel, type VistaPanel } from '@/state/vistas';
 import { AppShell, type ModoShell } from './AppShell';
@@ -22,16 +21,14 @@ import { CajaTdcValiu } from './CajaTdcValiu';
 import { PrecioEjecutable } from './PrecioEjecutable';
 import { CampoToken } from './CampoToken';
 import { Confirmacion } from './Confirmacion';
+import { SelectorDestino } from './SelectorDestino';
 import { PasoOnboarding, PASOS_ONBOARDING } from './PasoOnboarding';
 import { Boton } from './ui/Boton';
 import { Pestanas } from './ui/Pestanas';
 import { Alerta } from './ui/Alerta';
 import { Icono } from './ui/Icono';
+import { Toast } from './ui/Toast';
 import { CampoSelector, CampoTexto, OpcionLista } from './ui/Campo';
-
-const DIAS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
-const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
-const fechaLarga = (d: Date) => `${DIAS[d.getDay()]} ${d.getDate()} de ${MESES[d.getMonth()]}`;
 
 export interface HomeVistaProps {
   estado: EstadoApp;
@@ -40,131 +37,139 @@ export interface HomeVistaProps {
   raizRef: RefObject<HTMLDivElement | null>;
 }
 
-/** El home completo como función del estado: lo usan la app (/) y el tablero (/tablero). */
+/** El inicio completo como función del estado: lo usan la app (/) y el tablero (/tablero/alta). */
 export const HomeVista: FC<HomeVistaProps> = ({ estado, dispatch, modo = 'app', raizRef }) => {
   const home = useMemo(() => vistaHome(estado), [estado]);
   const panel = useMemo(() => vistaPanel(estado), [estado]);
   const operar = useMemo(() => vistaOperar(estado), [estado]);
   const [verTotal, setVerTotal] = useState(false);
-
-  const abrirPrimerPago = () => { if (home.nuevo.orden) dispatch({ tipo: 'abrirPanel', orden: home.nuevo.orden }); };
-  const totalMXN = home.posiciones.reduce((acc, p) => acc + (p.divisa === 'MXN' ? p.saldo : (cotizar(p.divisa, 'MXN', p.saldo, 'origen')?.recibe ?? 0)), 0);
-
+  const noDisponible = () => dispatch({ tipo: 'toast', texto: AVISO_FUERA_DEL_PROTOTIPO });
   const paso = estado.onboarding.activo ? PASOS_ONBOARDING[estado.onboarding.paso] : null;
 
   return (
-    <AppShell
-      modo={modo}
-      raizRef={raizRef}
-      capas={
-        <>
-          {panel ? <PanelContenido vista={panel} estado={estado} dispatch={dispatch} modo={modo} /> : null}
-          {paso ? (
-            <PasoOnboarding
-              paso={estado.onboarding.paso}
-              total={ONBOARDING_PASOS}
-              objetivo={paso.objetivo}
-              lado={paso.lado}
-              titulo={paso.titulo}
-              texto={paso.texto}
-              onSiguiente={() => dispatch({ tipo: 'onboardingSiguiente' })}
-              onAtras={() => dispatch({ tipo: 'onboardingAtras' })}
-              onCerrar={() => dispatch({ tipo: 'onboardingCerrar' })}
-              contenedorRef={raizRef}
-              modo={modo}
-            />
-          ) : null}
-        </>
-      }
-    >
-      {estado.aviso && estado.pestana === 'posicion' ? <AvisoResultado tipo={estado.aviso.tipo} texto={estado.aviso.texto} onCerrar={() => dispatch({ tipo: 'cerrarAviso' })} /> : null}
-
-      <div className="flex items-start justify-between gap-6">
-        <div className="flex flex-col gap-0.5">
-          <h1 className="text-h1 font-bold">Inicio</h1>
-          <span className="text-body text-app-ink-2">{empresa} · {fechaLarga(HOY)}</span>
-        </div>
-        <div className="flex gap-3">
-          <Boton variante="secondary" tamano="large">Subir documento</Boton>
-          <Boton variante="secondary" tamano="large" onClick={() => dispatch({ tipo: 'abrirPanel', orden: null })}>Pagar</Boton>
-        </div>
-      </div>
-
-      <Pestanas
-        etiqueta="Vistas del inicio"
-        pestanas={[{ id: 'posicion', label: 'Posición consolidada' }, { id: 'operar', label: 'Operar clásico' }]}
-        activa={estado.pestana}
-        onCambiar={(id) => dispatch({ tipo: 'pestana', pestana: id })}
-        tour={{ operar: 'clasico' }}
-      />
-
-      {estado.pestana === 'posicion' ? (
-        <div className="flex flex-col gap-5">
-          <section data-tour="posicion" aria-labelledby="posicion-titulo" className="flex flex-col gap-2.5">
-            <div className="flex items-baseline justify-between">
-              <h2 id="posicion-titulo" className="text-h3 font-semibold">Posición por divisa</h2>
-              <Boton variante="link-caption" aria-pressed={verTotal} onClick={() => setVerTotal((v) => !v)}>{verTotal ? 'Ocultar total en MXN' : 'Ver total en MXN'}</Boton>
-            </div>
-            {verTotal ? <span className="text-body text-app-ink-2 tabular-nums">Total de tus posiciones ≈ <span className="font-semibold text-app-ink">{fmt.monto(totalMXN, 'MXN')}</span> a precio de venta</span> : null}
-            <div className="grid grid-cols-3 gap-6 @max-md/shell:grid-cols-1">
-              {home.posiciones.map((p) => (
-                <TarjetaPosicion
-                  key={p.id}
-                  divisa={p.divisa}
-                  nombre={p.nombre}
-                  saldo={p.saldo}
-                  pactadas={p.pactadas}
-                  pagosFuturos={p.pagosFuturos}
-                  resultado={p.resultado}
-                  proyeccion={p.proyeccion}
-                  linea={p.linea}
-                  accion={p.accion ? { label: p.accion.label, onClick: () => dispatch({ tipo: 'abrirPanel', orden: p.accion!.orden }) } : null}
-                />
-              ))}
-            </div>
-          </section>
-
-          <div className="grid grid-cols-3 items-start gap-6 @max-md/shell:grid-cols-1">
-            <div className="col-span-2 flex min-w-0 flex-col gap-5 @max-md/shell:col-span-1">
-              <section aria-labelledby="nuevo-titulo" className="flex flex-col gap-2">
-                <h2 id="nuevo-titulo" className="text-h3 font-semibold">Lo nuevo</h2>
-                <FranjaNuevo monto={home.nuevo.monto} divisa={home.nuevo.divisa} origen={home.nuevo.de} meta={home.nuevo.meta} onUsar={home.nuevo.orden ? abrirPrimerPago : undefined} />
-              </section>
-              <ListaMovimientos
-                tour="movimientos"
-                proximos={home.proximos.map((p) => ({ fecha: p.fecha, nombre: p.nombre, detalle: p.detalle, monto: p.monto, divisa: p.divisa, estado: p.badge, onPagar: p.orden ? () => dispatch({ tipo: 'abrirPanel', orden: p.orden! }) : undefined }))}
-                realizados={home.realizados.map((r) => ({ fecha: r.fecha, nombre: r.nombre, detalle: r.detalle, monto: r.monto, divisa: r.divisa, estado: r.badge }))}
+    <>
+      <AppShell
+        modo={modo}
+        raizRef={raizRef}
+        onNoDisponible={noDisponible}
+        capas={
+          <>
+            {panel ? <PanelContenido vista={panel} estado={estado} dispatch={dispatch} modo={modo} /> : null}
+            {paso ? (
+              <PasoOnboarding
+                paso={estado.onboarding.paso}
+                total={ONBOARDING_PASOS}
+                objetivo={paso.objetivo}
+                lado={paso.lado}
+                titulo={paso.titulo}
+                texto={paso.texto}
+                onSiguiente={() => dispatch({ tipo: 'onboardingSiguiente' })}
+                onAtras={() => dispatch({ tipo: 'onboardingAtras' })}
+                onCerrar={() => dispatch({ tipo: 'onboardingCerrar' })}
+                contenedorRef={raizRef}
+                modo={modo}
               />
-            </div>
-            <div className="flex min-w-0 flex-col gap-5">
-              <TarjetaTipoDeCambio tour="tdc" {...home.tdc} />
-              <ModuloCuentas cuentas={home.cuentas} />
-            </div>
+            ) : null}
+          </>
+        }
+      >
+        {estado.aviso && estado.pestana === 'posicion' ? <AvisoResultado tipo={estado.aviso.tipo} texto={estado.aviso.texto} onCerrar={() => dispatch({ tipo: 'cerrarAviso' })} /> : null}
+
+        <div className="flex items-start justify-between gap-6">
+          <div className="flex flex-col gap-0.5">
+            <h1 className="text-h1 font-bold">Inicio</h1>
+            <span className="text-body text-app-ink-2">{empresa} · {fmt.fechaLarga(HOY)}</span>
+          </div>
+          <div className="flex gap-3">
+            <Boton variante="secondary" tamano="large" onClick={noDisponible}>Subir documento</Boton>
+            <Boton variante="secondary" tamano="large" onClick={() => dispatch({ tipo: 'abrirPanel', orden: null })}>Pagar</Boton>
           </div>
         </div>
-      ) : (
-        <div className="flex flex-col gap-4">
-          {estado.avisoOperar ? <AvisoResultado tipo={estado.avisoOperar.tipo} texto={estado.avisoOperar.texto} onCerrar={() => dispatch({ tipo: 'cerrarAvisoOperar' })} /> : null}
-          <AvisoVistaAnterior onProbar={abrirPrimerPago} />
-          <div className="flex items-center justify-between gap-4">
-            <span className="text-body text-app-ink-2">¿Qué quieres hacer hoy?</span>
-            <div className="flex gap-5">
-              <Boton variante="link-caption">Horarios de operación</Boton>
-              <Boton variante="link-caption">Operaciones recientes</Boton>
+
+        <Pestanas
+          etiqueta="Vistas del inicio"
+          pestanas={[{ id: 'posicion', label: 'Posición consolidada' }, { id: 'operar', label: 'Operar clásico' }]}
+          activa={estado.pestana}
+          onCambiar={(id) => dispatch({ tipo: 'pestana', pestana: id })}
+          tour={{ operar: 'clasico' }}
+        />
+
+        {estado.pestana === 'posicion' ? (
+          <div className="flex flex-col gap-5">
+            <section data-tour="posicion" aria-labelledby="posicion-titulo" className="flex flex-col gap-2.5">
+              <div className="flex items-baseline justify-between">
+                <h2 id="posicion-titulo" className="text-h3 font-semibold">Posición por divisa</h2>
+                <Boton variante="link-caption" aria-pressed={verTotal} onClick={() => setVerTotal((v) => !v)}>{verTotal ? 'Ocultar total en MXN' : 'Ver total en MXN'}</Boton>
+              </div>
+              {verTotal ? <span className="text-body text-app-ink-2 tabular-nums">Total de tus posiciones ≈ <span className="font-semibold text-app-ink">{fmt.monto(home.totalMXN, 'MXN')}</span> a precio de venta</span> : null}
+              <div className="grid grid-cols-3 gap-6">
+                {home.posiciones.map((p) => (
+                  <TarjetaPosicion
+                    key={p.id}
+                    divisa={p.divisa}
+                    nombre={p.nombre}
+                    saldo={p.saldo}
+                    pactadasRecibir={p.pactadasRecibir}
+                    pactadasLiquidar={p.pactadasLiquidar}
+                    pagosFuturos={p.pagosFuturos}
+                    resultado={p.resultado}
+                    proyeccion={p.proyeccion}
+                    linea={p.linea}
+                    accion={p.accion ? { label: p.accion.label, onClick: () => dispatch({ tipo: 'abrirPanel', orden: p.accion!.orden }) } : null}
+                    enlace={p.enlace ? { label: p.enlace.label, onClick: () => dispatch({ tipo: 'abrirDepositar' }) } : null}
+                  />
+                ))}
+              </div>
+            </section>
+
+            <div className="grid grid-cols-3 items-start gap-6">
+              <div className="col-span-2 flex min-w-0 flex-col gap-5">
+                {home.nuevo ? (
+                  <section aria-labelledby="nuevo-titulo" className="flex flex-col gap-2">
+                    <h2 id="nuevo-titulo" className="text-h3 font-semibold">Lo nuevo</h2>
+                    <FranjaNuevo monto={home.nuevo.monto} divisa={home.nuevo.divisa} origen={home.nuevo.de} meta={home.nuevo.meta} onComprobante={noDisponible} onUsar={() => dispatch({ tipo: 'abrirPanel', orden: null, origenId: 'mxn' })} />
+                  </section>
+                ) : null}
+                <ListaMovimientos
+                  tour="movimientos"
+                  totalProximos={home.totalProximos}
+                  verTodos={home.verTodos}
+                  onVerTodos={(valor) => dispatch({ tipo: 'verTodosLosPagos', valor })}
+                  proximos={home.proximos.map((p) => ({ fecha: p.fecha, nombre: p.nombre, detalle: p.detalle, monto: p.monto, divisa: p.divisa, estado: p.badge, onPagar: p.orden ? () => dispatch({ tipo: 'abrirPanel', orden: p.orden! }) : undefined }))}
+                  realizados={home.realizados.map((r) => ({ fecha: r.fecha, nombre: r.nombre, detalle: r.detalle, monto: r.monto, divisa: r.divisa, estado: r.badge }))}
+                />
+              </div>
+              <div className="flex min-w-0 flex-col gap-5">
+                <TarjetaTipoDeCambio tour="tdc" {...home.tdc} />
+                <ModuloCuentas cuentas={home.cuentas} onVerTodas={noDisponible} />
+              </div>
             </div>
           </div>
-          <div className="grid grid-cols-3 items-start gap-6 @max-md/shell:grid-cols-1">
-            <div className="col-span-2 min-w-0 @max-md/shell:col-span-1"><FormularioOperar vista={operar} dispatch={dispatch} /></div>
-            <ModuloCuentas cuentas={home.cuentas} className="self-start" />
+        ) : (
+          <div className="flex flex-col gap-4">
+            <AvisoVistaAnterior onProbar={() => dispatch({ tipo: 'abrirPanel', orden: null })} />
+            <div className="flex items-center justify-between gap-4">
+              <span className="text-body text-app-ink-2">¿Qué quieres hacer hoy?</span>
+              <div className="flex gap-5">
+                <Boton variante="link-caption" onClick={noDisponible}>Horarios de operación</Boton>
+                <Boton variante="link-caption" onClick={noDisponible}>Operaciones recientes</Boton>
+              </div>
+            </div>
+            <div className="grid grid-cols-3 items-start gap-6">
+              <div className="col-span-2 min-w-0"><FormularioOperar vista={operar} dispatch={dispatch} onNoDisponible={noDisponible} /></div>
+              <ModuloCuentas cuentas={home.cuentas} onVerTodas={noDisponible} className="self-start" />
+            </div>
           </div>
-        </div>
-      )}
-    </AppShell>
+        )}
+      </AppShell>
+      {modo === 'app' ? <Toast texto={estado.toast?.texto ?? null} /> : null}
+    </>
   );
 };
 
 const PanelContenido: FC<{ vista: VistaPanel; estado: EstadoApp; dispatch: (a: Accion) => void; modo: ModoShell }> = ({ vista: v, estado, dispatch, modo }) => {
-  const [conceptoAbierto, setConceptoAbierto] = useState(false);
+  const [motivoAbierto, setMotivoAbierto] = useState(false);
+  const noDisponible = () => dispatch({ tipo: 'toast', texto: AVISO_FUERA_DEL_PROTOTIPO });
   const cerrar = () => dispatch(v.paso === 'confirmacion' ? { tipo: 'volverInicio' } : { tipo: 'cerrarPanel' });
   const primario = () => {
     if (!v.primario.habilitado) return;
@@ -173,70 +178,86 @@ const PanelContenido: FC<{ vista: VistaPanel; estado: EstadoApp; dispatch: (a: A
       case 'pedirPrecio': dispatch({ tipo: 'pedirPrecio' }); break;
       case 'confirmar': dispatch({ tipo: 'confirmar' }); break;
       case 'volverInicio': dispatch({ tipo: 'volverInicio' }); break;
+      case 'cerrar': dispatch({ tipo: 'cerrarPanel' }); break;
     }
   };
   const secundario = v.secundario
-    ? { label: v.secundario.label, onClick: () => { if (v.secundario?.accion === 'volver') dispatch({ tipo: 'irPaso', paso: 'origen' }); else if (v.secundario?.accion === 'cancelar') dispatch({ tipo: 'cerrarPanel' }); } }
+    ? {
+      label: v.secundario.label,
+      onClick: () => {
+        switch (v.secundario?.accion) {
+          case 'volver': dispatch({ tipo: 'irPaso', paso: 'revision' }); break;
+          case 'volverOrigen': dispatch({ tipo: 'irPaso', paso: 'origen' }); break;
+          case 'volverDestino': dispatch({ tipo: 'irPaso', paso: 'destino' }); break;
+          case 'cancelar': dispatch({ tipo: 'cerrarPanel' }); break;
+          case 'comprobante': noDisponible(); break;
+        }
+      },
+    }
     : null;
-  const esCompra = estado.panel.orden?.tipo === 'compra';
 
   return (
     <PanelOperar titulo={v.titulo} sub={v.sub} primario={{ label: v.primario.label, habilitado: v.primario.habilitado, onClick: primario }} secundario={secundario} onCerrar={cerrar} modo={modo}>
-      {v.paso === 'destinatario' ? (
+      {v.depositar ? (
         <>
-          <h3 className="text-h3 font-semibold">¿A quién le pagas?</h3>
-          <span className="text-caption text-app-ink-2">Elige un pago cargado. Pagar a un destinatario nuevo desde aquí está en diseño.</span>
-          <div role="listbox" aria-label="Pagos cargados" className="flex flex-col gap-0.5">
-            {v.ordenes.map((o) => (
-              <OpcionLista key={o.orden.id} alta onElegir={() => dispatch({ tipo: 'elegirOrden', orden: o.orden })}>
-                <span className="flex min-w-0 flex-1 items-center justify-between gap-3">
-                  <span className="flex min-w-0 flex-col"><span className="truncate text-body font-semibold">{o.orden.destinatario}</span><span className="text-caption text-app-ink-2">vence {o.fecha} · {o.orden.referencia}</span></span>
-                  <span className="text-body font-semibold tabular-nums">{o.monto}</span>
-                </span>
-              </OpcionLista>
-            ))}
-          </div>
+          <p className="text-body text-app-ink-2">Transfiere desde cualquier banco a esta cuenta. El dinero se acredita el mismo día hábil.</p>
+          <dl className="flex flex-col rounded-sm border border-app-divider px-4 py-1 tabular-nums">
+            <div className="flex justify-between gap-4 border-b border-app-divider py-2.5"><dt className="text-body text-app-ink-2">Cuenta</dt><dd className="text-body font-semibold">{v.depositar.cuenta}</dd></div>
+            <div className="flex justify-between gap-4 border-b border-app-divider py-2.5"><dt className="text-body text-app-ink-2">Banco</dt><dd className="text-body font-semibold">{v.depositar.banco}</dd></div>
+            <div className="flex justify-between gap-4 py-2.5"><dt className="text-body text-app-ink-2">CLABE</dt><dd className="text-body font-semibold">{v.depositar.clabe.replace(/(\d{4})(?=\d)/g, '$1 ')}</dd></div>
+          </dl>
+          <Boton variante="secondary" tamano="large" className="self-start" onClick={() => { navigator.clipboard?.writeText(v.depositar!.clabe).then(() => dispatch({ tipo: 'toast', texto: 'CLABE copiada.' })).catch(() => dispatch({ tipo: 'toast', texto: 'No se pudo copiar la CLABE.' })); }}>Copiar CLABE</Boton>
         </>
       ) : null}
 
-      {v.paso === 'origen' ? (
+      {v.paso === 'destino' && v.destino ? (
+        <>
+          <h3 className="text-h3 font-semibold">¿A quién le pagas?</h3>
+          <SelectorDestino modo="lista" grupos={v.destino.grupos} busqueda={v.destino.busqueda} onBusqueda={(t) => dispatch({ tipo: 'busquedaDestino', texto: t })} onElegir={(d) => dispatch({ tipo: 'elegirDestino', destino: d.destino, pago: d.pago })} onAgregar={noDisponible} />
+        </>
+      ) : null}
+
+      {v.paso === 'origen' && !v.depositar ? (
         <>
           <h3 className="text-h3 font-semibold">¿Desde qué cuenta pagas?</h3>
-          <GrupoOrigen opciones={v.origenes.map((o) => ({ id: o.id, cuenta: o.nombre, saldo: o.saldo, pagas: o.pagas, consecuencia: o.consecuencia, seleccionada: o.seleccionada }))} valor={estado.panel.origenId} onCambiar={(id) => dispatch({ tipo: 'elegirOrigen', origenId: id as 'mxn' | 'usd' | 'eur' })} />
+          <GrupoOrigen opciones={v.origenes.map((o) => ({ id: o.id, cuenta: o.nombre, saldo: o.saldo, pagas: o.pagas, consecuencia: o.consecuencia, seleccionada: o.seleccionada }))} valor={estado.panel.origenId} onCambiar={(id) => dispatch({ tipo: 'elegirOrigen', origenId: id as CuentaId })} />
         </>
       ) : null}
 
       {v.paso === 'revision' && v.revision ? (
         <>
-          <BloqueMonto pagas={{ monto: v.revision.pagas, divisa: v.revision.pagasDivisa, enVivo: !v.sinTdc }} recibe={{ monto: v.revision.recibe, divisa: v.revision.recibeDivisa, fijo: true, destinatario: v.revision.destinatario }} />
+          {v.mercadoCerrado ? <Alerta tono="warning" titulo="Mercado cerrado.">No se puede pedir precio hasta que abra. Puedes dejar el pago listo.</Alerta> : null}
+          <BloqueMonto pagas={{ monto: v.revision.pagas, divisa: v.revision.pagasDivisa }} recibe={{ monto: v.revision.recibe, divisa: v.revision.recibeDivisa, destinatario: v.revision.destinatario }} ladoFijo={v.revision.ladoFijo} conTdc={!v.sinTdc} editable={v.revision.editable} onCambiar={(lado, valor) => dispatch({ tipo: 'monto', lado, valor })} />
           <FechaLiquidacion visible={v.revision.fechas.length > 0} opciones={v.revision.fechas} valor={estado.panel.fechaValor} onChange={(f) => dispatch({ tipo: 'fechaValor', fecha: f })} />
           <div className="flex flex-col gap-1.5">
             <p className="text-pretty text-body font-medium tabular-nums">{v.revision.texto}</p>
             {v.revision.ayuda ? <span className="flex items-center gap-2 text-caption text-app-ink-2"><Icono nombre="info-circle" tamano="xs" /><span>{v.revision.ayuda}</span></span> : null}
           </div>
-          {v.revision.tdc != null ? <CajaTdcValiu tdc={v.revision.tdc} tipo="Precio indicativo" className="self-start" /> : null}
+          {v.revision.tdc != null ? <CajaTdcValiu sinBorde tdc={v.revision.tdc} tipo="Precio indicativo" className="self-start" /> : null}
           <div className="grid grid-cols-2 gap-3">
-            <CampoSelector etiqueta="Concepto" valor={v.revision.concepto} placeholder="Elige un concepto" abierto={conceptoAbierto} onAbrir={setConceptoAbierto}>
-              {MOTIVOS.map((m) => (
-                <OpcionLista key={m} seleccionada={m === v.revision!.concepto} onElegir={() => { dispatch({ tipo: 'concepto', concepto: m }); setConceptoAbierto(false); }}><span className="text-body">{m}</span></OpcionLista>
+            <CampoSelector etiqueta="Motivo de pago" valor={v.revision.motivo} placeholder="Elige un motivo" abierto={motivoAbierto} onAbrir={setMotivoAbierto}>
+              {v.revision.motivos.map((m) => (
+                <OpcionLista key={m} seleccionada={m === v.revision!.motivo} onElegir={() => { dispatch({ tipo: 'motivo', motivo: m }); setMotivoAbierto(false); }}><span className="text-body">{m}</span></OpcionLista>
               ))}
             </CampoSelector>
-            <CampoTexto etiqueta="Referencia" valor={v.revision.referencia} onCambiar={(t) => dispatch({ tipo: 'referencia', referencia: t })} />
+            <CampoTexto etiqueta="Referencia" opcional valor={v.revision.referencia} onCambiar={(t) => dispatch({ tipo: 'referencia', referencia: t })} placeholder="Ej. Factura 0457" />
           </div>
-          <span className="text-body text-app-ink-2 tabular-nums">{v.revision.saldoDespues}</span>
+          <span className="text-body text-app-ink-2 tabular-nums">{v.revision.efecto}{v.revision.posVencimiento ? ` ${v.revision.posVencimiento}` : ''}</span>
           {!v.sinTdc ? <span className="flex items-center gap-2 text-caption text-app-ink-2"><Icono nombre="info-circle" tamano="xs" />Ten tu token a mano: el precio dura 2 minutos.</span> : null}
         </>
       ) : null}
 
       {v.paso === 'precio' && v.precio ? (
         <>
-          {v.precio.estado === 'vencido' ? <Alerta tono="error" role="alert" titulo="El precio venció. Pide uno nuevo.">El precio fijo dura 2 minutos. Los montos volvieron al indicativo.</Alerta> : null}
+          {v.precio.estado === 'vencido' ? <Alerta tono="info" role="status" titulo="El precio venció. Pide uno nuevo.">El precio fijo dura 2 minutos. Los montos volvieron al indicativo.</Alerta> : null}
           <PrecioEjecutable {...v.precio} />
-          <CampoToken valor={v.precio.token} habilitado={v.precio.tokenHabilitado} onChange={(t) => dispatch({ tipo: 'token', token: t })} autoFoco={modo === 'app'} />
+          {v.precio.estado !== 'vencido' ? (
+            <CampoToken valor={v.precio.token} habilitado={!v.precio.confirmando} onChange={(t) => dispatch({ tipo: 'token', token: t })} autoFoco={modo === 'app'} error={v.precio.tokenError} />
+          ) : null}
         </>
       ) : null}
 
-      {v.paso === 'confirmacion' && v.confirmacion ? <Confirmacion {...v.confirmacion} esCompra={esCompra} /> : null}
+      {v.paso === 'confirmacion' && v.confirmacion ? <Confirmacion vista={v.confirmacion} /> : null}
     </PanelOperar>
   );
 };

@@ -1,21 +1,47 @@
 import { describe, it, expect } from 'vitest';
-import { deducir, cotizar, fechasLiquidacion } from './fx';
+import { cotizar, deducir, ejecutable, fechasLiquidacion, siguienteHabil } from './fx';
+import { centavos, entreTdc, escalarTdc, leerCentavos, porTdc } from './dinero';
+import * as fmt from './format';
+
+describe('dinero', () => {
+  it('redondea half-up a centavos', () => {
+    expect(porTdc(centavos(1500), 18_091_183)).toBe(centavos(27_136.77)); // 27,136.7745
+    expect(porTdc(centavos(1500), 18_092_415)).toBe(centavos(27_138.62)); // 27,138.6225
+    expect(porTdc(centavos(1000), 18_092_415)).toBe(centavos(18_092.42)); // 18,092.415 → .42 (half-up)
+    expect(entreTdc(centavos(1500), 1_080_000)).toBe(centavos(1_388.89)); // 1,388.888…
+  });
+  it('precio ejecutable con los factores del handoff', () => {
+    expect(escalarTdc(18_091_183, 10_000_681)).toBe(18_092_415);
+    expect(ejecutable(18_091_183, 'comprar')).toBe(18_092_415);
+    expect(ejecutable(18_032_135, 'vender')).toBe(18_030_907);
+  });
+  it('lee lo que escribe el usuario', () => {
+    expect(leerCentavos('1,000')).toBe(100000);
+    expect(leerCentavos('1000.5')).toBe(100050);
+    expect(leerCentavos('')).toBeNull();
+    expect(leerCentavos('abc')).toBeNull();
+  });
+  it('formatea', () => {
+    expect(fmt.monto(centavos(1_180_000), 'MXN')).toBe('1,180,000.00 MXN');
+    expect(fmt.montoSigno(centavos(-1250.5), 'MXN')).toBe('−1,250.50 MXN');
+    expect(fmt.tdc(18_091_183)).toBe('18.091183');
+    expect(fmt.compacto(centavos(1000))).toBe('1,000');
+    expect(fmt.cuentaRegresiva(120)).toBe('2:00');
+  });
+});
 
 describe('deducir (sección 5 / Anexo A)', () => {
-  it('MXN → USD es compra de USD/MXN a la punta de compra', () => {
-    expect(deducir('MXN', 'USD')).toMatchObject({ tipo: 'compra', par: 'USD/MXN', punta: 'compra', tdc: 18.091183 });
+  it('MXN → USD es compra de USD/MXN al lado comprar', () => {
+    expect(deducir('MXN', 'USD')).toMatchObject({ tipo: 'compra', par: 'USD/MXN', lado: 'comprar' });
   });
-  it('USD → MXN es venta de USD/MXN a la punta de venta', () => {
-    expect(deducir('USD', 'MXN')).toMatchObject({ tipo: 'venta', par: 'USD/MXN', punta: 'venta', tdc: 18.032135 });
+  it('USD → MXN es venta de USD/MXN al lado vender', () => {
+    expect(deducir('USD', 'MXN')).toMatchObject({ tipo: 'venta', par: 'USD/MXN', lado: 'vender' });
   });
-  it('MXN → EUR es compra de EUR/MXN', () => {
-    expect(deducir('MXN', 'EUR')).toMatchObject({ tipo: 'compra', par: 'EUR/MXN', punta: 'compra' });
-  });
-  it('USD → EUR es compra de EUR/USD', () => {
-    expect(deducir('USD', 'EUR')).toMatchObject({ tipo: 'compra', par: 'EUR/USD', punta: 'compra' });
+  it('EUR → USD es venta de EUR/USD', () => {
+    expect(deducir('EUR', 'USD')).toMatchObject({ tipo: 'venta', par: 'EUR/USD', lado: 'vender' });
   });
   it('misma divisa es transferencia sin par', () => {
-    expect(deducir('USD', 'USD')).toEqual({ tipo: 'transferencia', par: null, punta: null, tdc: null });
+    expect(deducir('USD', 'USD')).toEqual({ tipo: 'transferencia', par: null, lado: null });
   });
   it('combinación inexistente devuelve null', () => {
     expect(deducir('GBP', 'CAD')).toBeNull();
@@ -24,20 +50,30 @@ describe('deducir (sección 5 / Anexo A)', () => {
 
 describe('cotizar', () => {
   it('1,500 USD fijos desde MXN cuestan 27,136.77 MXN', () => {
-    expect(cotizar('MXN', 'USD', 1500, 'destino')!.pagas).toBeCloseTo(27136.77, 2);
+    expect(cotizar({ origen: 'MXN', destino: 'USD', monto: centavos(1500), ladoFijo: 'recibe' })!.pagas).toBe(centavos(27_136.77));
+  });
+  it('1,500 USD desde EUR cuestan 1,388.89 EUR (lado vender de EUR/USD)', () => {
+    expect(cotizar({ origen: 'EUR', destino: 'USD', monto: centavos(1500), ladoFijo: 'recibe' })!.pagas).toBe(centavos(1_388.89));
+  });
+  it('con el ejecutable fijo: 27,138.62 MXN', () => {
+    expect(cotizar({ origen: 'MXN', destino: 'USD', monto: centavos(1500), ladoFijo: 'recibe', tdc: 18_092_415 })!.pagas).toBe(centavos(27_138.62));
+  });
+  it('lado pagas fijo: 18,091.18 MXN compran 1,000.00 USD', () => {
+    expect(cotizar({ origen: 'MXN', destino: 'USD', monto: centavos(18_091.18), ladoFijo: 'pagas' })!.recibe).toBe(centavos(1000));
   });
   it('transferencia: pagas = recibe', () => {
-    expect(cotizar('USD', 'USD', 1000, 'destino')).toMatchObject({ pagas: 1000, recibe: 1000 });
+    expect(cotizar({ origen: 'USD', destino: 'USD', monto: centavos(1000), ladoFijo: 'recibe' })).toMatchObject({ pagas: centavos(1000), recibe: centavos(1000), tdc: null });
   });
 });
 
 describe('fechasLiquidacion', () => {
   it('martes 6 oct 2026 → Hoy, mié 7, jue 8 (vence), vie 9', () => {
     const f = fechasLiquidacion(new Date(2026, 9, 6), new Date(2026, 9, 8));
-    expect(f.map(x => x.etiqueta)).toEqual(['Hoy', 'mié 7', 'jue 8', 'vie 9']);
-    expect(f.map(x => x.vence)).toEqual([false, false, true, false]);
+    expect(f.map((x) => x.etiqueta)).toEqual(['Hoy', 'mié 7', 'jue 8', 'vie 9']);
+    expect(f.map((x) => x.vence)).toEqual([false, false, true, false]);
   });
   it('salta el fin de semana', () => {
-    expect(fechasLiquidacion(new Date(2026, 9, 9)).map(x => x.etiqueta)).toEqual(['Hoy', 'lun 12', 'mar 13', 'mié 14']);
+    expect(fechasLiquidacion(new Date(2026, 9, 9)).map((x) => x.etiqueta)).toEqual(['Hoy', 'lun 12', 'mar 13', 'mié 14']);
+    expect(siguienteHabil(new Date(2026, 9, 9)).getDate()).toBe(12);
   });
 });

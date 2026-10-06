@@ -14,19 +14,33 @@ export interface PanelOperarProps {
   modo?: 'app' | 'frame';
 }
 
-/** Panel 480 px, radio 16 a la izquierda, --shadow-lg, overlay rgba(21,21,34,.4). Esc cierra; footer con secundario + primario. */
+const FOCUSABLES = 'a[href], button:not([disabled]), input:not([disabled]), [role="radio"], [tabindex]:not([tabindex="-1"])';
+
+/** Panel 480 px, radio 16 a la izquierda, --shadow-lg, overlay rgba(21,21,34,.4). role=dialog, foco atrapado, Esc cierra y el foco vuelve al botón que lo abrió. */
 export const PanelOperar: FC<PanelOperarProps> = ({ titulo, sub, primario, secundario, onCerrar, children, modo = 'app' }) => {
   const ref = useRef<HTMLDivElement>(null);
   const esApp = modo === 'app';
+  const cerrarRef = useRef(onCerrar);
+  useEffect(() => { cerrarRef.current = onCerrar; }, [onCerrar]);
 
   useEffect(() => {
     if (!esApp) return;
     const previo = document.activeElement as HTMLElement | null;
-    ref.current?.focus();
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onCerrar(); };
+    const nodo = ref.current;
+    const primero = nodo?.querySelector<HTMLElement>('input:not([disabled]), [role="radio"][tabindex="0"]') ?? nodo;
+    primero?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { e.stopPropagation(); cerrarRef.current(); return; }
+      if (e.key !== 'Tab' || !nodo) return;
+      const focusables = Array.from(nodo.querySelectorAll<HTMLElement>(FOCUSABLES)).filter((el) => el.offsetParent !== null);
+      if (!focusables.length) return;
+      const primero = focusables[0];
+      const ultimo = focusables[focusables.length - 1];
+      if (e.shiftKey && (document.activeElement === primero || document.activeElement === nodo)) { e.preventDefault(); ultimo.focus(); }
+      else if (!e.shiftKey && document.activeElement === ultimo) { e.preventDefault(); primero.focus(); }
+    };
     window.addEventListener('keydown', onKey);
     return () => { window.removeEventListener('keydown', onKey); previo?.focus?.(); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [esApp]);
 
   const pos = esApp ? 'fixed' : 'absolute';
@@ -39,6 +53,7 @@ export const PanelOperar: FC<PanelOperarProps> = ({ titulo, sub, primario, secun
         role="dialog"
         aria-modal="true"
         aria-labelledby="panel-titulo"
+        aria-describedby="panel-sub"
         data-component="PanelOperar"
         className={`${pos} inset-y-0 right-0 z-30 flex w-(--app-panel-w) max-w-full flex-col rounded-l-lg bg-app-surface shadow-lg outline-none`}
       >
@@ -49,12 +64,12 @@ export const PanelOperar: FC<PanelOperarProps> = ({ titulo, sub, primario, secun
               <Icono nombre="times" tamano="lg" />
             </button>
           </div>
-          <span className="text-body text-app-ink-2 tabular-nums">{sub}</span>
+          <span id="panel-sub" className="text-body text-app-ink-2 tabular-nums">{sub}</span>
         </div>
         <div className={['flex min-h-0 flex-1 flex-col gap-4 px-6 py-5', esApp ? 'overflow-y-auto' : ''].join(' ')}>{children}</div>
         <div className="flex gap-3 border-t border-app-divider px-6 pb-5 pt-4">
-          {secundario ? <Boton variante="secondary" tamano="xl-14" onClick={secundario.onClick} className="flex-1">{secundario.label}</Boton> : null}
-          <Boton variante="primary" tamano="xl" onClick={primario.onClick} disabled={!primario.habilitado} className="flex-1">{primario.label}</Boton>
+          {secundario ? <Boton variante="secondary" tamano="xl-14" onClick={secundario.onClick} className="min-w-0 flex-1 px-3">{secundario.label}</Boton> : null}
+          <Boton variante="primary" tamano="xl" onClick={primario.onClick} disabled={!primario.habilitado} aria-busy={primario.label.endsWith('…') || undefined} className="min-w-0 flex-1 px-3">{primario.label}</Boton>
         </div>
       </aside>
     </>

@@ -111,6 +111,7 @@
   --breakpoint-md: 900px;
   --breakpoint-lg: 1100px;
   --breakpoint-xl: 1280px;
+  --breakpoint-min: 1200px;
   --container-md: 900px;
   --container-lg: 1100px;
 

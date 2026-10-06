@@ -1,10 +1,11 @@
 import type { FC } from 'react';
+import type { Centavos } from '@/lib/dinero';
 import * as fmt from '@/lib/format';
 import type { Divisa } from '@/lib/fx';
 import { Boton } from './ui/Boton';
 
 export interface ModuloCuentasProps {
-  cuentas: { id: string; nombre: string; mascara: string; saldo: number; divisa: Divisa }[];
+  cuentas: { id: string; nombre: string; mascara: string; saldo: Centavos; divisa: Divisa }[];
   onVerTodas?: () => void;
   className?: string;
 }

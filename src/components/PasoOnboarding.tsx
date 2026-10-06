@@ -108,7 +108,7 @@ export const PasoOnboarding: FC<PasoOnboardingProps> = ({ paso, total, objetivo,
             {Array.from({ length: total }, (_, j) => <span key={j} className={['size-(--app-dot) rounded-full', j === paso ? 'bg-app-primary' : 'bg-app-ink-disabled'].join(' ')} />)}
           </div>
           <div className="flex items-center gap-4">
-            {paso > 0 ? <Boton variante="link" className="font-bold" onClick={onAtras}>Atrás</Boton> : null}
+            {paso > 0 ? <Boton variante="link" onClick={onAtras}>Atrás</Boton> : null}
             <Boton variante="primary" tamano="large" onClick={onSiguiente}>{paso === total - 1 ? 'Empezar' : 'Siguiente'}</Boton>
           </div>
         </div>

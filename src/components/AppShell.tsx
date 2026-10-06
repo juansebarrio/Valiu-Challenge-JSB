@@ -20,13 +20,16 @@ export interface AppShellProps {
   modo?: ModoShell;
   raizRef?: Ref<HTMLDivElement>;
   activo?: number;
+  /** Secciones fuera del prototipo: muestran un aviso breve en lugar de navegar. */
+  onNoDisponible?: () => void;
 }
 
 const ITEM = 'flex h-(--app-nav-item-h) cursor-pointer items-center gap-2.5 rounded-sm px-2.5 text-body whitespace-nowrap transition-colors hover:bg-app-accent-bg @max-lg/shell:w-(--app-nav-item-w-min) @max-lg/shell:justify-center @max-lg/shell:px-0';
 
 /** Sidebar 240 · header 48 · main 24 32 32 · footer 40 (README · Layout del AppShell). */
-export const AppShell: FC<AppShellProps> = ({ children, capas, modo = 'app', raizRef, activo = 0 }) => {
+export const AppShell: FC<AppShellProps> = ({ children, capas, modo = 'app', raizRef, activo = 0, onNoDisponible }) => {
   const esApp = modo === 'app';
+  const noDisponible = (e: React.MouseEvent) => { e.preventDefault(); onNoDisponible?.(); };
   return (
     <div ref={raizRef} data-shell={modo} className={['relative flex bg-app-canvas text-app-ink @container/shell', esApp ? 'min-h-dvh w-full' : 'w-(--app-frame-w) overflow-hidden'].join(' ')}>
       <aside className={['flex shrink-0 flex-col gap-1 border-app-divider bg-app-surface px-2 py-4 hairline-r', 'w-(--app-sidebar-w) @max-lg/shell:w-(--app-sidebar-w-min) @max-lg/shell:items-center', esApp ? 'sticky top-0 h-dvh' : ''].join(' ')}>
@@ -36,14 +39,14 @@ export const AppShell: FC<AppShellProps> = ({ children, capas, modo = 'app', rai
         </div>
         <nav aria-label="Principal" className="flex flex-col gap-1 @max-lg/shell:items-center">
           {NAV.map((it, i) => (
-            <a key={it.label} href="#" aria-current={i === activo ? 'page' : undefined} title={it.label} className={[ITEM, i === activo ? 'bg-app-accent-bg font-semibold text-app-accent' : 'font-medium text-app-ink'].join(' ')}>
+            <a key={it.label} href="#" onClick={i === activo ? (e) => e.preventDefault() : noDisponible} aria-current={i === activo ? 'page' : undefined} title={it.label} className={[ITEM, i === activo ? 'bg-app-accent-bg font-semibold text-app-accent' : 'font-medium text-app-ink'].join(' ')}>
               <Icono nombre={it.icono} tamano="md" />
               <span className="@max-lg/shell:sr-only">{it.label}</span>
             </a>
           ))}
         </nav>
         <div className="flex-1" />
-        <a href="#" title="Cerrar sesión" className={[ITEM, 'font-medium text-app-ink-2'].join(' ')}>
+        <a href="#" onClick={noDisponible} title="Cerrar sesión" className={[ITEM, 'font-medium text-app-ink-2'].join(' ')}>
           <Icono nombre="signout" tamano="md" />
           <span className="@max-lg/shell:sr-only">Cerrar sesión</span>
         </a>
@@ -51,11 +54,11 @@ export const AppShell: FC<AppShellProps> = ({ children, capas, modo = 'app', rai
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex h-(--app-header-h) shrink-0 items-center justify-end gap-6 border-app-divider bg-app-surface px-8 hairline-b">
-          <a href="#" className="inline-flex cursor-pointer items-center gap-1 rounded-2xl border border-app-primary bg-app-surface px-3 py-1.5 text-caption font-semibold text-app-primary shadow-high hover:bg-app-accent-bg">
+          <a href="#" onClick={noDisponible} className="inline-flex cursor-pointer items-center gap-1 rounded-2xl border border-app-primary bg-app-surface px-3 py-1.5 text-caption font-semibold text-app-primary shadow-high hover:bg-app-accent-bg">
             <Icono nombre="whatsapp" tamano="sm" />
             Contáctanos
           </a>
-          <button type="button" aria-label="Notificaciones" className="flex cursor-pointer items-center rounded-xs bg-transparent text-app-ink">
+          <button type="button" onClick={onNoDisponible} aria-label="Notificaciones" className="flex cursor-pointer items-center rounded-xs bg-transparent text-app-ink">
             <Icono nombre="bell" tamano="xl" />
           </button>
         </header>
@@ -65,9 +68,9 @@ export const AppShell: FC<AppShellProps> = ({ children, capas, modo = 'app', rai
         <footer className="flex h-(--app-footer-h) shrink-0 items-center justify-center gap-4 whitespace-nowrap border-app-divider px-8 text-caption text-app-ink-2 hairline-t">
           Las operaciones bancarias serán realizadas por Banco BASE
           <span className="text-app-ink-disabled">·</span>
-          <a href="#" className="text-app-ink-2 hover:text-app-primary">Términos y condiciones</a>
+          <a href="#" onClick={noDisponible} className="text-app-ink-2 hover:text-app-primary">Términos y condiciones</a>
           <span className="text-app-ink-disabled">·</span>
-          <a href="#" className="text-app-ink-2 hover:text-app-primary">Aviso de privacidad</a>
+          <a href="#" onClick={noDisponible} className="text-app-ink-2 hover:text-app-primary">Aviso de privacidad</a>
         </footer>
       </div>
       {capas}

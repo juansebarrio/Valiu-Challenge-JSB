@@ -1,8 +1,6 @@
-import type { Metadata } from 'next';
-import { Tablero } from './Tablero';
+import { redirect } from 'next/navigation';
 
-export const metadata: Metadata = { title: 'Valiu · Tablero de frames', description: 'Los 24 frames del flujo principal, generados desde el mismo estado que la app.' };
-
+/** El tablero de frames vive en /tablero/alta. */
 export default function Pagina() {
-  return <Tablero />;
+  redirect('/tablero/alta');
 }

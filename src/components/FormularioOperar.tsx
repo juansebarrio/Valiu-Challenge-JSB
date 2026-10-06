@@ -8,14 +8,16 @@ import { Badge } from './ui/Badge';
 import { Alerta } from './ui/Alerta';
 import { Boton } from './ui/Boton';
 import { Icono } from './ui/Icono';
-import { ChipDivisa } from './ui/ChipDivisa';
-import { CampoSelector, CampoTexto, Etiqueta, MensajeError, OpcionLista, TituloGrupo } from './ui/Campo';
+import { CampoSelector, CampoTexto, Etiqueta, MensajeError, OpcionLista } from './ui/Campo';
 import { CajaTdcValiu } from './CajaTdcValiu';
 import { CampoToken } from './CampoToken';
+import { SelectorDestino } from './SelectorDestino';
+import { Confirmacion } from './Confirmacion';
 
 export interface FormularioOperarProps {
   vista: VistaOperar;
   dispatch: (a: Accion) => void;
+  onNoDisponible?: () => void;
 }
 
 /** Split Compras / Pagas: lado activo con borde 1.5 px #0086FF, error 1 px #B40909 con mensaje inline. */
@@ -53,23 +55,36 @@ const CampoMontoDoble: FC<{ v: VistaOperar; dispatch: (a: Accion) => void }> = (
   );
 };
 
-/** El formulario Operar del producto actual llevado al DS: tabs, par, montos, origen/destino, motivo, cotización, un solo CTA. */
-export const FormularioOperar: FC<FormularioOperarProps> = ({ vista: v, dispatch }) => {
+/** El formulario Operar clásico con el mismo motor que el panel: cotización, precio ejecutable, cuenta regresiva, token y vencimiento. */
+export const FormularioOperar: FC<FormularioOperarProps> = ({ vista: v, dispatch, onNoDisponible }) => {
   const onCta = () => {
     if (!v.cta.habilitado) return;
     if (v.cta.accion === 'pedirPrecio') dispatch({ tipo: 'opPedirPrecio' });
     else if (v.cta.accion === 'continuar') dispatch({ tipo: 'opContinuar' });
     else if (v.cta.accion === 'confirmar') dispatch({ tipo: 'opConfirmar' });
   };
+  const tabs = <Pestanas etiqueta="Tipo de operación" llenas pestanas={v.tabs.map((t) => ({ id: t.id, label: t.label }))} activa={v.tipo} onCambiar={(id) => dispatch({ tipo: 'opTipo', valor: id })} />;
+
+  if (v.paso === 'confirmacion' && v.confirmacion) {
+    return (
+      <section data-component="FormularioOperar" aria-label="Operar" className="flex flex-col rounded-sm bg-app-surface shadow-mid">
+        {tabs}
+        <div className="flex flex-col gap-4 px-6 pb-6 pt-2">
+          <Confirmacion vista={v.confirmacion} />
+          <div className="flex items-center justify-end gap-4 border-t border-app-divider pt-4">
+            <Boton variante="link" onClick={onNoDisponible}>{v.confirmacion.comprobante}</Boton>
+            <Boton variante="primary" tamano="mid" onClick={() => dispatch({ tipo: 'opNueva' })}>Nueva operación</Boton>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section data-component="FormularioOperar" aria-label="Operar" className="flex flex-col rounded-sm bg-app-surface shadow-mid">
-      <Pestanas etiqueta="Tipo de operación" llenas pestanas={v.tabs.map((t) => ({ id: t.id, label: t.label }))} activa={v.tipo} onCambiar={(id) => dispatch({ tipo: 'opTipo', valor: id })} />
+      {tabs}
       <div className="flex flex-col gap-4 px-6 pb-6 pt-5">
-        {v.cerrado ? (
-          <Alerta tono="warning" titulo="Mercado cerrado. Abre mañana a las 6:30." extra={<Badge tono="neutral" futuro className="self-center">Programar · Futuro</Badge>} className="items-center">
-            Operas de lunes a viernes de 6:30 a 16:30, hora de CDMX. Puedes dejar el formulario listo.
-          </Alerta>
-        ) : null}
+        {v.avisoCerrado ? <Alerta tono="warning" titulo={v.avisoCerrado.titulo}>{v.avisoCerrado.texto}</Alerta> : null}
         <div className="flex items-center justify-between">
           <span className="text-body font-semibold text-app-ink-2">{v.subtitulo}</span>
           <Badge tono={v.mercado.tono}>{v.mercado.texto}</Badge>
@@ -77,23 +92,26 @@ export const FormularioOperar: FC<FormularioOperarProps> = ({ vista: v, dispatch
 
         {v.esCambio ? (
           <div className="grid grid-cols-[var(--app-par-col-w)_minmax(0,1fr)] gap-4">
-            <CampoSelector etiqueta="Elige un par" valor={v.par.valor} placeholder="Elige un par" fuerte abierto={v.par.abierto} onAbrir={(ab) => dispatch({ tipo: 'opParAbierto', abierto: ab })} anchoLista="ancho">
-              <div data-component="SelectorPar" className="contents">
-                {v.par.grupos.map((g) => (
-                  <div key={g.titulo} className="contents">
-                    <TituloGrupo>{g.titulo}</TituloGrupo>
-                    {g.items.map((it) => (
-                      <OpcionLista key={it.par} seleccionada={it.seleccionado} onElegir={() => dispatch({ tipo: 'opPar', par: it.par })}>
-                        <span className="flex flex-1 items-center justify-between gap-3">
-                          <span className="text-body font-semibold">{it.par}</span>
-                          <span className="text-caption text-app-ink-2">{it.nombre}</span>
-                        </span>
-                      </OpcionLista>
-                    ))}
-                  </div>
-                ))}
-              </div>
-            </CampoSelector>
+            <div className="flex flex-col gap-1.5">
+              <CampoSelector etiqueta="Elige un par" valor={v.par.valor} placeholder="Elige un par" fuerte abierto={v.par.abierto} onAbrir={(ab) => dispatch({ tipo: 'opParAbierto', abierto: ab })} anchoLista="ancho">
+                <div data-component="SelectorPar" className="contents">
+                  {v.par.grupos.map((g) => (
+                    <div key={g.titulo} className="contents">
+                      <span className="px-2 pb-1 pt-2 text-caption font-bold text-app-ink-2">{g.titulo}</span>
+                      {g.items.map((it) => (
+                        <OpcionLista key={it.par} seleccionada={it.seleccionado} onElegir={() => dispatch({ tipo: 'opPar', par: it.par })}>
+                          <span className="flex flex-1 items-center justify-between gap-3">
+                            <span className="text-body font-semibold">{it.par}</span>
+                            <span className="text-caption text-app-ink-2">{it.nombre}</span>
+                          </span>
+                        </OpcionLista>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              </CampoSelector>
+              {v.par.aviso ? <span role="status" className="flex items-center gap-1.5 text-caption font-medium text-app-ink-2"><Icono nombre="info-circle" tamano="xs" />{v.par.aviso}</span> : null}
+            </div>
             <CampoMontoDoble v={v} dispatch={dispatch} />
           </div>
         ) : null}
@@ -106,31 +124,18 @@ export const FormularioOperar: FC<FormularioOperarProps> = ({ vista: v, dispatch
               </OpcionLista>
             )) : <span className="px-2 py-2 text-caption text-app-ink-2">No tienes cuentas en esta divisa.</span>}
           </CampoSelector>
-          <CampoSelector
-            etiqueta="Destino"
+          <SelectorDestino
+            modo="campo"
             valor={v.destino.valor}
-            placeholder="Elige una cuenta"
             abierto={v.destino.abierto}
             onAbrir={(ab) => dispatch({ tipo: 'opDestinoAbierto', abierto: ab })}
-            busqueda={{ texto: v.destino.busqueda, onCambiar: (t) => dispatch({ tipo: 'opDestinoBusqueda', texto: t }), placeholder: 'Busca una cuenta o destinatario' }}
-          >
-            <div data-component="SelectorDestino" className="contents">
-              {v.destino.grupos.length ? v.destino.grupos.map((g) => (
-                <div key={g.titulo} className="contents">
-                  <TituloGrupo>{g.titulo}</TituloGrupo>
-                  {g.items.map((d) => (
-                    <OpcionLista key={d.id} alta seleccionada={d.seleccionado} onElegir={() => dispatch({ tipo: 'opDestino', destinoId: d.id })}>
-                      <ChipDivisa divisa={d.divisa} chico />
-                      <span className="flex min-w-0 flex-1 flex-col"><span className="truncate text-body font-semibold">{d.nombre}</span><span className="text-caption text-app-ink-2 tabular-nums">{d.sub}</span></span>
-                    </OpcionLista>
-                  ))}
-                </div>
-              )) : <span className="px-2 py-2 text-caption text-app-ink-2">{v.tipo === 'transferir' && !v.origen.valor ? 'Primero elige la cuenta de origen.' : 'Sin resultados.'}</span>}
-              <button type="button" className="mt-1 flex cursor-pointer items-center gap-2 border-t border-app-divider bg-transparent px-2 pb-1 pt-2.5 text-caption font-semibold text-app-primary">
-                <Icono nombre="plus" tamano="sm" />Agregar destinatario
-              </button>
-            </div>
-          </CampoSelector>
+            busqueda={v.destino.busqueda}
+            onBusqueda={(t) => dispatch({ tipo: 'opDestinoBusqueda', texto: t })}
+            grupos={v.destino.grupos}
+            onElegir={(d) => dispatch({ tipo: 'opDestino', destinoId: d.id })}
+            onAgregar={onNoDisponible}
+            vacio={v.tipo === 'transferir' && !v.origen.valor ? 'Primero elige la cuenta de origen.' : 'Sin resultados.'}
+          />
         </div>
 
         {!v.esCambio ? (
@@ -153,13 +158,13 @@ export const FormularioOperar: FC<FormularioOperarProps> = ({ vista: v, dispatch
         </div>
 
         {v.vencido ? (
-          <Alerta tono="error" titulo="El precio venció. Pide uno nuevo." role="alert">El precio fijo dura 2 minutos. Los montos volvieron al indicativo.</Alerta>
+          <Alerta tono="info" titulo="El precio venció. Pide uno nuevo." role="status">El precio fijo dura 2 minutos. Los montos volvieron al indicativo.</Alerta>
         ) : null}
 
         <div data-component="Cotizacion" className="flex flex-col gap-2">
           <div className="flex items-center justify-between gap-4">
             <span className="text-caption font-bold text-app-ink-label">{v.cotizacion.titulo}</span>
-            <Badge tono={v.cotizacion.badge.tono} aria-live="polite">{v.cotizacion.badge.texto}</Badge>
+            <Badge tono={v.cotizacion.badge.tono}>{v.cotizacion.badge.texto}</Badge>
           </div>
           <div className="flex items-stretch">
             <div className={['flex flex-1 items-center justify-between gap-4 bg-app-canvas px-4 py-2.5 tabular-nums', v.cotizacion.tdc ? 'rounded-l-sm' : 'rounded-sm'].join(' ')}>
@@ -180,10 +185,10 @@ export const FormularioOperar: FC<FormularioOperarProps> = ({ vista: v, dispatch
 
         {v.token.visible ? (
           <div className="flex items-end justify-between gap-4 border-t border-app-divider pt-4">
-            <CampoToken ancho="formulario" valor={v.token.valor} habilitado onChange={(t) => dispatch({ tipo: 'opToken', token: t })} autoFoco />
+            <CampoToken ancho="formulario" valor={v.token.valor} habilitado={!v.token.confirmando} onChange={(t) => dispatch({ tipo: 'opToken', token: t })} autoFoco error={v.token.error} />
             <div className="flex items-center gap-4">
-              <Boton variante="link" className="font-bold" onClick={() => dispatch({ tipo: 'opCancelar' })}>Cancelar</Boton>
-              <Boton variante="primary" tamano="mid" onClick={onCta} disabled={!v.cta.habilitado}>{v.cta.label}</Boton>
+              <Boton variante="link" onClick={() => dispatch({ tipo: 'opCancelar' })}>Cancelar</Boton>
+              <Boton variante="primary" tamano="mid" onClick={onCta} disabled={!v.cta.habilitado} aria-busy={v.token.confirmando || undefined}>{v.cta.label}</Boton>
             </div>
           </div>
         ) : (

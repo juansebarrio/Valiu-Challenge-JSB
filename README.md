@@ -11,19 +11,26 @@ npm run build && npm start
 npm run check      # lint + typecheck + tests (vitest)
 ```
 
-Node 22, Next 16 (App Router), React 19, TypeScript, Tailwind 4, `@iconscout/react-unicons`, Vitest. Sin librerías de componentes de terceros.
+Node 22, Next 16 (App Router), React 19, TypeScript, Tailwind 4, `@iconscout/react-unicons`, Vitest. Sin librerías de componentes de terceros. Dinero en centavos enteros y tipo de cambio en millonésimas (`src/lib/dinero.ts`).
 
-## Rutas
+## Rutas y modos
 
 | Ruta | Qué es |
 |---|---|
-| `/` | Home con las pestañas **Posición consolidada** y **Operar clásico**. El panel de pago se abre sobre el home. |
-| `/tablero` | Los 24 frames del handoff (01–07, 03B–07B, 08–16, 17–20), generados desde el mismo estado que la app y escalados al ancho disponible. |
-| `/sistema` | Guía viva: tokens del design system y cada componente en sus estados (incluida la hoja de estados de FechaLiquidacion, TarjetaPosicion y OpcionOrigen). |
+| `/` | El prototipo en el escenario base. Es la URL de la prueba y de la presentación. |
+| `/tablero/alta` | Frames 01–07, 03B–07B, Estados, 08–16 y 17–20 a 1280 px, renderizados con los mismos componentes en estados fijos (`src/state/escenarios.ts`). `/tablero` redirige acá. |
+| `/sistema` | Guía viva: tokens del design system y cada componente en sus estados. |
 
-Parámetros de `/`: `?pago=p1` abre el panel con ese pago cargado (la URL se mantiene sincronizada al abrir y cerrar) · `?pestana=operar` · `?mercado=cerrado` (frame 16) · `?recorrido=1` repite el onboarding.
+Parámetros de `/`:
 
-Teclado: **Esc** cierra el panel o el recorrido · **P** pausa la cuenta regresiva del precio (demos) · **← →** mueven la selección en FechaLiquidacion y en las opciones de origen · **Tab** recorre opciones y botones · el token autoavanza y acepta pegar los 6 dígitos.
+- `?escenario=faltante|resuelta|pactada|sin-saldo|mercado-cerrado` (base: faltante).
+- `?congelar=1` fija el tipo de cambio indicativo (capturas y verificación).
+- `?demo=1` muestra un control flotante con "Vencer precio" (deja la cuenta en 0:05), "Ver recorrido" y "Reiniciar escenario".
+- `?recorrido=0` apaga el onboarding.
+
+Estado en memoria: recargar reinicia el escenario (nada de localStorage). Solo escritorio: con menos de 1200 px aparece un aviso.
+
+Teclado: **Esc** cierra el panel o el recorrido · **← →** mueven la selección en la fecha valor y en las opciones de origen · **Tab** recorre el panel con el foco atrapado · el token es un solo input de 6 dígitos (admite pegar) · el código `000000` simula un token incorrecto.
 
 ## Estructura
 
@@ -32,19 +39,23 @@ src/
   styles/tokens.css        copia literal del DS oficial (colors_and_type.css) + alias --app-*
   app/globals.css          Tailwind mapeado a los alias (ningún hex ni medida suelta en componentes)
   app/                     / · /tablero · /sistema
-  data/escenario-importadora.ts   todos los números del flujo (lo inventado está marcado)
-  lib/fx.ts                deducción de tipo, par y punta; cotización; fechas de liquidación (+ tests)
+  data/escenario.ts        escenario, cuentas, pagos, destinatarios, tipo de cambio y escenarios (todo ficticio)
+  lib/dinero.ts            centavos, micro-unidades y redondeo half-up con BigInt
+  lib/fx.ts                deducción de par, operación y lado; cotizar({...}); precio ejecutable; fechas de liquidación (+ tests)
   lib/format.ts            un formato por tipo de dato (D-10)
   lib/posicion.ts          posición por divisa, proyección de la semana, consecuencia de cada origen (+ tests)
-  state/estado.ts          estado mínimo del cliente y reducer puro
+  state/estado.ts          estado en memoria y reducer puro
+  state/derivados.ts       cuentas, pagos pendientes, posiciones y proyecciones derivados del estado
   state/vistas.ts          selectores: del estado a los props de cada componente
-  state/frames.ts          los 24 frames como secuencias de acciones sobre el reducer
+  state/escenarios.ts      estados iniciales por escenario y los frames de /tablero/alta
   state/flujo.test.ts      el flujo completo, frame por frame, con los números del handoff
   components/              AppShell, TarjetaPosicion, FranjaNuevo, FilaMovimiento, TarjetaTipoDeCambio, ModuloCuentas,
                            PanelOperar, OpcionOrigen, BloqueMonto, FechaLiquidacion, PrecioEjecutable, CampoToken,
                            AvisoResultado, PasoOnboarding, FormularioOperar (SelectorPar, SelectorDestino,
                            CampoMontoDoble, Cotizacion, CajaTdcValiu), AvisoVistaAnterior; ui/ (Boton, Badge, Alerta, Campo…)
 docs/handoff/              el paquete de diseño tal como llegó: README, docs/, design-system/, prototipo/
+docs/decisiones.md         correcciones aplicadas sobre el export, con el motivo
+docs/design/frames/        una captura por frame del export · docs/design/verificacion/ capturas del recorrido de verificación
 ```
 
 Cada componente lleva `data-component="Nombre"` con el nombre del handoff.

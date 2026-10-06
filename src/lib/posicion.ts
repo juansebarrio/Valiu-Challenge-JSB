@@ -1,34 +1,35 @@
-// src/lib/posicion.ts — posición por divisa, proyección de la semana y consecuencia de cada origen.
-import { cotizar, type Divisa } from './fx';
+// src/lib/posicion.ts — posición por divisa, proyección de la semana y consecuencia de cada cuenta de origen.
+import type { Centavos } from './dinero';
+import { cotizar, esFinDeSemana, type Divisa, type TablaPares } from './fx';
 import * as fmt from './format';
 
-export interface PagoPendiente {
+export interface Movimiento {
   id: string;
-  monto: number;
+  monto: Centavos;
   divisa: Divisa;
   fecha: Date;
 }
 
 export interface Agregado {
   cantidad: number;
-  total: number;
+  total: Centavos;
 }
 
 export interface Resultado {
   tipo: 'faltan' | 'sobran' | 'nada';
-  monto: number;
+  monto: Centavos;
 }
 
 export interface Posicion {
   divisa: Divisa;
-  saldo: number;
-  pactadas: Agregado | null;
-  pagosFuturos: Agregado;
+  saldo: Centavos;
+  pactadasRecibir: Agregado | null;
+  pactadasLiquidar: Agregado | null;
+  pagosFuturos: Agregado | null;
   resultado: Resultado;
 }
 
 const finDelDia = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999);
-const esFinDeSemana = (d: Date) => d.getDay() === 0 || d.getDay() === 6;
 
 /** Días hábiles desde hoy hasta el viernes de la semana; mínimo 4 puntos para la gráfica. */
 export function diasSemana(hoy: Date): Date[] {
@@ -46,30 +47,34 @@ export function diasSemana(hoy: Date): Date[] {
   return out;
 }
 
-/** Proyección escalonada: el saldo se mantiene hasta el día del pago y cae ese día. */
-export function proyeccion(saldo: number, pagos: PagoPendiente[], dias: Date[]): number[] {
+/** Saldo proyectado por día: se mantiene hasta la fecha de cada movimiento y cambia ese día (salidas negativas, entradas positivas). */
+export function proyeccion(saldo: Centavos, movimientos: Movimiento[], dias: Date[]): Centavos[] {
   return dias.map((dia) => {
     const limite = finDelDia(dia).getTime();
-    return pagos.filter((p) => p.fecha.getTime() <= limite).reduce((acc, p) => acc - p.monto, saldo);
+    return movimientos.filter((m) => m.fecha.getTime() <= limite).reduce((acc, m) => acc + m.monto, saldo);
   });
 }
 
 /** Índice del primer día en que la proyección cruza por debajo de cero, o −1. */
-export const diaDeCruce = (serie: number[]) => serie.findIndex((v) => v < 0);
+export const diaDeCruce = (serie: Centavos[]) => serie.findIndex((v) => v < 0);
 
-export function agregar(pagos: PagoPendiente[]): Agregado {
-  return { cantidad: pagos.length, total: pagos.reduce((a, p) => a + p.monto, 0) };
+export function agregar(movs: { monto: Centavos }[]): Agregado | null {
+  return movs.length ? { cantidad: movs.length, total: movs.reduce((a, m) => a + m.monto, 0) } : null;
 }
 
-export function resultado(saldo: number, pagosFuturos: Agregado, pactadas: Agregado | null): Resultado {
-  if (pagosFuturos.cantidad === 0 && !pactadas) return { tipo: 'nada', monto: 0 };
-  const neto = saldo - pagosFuturos.total - (pactadas?.total ?? 0);
+/** Posición = saldo + pactadas por recibir − pagos futuros pendientes − pactadas por liquidar. */
+export function resultado(saldo: Centavos, pagosFuturos: Agregado | null, pactadasLiquidar: Agregado | null, pactadasRecibir: Agregado | null): Resultado {
+  if (!pagosFuturos && !pactadasLiquidar && !pactadasRecibir) return { tipo: 'nada', monto: 0 };
+  const neto = saldo + (pactadasRecibir?.total ?? 0) - (pagosFuturos?.total ?? 0) - (pactadasLiquidar?.total ?? 0);
   return neto < 0 ? { tipo: 'faltan', monto: -neto } : { tipo: 'sobran', monto: neto };
 }
 
-export function posicion(divisa: Divisa, saldo: number, pagosFuturos: Agregado, pactadas: Agregado | null = null): Posicion {
-  return { divisa, saldo, pactadas, pagosFuturos, resultado: resultado(saldo, pagosFuturos, pactadas) };
+export function posicion(divisa: Divisa, saldo: Centavos, pagosFuturos: Agregado | null, pactadasLiquidar: Agregado | null = null, pactadasRecibir: Agregado | null = null): Posicion {
+  return { divisa, saldo, pactadasRecibir, pactadasLiquidar, pagosFuturos, resultado: resultado(saldo, pagosFuturos, pactadasLiquidar, pactadasRecibir) };
 }
+
+/** Neto de una posición con signo (negativo = faltan). Sin movimientos, el neto es el saldo. */
+export const neto = (p: Posicion) => (p.resultado.tipo === 'nada' ? p.saldo : p.resultado.tipo === 'faltan' ? -p.resultado.monto : p.resultado.monto);
 
 export type Tono = 'ok' | 'warn' | 'neutro';
 
@@ -82,72 +87,73 @@ export interface Consecuencia {
 }
 
 export interface OrigenEvaluado {
-  /** Lo que sale de la cuenta en su divisa (null si no hay par para cotizar). */
-  pagas: number | null;
-  /** Texto "Pagas ≈ 27,136.77 MXN" o "Pagas 1,500.00 USD, sin tipo de cambio". */
+  pagas: Centavos | null;
   pagasTexto: string;
   consecuencia: Consecuencia;
 }
 
-const NOMBRES: Record<Divisa, string> = { MXN: 'pesos', USD: 'dólares', EUR: 'euros', GBP: 'libras', CAD: 'dólares canadienses' };
-const DIAS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+const DIAS3 = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
 
 /**
- * Evalúa una cuenta de origen para pagar `monto` en `divisaPago`.
- * Reglas (docs/componentes.md · OpcionOrigen y hoja de estados):
- *  1. Si hoy el saldo no cubre lo que sale → Warning "Hoy no alcanza" (se puede elegir igual).
- *  2. Misma divisa: la posición ya incluye el pago; si falta → Warning con el día en que cruza.
- *  3. Otra divisa: sin pagos pendientes en el origen → Neutral; si cubre el faltante de la divisa del
- *     pago → Success "Cubre el faltante en USD"; si al origen le sigue alcanzando → Success; si no → Warning.
+ * Evalúa una cuenta de origen para una operación. Los chips salen del cálculo de posición:
+ *  · si la opción resuelve un faltante → "Cubre el faltante en USD";
+ *  · si lo crea o lo mantiene → "Te faltarían X USD el vie 9" (con la fecha en que la proyección cruza cero);
+ *  · si no cambia nada → "Te quedan X EUR".
+ * Si hoy el saldo no cubre lo que sale, el chip es "Hoy no alcanza" y se puede elegir igual (handoff).
  */
 export function evaluarOrigen(args: {
-  origen: { divisa: Divisa; saldo: number };
-  monto: number;
-  divisaPago: Divisa;
+  origen: { divisa: Divisa; saldo: Centavos };
+  /** Monto que llega al destino, en su divisa. */
+  monto: Centavos;
+  divisaDestino: Divisa;
+  /** El destino es una cuenta propia: el monto entra a esa posición. */
+  destinoPropio: boolean;
+  /** Con un pago cargado, el monto ya está en los pagos futuros del destino y sale de ahí al pagarlo. */
+  pagoCargado: boolean;
   posiciones: Partial<Record<Divisa, Posicion>>;
-  proyeccionPago?: { serie: number[]; dias: Date[] };
+  /** Proyección de la semana por divisa, para fechar el faltante. */
+  proyecciones: Partial<Record<Divisa, { serie: Centavos[]; dias: Date[] }>>;
+  pares: TablaPares;
 }): OrigenEvaluado {
-  const { origen, monto, divisaPago, posiciones, proyeccionPago } = args;
-  const mismaDivisa = origen.divisa === divisaPago;
-  const cot = cotizar(origen.divisa, divisaPago, monto, 'destino');
+  const { origen, monto, divisaDestino, destinoPropio, pagoCargado, posiciones, proyecciones, pares } = args;
+  const mismaDivisa = origen.divisa === divisaDestino;
+  const cot = cotizar({ origen: origen.divisa, destino: divisaDestino, monto, ladoFijo: 'recibe', pares });
   const pagas = cot ? cot.pagas : null;
   const pagasTexto = mismaDivisa
-    ? `Pagas ${fmt.monto(monto, divisaPago)}, sin tipo de cambio`
+    ? `Pagas ${fmt.monto(monto, divisaDestino)}, sin tipo de cambio`
     : pagas == null
       ? 'Sin tipo de cambio para este par'
       : `Pagas ≈ ${fmt.monto(pagas, origen.divisa)}`;
 
-  const posOrigen = posiciones[origen.divisa];
-  const posPago = posiciones[divisaPago];
-  const con = NOMBRES[origen.divisa];
+  const vacio = (p?: Posicion) => (p ? neto(p) : 0);
+  const antesOrigen = vacio(posiciones[origen.divisa]);
+  const antesDestino = vacio(posiciones[divisaDestino]);
+  // Después: el origen pierde lo que paga; el destino deja de tener el pago pendiente (o recibe el monto si es propio).
+  let despuesOrigen = antesOrigen - (pagas ?? 0);
+  let despuesDestino = antesDestino + (pagoCargado || destinoPropio ? monto : 0);
+  if (mismaDivisa) {
+    despuesOrigen = antesOrigen - (pagoCargado ? 0 : monto) + (destinoPropio ? monto : 0);
+    despuesDestino = despuesOrigen;
+  }
 
   let consecuencia: Consecuencia;
   if (pagas != null && pagas > origen.saldo) {
     consecuencia = { texto: 'Hoy no alcanza', tono: 'warn', hoyNoAlcanza: true, ayuda: 'Puedes cerrar el precio y fondear antes del día que elijas.' };
-  } else if (mismaDivisa) {
-    if (posOrigen?.resultado.tipo === 'faltan') {
-      const cruce = proyeccionPago ? diaDeCruce(proyeccionPago.serie) : -1;
-      const dia = cruce >= 0 ? ` el ${DIAS[proyeccionPago!.dias[cruce].getDay()]}` : '';
-      consecuencia = { texto: `Te faltarían ${fmt.monto(posOrigen.resultado.monto, origen.divisa)}${dia}`, tono: 'warn', hoyNoAlcanza: false };
-    } else {
-      consecuencia = { texto: `Te alcanza para los pagos en ${con}`, tono: 'ok', hoyNoAlcanza: false };
+  } else if (!mismaDivisa && antesDestino < 0 && despuesDestino >= 0 && despuesOrigen >= 0) {
+    consecuencia = { texto: `Cubre el faltante en ${divisaDestino}`, tono: 'ok', hoyNoAlcanza: false };
+  } else if (despuesOrigen < 0 || despuesDestino < 0) {
+    const divisa = despuesOrigen < 0 ? origen.divisa : divisaDestino;
+    const falta = despuesOrigen < 0 ? -despuesOrigen : -despuesDestino;
+    const proy = proyecciones[divisa];
+    let dia = '';
+    if (proy) {
+      const serie = divisa === origen.divisa && !mismaDivisa ? proy.serie.map((v) => v - (pagas ?? 0)) : proy.serie;
+      const i = diaDeCruce(serie);
+      if (i >= 0) dia = i === 0 ? ' hoy' : ` el ${DIAS3[proy.dias[i].getDay()]} ${proy.dias[i].getDate()}`;
     }
-  } else if (!posOrigen || posOrigen.pagosFuturos.cantidad === 0) {
-    consecuencia = { texto: `Sin pagos pendientes en ${con}`, tono: 'neutro', hoyNoAlcanza: false };
-  } else if (posPago?.resultado.tipo === 'faltan' && posPago.resultado.monto - monto <= 0) {
-    consecuencia = { texto: `Cubre el faltante en ${divisaPago}`, tono: 'ok', hoyNoAlcanza: false };
-  } else if (pagas != null && posOrigen.resultado.tipo !== 'faltan' && posOrigen.resultado.monto - pagas >= 0) {
-    consecuencia = { texto: `Te sigue alcanzando para los pagos en ${con}`, tono: 'ok', hoyNoAlcanza: false };
+    consecuencia = { texto: `Te faltarían ${fmt.monto(falta, divisa)}${dia}`, tono: 'warn', hoyNoAlcanza: false };
   } else {
-    const falta = pagas == null ? 0 : Math.abs(posOrigen.resultado.monto * (posOrigen.resultado.tipo === 'faltan' ? -1 : 1) - pagas);
-    consecuencia = { texto: `Te faltarían ${fmt.monto(falta, origen.divisa)} para los pagos en ${con}`, tono: 'warn', hoyNoAlcanza: false };
+    consecuencia = { texto: `Te quedan ${fmt.monto(despuesOrigen, origen.divisa)}`, tono: 'neutro', hoyNoAlcanza: false };
   }
   return { pagas, pagasTexto, consecuencia };
-}
-
-/** Precio ejecutable a partir del indicativo: mismo spread que el escenario (18.092415 − 18.091183). */
-export const SPREAD_EJECUTABLE = 18.092415 - 18.091183;
-export function ejecutable(indicativo: number, punta: 'compra' | 'venta'): number {
-  const x = punta === 'compra' ? indicativo + SPREAD_EJECUTABLE : indicativo - SPREAD_EJECUTABLE;
-  return Number(x.toFixed(6));
 }
