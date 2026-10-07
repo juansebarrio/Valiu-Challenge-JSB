@@ -209,8 +209,8 @@ html, body { font-family: var(--font-sans); color: var(--fg-1); }
   --app-primary:         var(--valiu-indigo);        /* #3D46CC botón primario, borde secundario, seleccionado */
   --app-primary-hover:   var(--valiu-blue);          /* #0086FF hover del primario (Figma) */
   --app-primary-press:   var(--valiu-indigo-press);  /* #252D92 */
-  --app-accent:          var(--valiu-blue);          /* #0086FF foco, nav activo, subrayado de tab, links */
-  --app-accent-bg:       var(--valiu-blue-bg);       /* #F6FBFF nav activo, tab activa, hover de fila */
+  --app-accent:          var(--valiu-blue);          /* #0086FF foco, nav activo, links */
+  --app-accent-bg:       var(--valiu-blue-bg);       /* #F6FBFF nav activo, hover de fila */
   --app-hover-soft:      #EDF3FF;                    /* Main/V40 */
   --app-info-dot:        #8BCAFB;                    /* Main/V60 · punto del tag Descriptive */
   --app-chart-accent:    #4D9EF7;                    /* Main/V80 · gráficas */
@@ -268,8 +268,8 @@ html, body { font-family: var(--font-sans); color: var(--fg-1); }
   /* --- Bordes --- */
   --app-border-hairline: 0.5px;  /* input en reposo, sidebar, header */
   --app-border-thin:     1px;
-  --app-border-split:    1.5px;  /* lado activo del CampoMontoDoble */
-  --app-border-strong:   2px;    /* CajaTdcValiu, subrayado de tab, outline de foco */
+  --app-border-split:    1.5px;  /* borde del radio de OpcionOrigen */
+  --app-border-strong:   2px;    /* outline de foco */
   --app-focus-ring:      var(--app-border-strong) solid var(--app-accent);
   --app-focus-offset:    2px;
 
@@ -298,7 +298,6 @@ html, body { font-family: var(--font-sans); color: var(--fg-1); }
   --app-button-h-large:  36px;
   --app-button-h-xl:     40px;
   --app-token-box:       48px;
-  --app-token-box-w-op:  44px;
   --app-tour-card-w:     320px;
   --app-tour-card-h:     232px;
   --app-tour-gap:        24px;
@@ -325,9 +324,6 @@ html, body { font-family: var(--font-sans); color: var(--fg-1); }
   --app-frame-w:         1280px;
   --app-spark-h:         48px;
   --app-trend-h:         36px;
-  --app-selector-par-w:  300px;
-  --app-tdc-box-w:       170px;
-  --app-par-col-w:       200px;
   --app-col-fecha:       56px;
   --app-col-monto:       160px;
   --app-col-accion:      120px;
@@ -346,7 +342,6 @@ html, body { font-family: var(--font-sans); color: var(--fg-1); }
   --app-fs-amount:   24px; --app-lh-amount:   32px;
   --app-fs-tdc:      18px; --app-lh-tdc:      24px;
   --app-fs-cta-xl:   16px; --app-lh-cta-xl:   24px;
-  --app-fs-tab:      16px; --app-lh-tab:      20px;
   --app-fs-token:    18px; --app-lh-token:    24px;
   --app-fs-spark:    10px;
 }

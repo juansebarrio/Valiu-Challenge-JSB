@@ -18,6 +18,8 @@ const horaEscenario = (inicio: number) => fmt.hora(new Date(HOY.getTime() + (ini
 
 /** Arquetipos cuyo recorrido ya se cerró en esta sesión (en memoria: recargar lo vuelve a mostrar, C-23). */
 const RECORRIDOS_VISTOS = new Set<ArquetipoId>();
+/** Cómo quedó "Operar con este par" en la sesión (en memoria, C-53): desplegado al entrar por primera vez. */
+const SESION = { cotizadorAbierto: true };
 
 function opcionesDeUrl(arquetipo: ArquetipoId) {
   const params = new URLSearchParams(window.location.search);
@@ -59,7 +61,7 @@ export function HomeApp({ arquetipo }: { arquetipo: ArquetipoId }) {
   useEffect(() => {
     inicioRef.current = Date.now();
     const o = opcionesDeUrl(arquetipo);
-    const inicial = estadoDeEscenario(o.escenario, o, arquetipo);
+    const inicial = estadoDeEscenario(o.escenario, { ...o, cotizadorAbierto: SESION.cotizadorAbierto }, arquetipo);
     dispatch({ tipo: 'reiniciar', estado: inicial });
     for (const accion of accionesDeUrl(inicial, o)) dispatch(accion);
   }, [arquetipo]);
@@ -72,9 +74,14 @@ export function HomeApp({ arquetipo }: { arquetipo: ArquetipoId }) {
     else if (huboRecorrido.current) RECORRIDOS_VISTOS.add(arquetipo);
   }, [onboardingActivo, arquetipo]);
 
+  const cotizadorAbierto = estado.cotizador.abierto;
+  useEffect(() => {
+    SESION.cotizadorAbierto = cotizadorAbierto;
+  }, [cotizadorAbierto]);
+
   const { congelado, pausado, tdcBase } = estado;
   // Ventana para confirmar (C-48): mientras hay precio ejecutable corre la cuenta regresiva de 2 minutos.
-  const hayEjecutable = estado.panel.precio.estado === 'ejecutable' || estado.operar.precio.estado === 'ejecutable';
+  const hayEjecutable = estado.panel.precio.estado === 'ejecutable';
   useEffect(() => {
     if (!hayEjecutable || pausado) return;
     const id = window.setInterval(() => dispatch({ tipo: 'tick' }), 1000);
@@ -109,13 +116,6 @@ export function HomeApp({ arquetipo }: { arquetipo: ArquetipoId }) {
     return () => window.clearTimeout(id);
   }, [confirmandoPanel]);
 
-  const confirmandoOperar = estado.operar.confirmando;
-  useEffect(() => {
-    if (!confirmandoOperar) return;
-    const id = window.setTimeout(() => dispatch({ tipo: 'opConfirmado', hora: horaEscenario(inicioRef.current) }), CONFIRMANDO_MS);
-    return () => window.clearTimeout(id);
-  }, [confirmandoOperar]);
-
   const toastId = estado.toast?.id ?? null;
   useEffect(() => {
     if (toastId == null) return;
@@ -139,7 +139,7 @@ export function HomeApp({ arquetipo }: { arquetipo: ArquetipoId }) {
           hayPrecio={hayEjecutable}
           onVencer={() => dispatch({ tipo: 'vencerPrecio' })}
           onRecorrido={() => dispatch({ tipo: 'onboardingIniciar' })}
-          onReiniciar={() => { inicioRef.current = Date.now(); dispatch({ tipo: 'reiniciar', estado: estadoDeEscenario(estado.escenario, { congelado: estado.congelado, demo: true, recorrido: false }, arquetipo) }); }}
+          onReiniciar={() => { inicioRef.current = Date.now(); dispatch({ tipo: 'reiniciar', estado: estadoDeEscenario(estado.escenario, { congelado: estado.congelado, demo: true, recorrido: false, cotizadorAbierto: SESION.cotizadorAbierto }, arquetipo) }); }}
         />
       ) : null}
     </>

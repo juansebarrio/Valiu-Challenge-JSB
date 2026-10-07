@@ -6,8 +6,6 @@ export interface CampoTokenProps {
   valor: string;
   habilitado: boolean;
   onChange: (valor: string) => void;
-  /** panel: casillas 48×48 (ventana de pago) · formulario: 44×48 (Operar clásico). */
-  ancho?: 'panel' | 'formulario';
   autoFoco?: boolean;
   etiqueta?: string;
   error?: string | null;
@@ -16,7 +14,7 @@ export interface CampoTokenProps {
 const N = 6;
 
 /** Un solo input (inputmode numeric, autocomplete one-time-code, admite pegar) con seis casillas visuales. */
-export const CampoToken: FC<CampoTokenProps> = ({ valor, habilitado, onChange, ancho = 'panel', autoFoco, etiqueta = 'Ingresa el código de tu token', error }) => {
+export const CampoToken: FC<CampoTokenProps> = ({ valor, habilitado, onChange, autoFoco, etiqueta = 'Ingresa el código de tu token', error }) => {
   const id = useId();
   const [conFoco, setConFoco] = useState(false);
   const digitos = valor.replace(/\D/g, '').slice(0, N);
@@ -32,8 +30,7 @@ export const CampoToken: FC<CampoTokenProps> = ({ valor, habilitado, onChange, a
               <span
                 key={i}
                 className={[
-                  'flex h-(--app-token-box) items-center justify-center rounded-sm text-token font-semibold tabular-nums',
-                  ancho === 'panel' ? 'w-(--app-token-box)' : 'w-(--app-token-box-w-op)',
+                  'flex size-(--app-token-box) items-center justify-center rounded-sm text-token font-semibold tabular-nums',
                   !habilitado ? 'hairline border-app-ink-disabled bg-app-canvas text-app-ink-3' : enfocada ? 'border border-app-accent bg-app-surface' : error ? 'border border-app-danger bg-app-surface' : 'hairline border-app-border-input bg-app-surface',
                 ].join(' ')}
               >

@@ -1,5 +1,5 @@
 'use client';
-import { useState, type FC, type ReactNode } from 'react';
+import { useMemo, useReducer, useState, type FC, type ReactNode } from 'react';
 import Link from 'next/link';
 import { centavos } from '@/lib/dinero';
 import * as fmt from '@/lib/format';
@@ -10,7 +10,6 @@ const pagasEur = cotizar({ origen: 'EUR', destino: 'USD', monto: centavos(1500),
 import { Boton } from '@/components/ui/Boton';
 import { Badge } from '@/components/ui/Badge';
 import { Alerta } from '@/components/ui/Alerta';
-import { Pestanas } from '@/components/ui/Pestanas';
 import { CampoTexto, CampoSelector, OpcionLista } from '@/components/ui/Campo';
 import { Icono, ICONOS, type NombreIcono } from '@/components/ui/Icono';
 import { ChipDivisa } from '@/components/ui/ChipDivisa';
@@ -20,12 +19,26 @@ import { GrupoPago, OpcionOrigen } from '@/components/OpcionOrigen';
 import { BloqueMonto } from '@/components/BloqueMonto';
 import { ResumenPago } from '@/components/ResumenPago';
 import { CampoToken } from '@/components/CampoToken';
-import { CajaTdcValiu } from '@/components/CajaTdcValiu';
 import { FranjaNuevo } from '@/components/FranjaNuevo';
 import { FilaMovimiento } from '@/components/FilaMovimiento';
-import { TarjetaTipoDeCambio } from '@/components/TarjetaTipoDeCambio';
+import { TarjetaTipoDeCambio, accionesCotizador } from '@/components/TarjetaTipoDeCambio';
 import { ModuloCuentas } from '@/components/ModuloCuentas';
 import { HojaEstados, Caso } from '@/components/HojaEstados';
+import { DesglosePosicion } from '@/components/DesglosePosicion';
+import { aplicar, estadoInicial, reducer } from '@/state/estado';
+import { estadoDeEscenario } from '@/state/escenarios';
+import { vistaPanel, vistaTipoDeCambio } from '@/state/vistas';
+
+/** La tarjeta de tipo de cambio con su cotizador, viva sobre un estado del arquetipo (C-53). */
+const TarjetaTipoDeCambioViva: FC<{ arquetipo: 'importadora' | 'turismo' }> = ({ arquetipo }) => {
+  const [estado, dispatch] = useReducer(reducer, arquetipo, (a) => estadoInicial('faltante', { congelado: true }, a));
+  const vista = useMemo(() => vistaTipoDeCambio(estado), [estado]);
+  return <TarjetaTipoDeCambio {...vista} {...accionesCotizador(dispatch)} />;
+};
+
+/** Desgloses de la posición (C-55) desde el escenario base y el de otras divisas. */
+const DESGLOSE_USD = vistaPanel(aplicar([{ tipo: 'abrirDesglose', cuentaId: 'usd', fila: 'pagosFuturos' }], estadoInicial('faltante', { congelado: true })))!;
+const DESGLOSE_OTRAS = vistaPanel(aplicar([{ tipo: 'abrirDesglose', cuentaId: 'mxn', fila: 'pagosOtrasDivisas' }], estadoDeEscenario('otras-divisas', { congelado: true })))!;
 
 const Seccion: FC<{ id: string; titulo: string; nota?: string; children: ReactNode }> = ({ id, titulo, nota, children }) => (
   <section id={id} aria-labelledby={`${id}-t`} className="flex flex-col gap-4">
@@ -80,7 +93,6 @@ const TIPOS: [string, string, string][] = [
 /** Guía viva: tokens (src/styles/tokens.css) y componentes del flujo en sus estados. */
 export const Sistema: FC = () => {
   const [token, setToken] = useState('47');
-  const [tab, setTab] = useState<'a' | 'b' | 'c'>('a');
   const [texto, setTexto] = useState('');
   const [selAbierto, setSelAbierto] = useState(false);
   const [sel, setSel] = useState<string | null>(null);
@@ -158,13 +170,12 @@ export const Sistema: FC = () => {
             <Alerta tono="success" compacta titulo="Pago en proceso. Ya te alcanza para los pagos en USD de la semana." onCerrar={() => {}} />
             <Alerta tono="info" compacta icono="calendar-alt" titulo="Pactaste el pago a Shenzhen Parts Co. El dinero sale el jue 8." onCerrar={() => {}} />
             <Alerta tono="info" titulo="Se acabó el tiempo para confirmar.">Pide precio de nuevo. Los montos volvieron al indicativo.</Alerta>
-            <Alerta tono="warning" titulo="Mercado cerrado.">No se puede pedir precio hasta que abra. Puedes dejar el formulario listo.</Alerta>
+            <Alerta tono="warning" titulo="Mercado cerrado.">No se puede pedir precio hasta que abra.</Alerta>
             <Alerta tono="error" titulo="El código no coincide.">Revisa tu token y vuelve a intentarlo.</Alerta>
-            <Alerta tono="info">Estás en la vista anterior de Operar. Puedes seguir usándola mientras te acostumbras al nuevo flujo de pago.</Alerta>
           </div>
         </Seccion>
 
-        <Seccion id="controles" titulo="Inputs, selectores, tabs y token" nota="Input min-height 48, padding 12, radio 8, borde 0.5 px #021734; activo 1 px #0086FF; error 1 px #B40909 con mensaje 12/500. Token: un solo input con seis casillas visuales.">
+        <Seccion id="controles" titulo="Inputs, selectores y token" nota="Input min-height 48, padding 12, radio 8, borde 0.5 px #021734; activo 1 px #0086FF; error 1 px #B40909 con mensaje 12/500. Token: un solo input con seis casillas visuales.">
           <div className="grid grid-cols-2 gap-4 xl:grid-cols-3">
             <CampoTexto etiqueta="Referencia" opcional valor={texto} onCambiar={setTexto} placeholder="Ej. Factura 0457" />
             <CampoTexto etiqueta="Con error" valor="5,000.00" onCambiar={() => {}} monto sufijo="USD" error="Supera tu saldo disponible: 2,000.00 USD." />
@@ -172,10 +183,6 @@ export const Sistema: FC = () => {
             <CampoSelector etiqueta="Motivo de pago" valor={sel} placeholder="Elige un motivo" abierto={selAbierto} onAbrir={setSelAbierto}>
               {['Pago a proveedores', 'Compra de divisas', 'Venta de divisas'].map((m) => <OpcionLista key={m} seleccionada={m === sel} onElegir={() => { setSel(m); setSelAbierto(false); }}><span className="text-body">{m}</span></OpcionLista>)}
             </CampoSelector>
-            <div className="col-span-2 flex flex-col gap-1.5">
-              <span className="text-caption font-bold text-app-ink-label">Tabs</span>
-              <div className="rounded-sm bg-app-surface"><Pestanas etiqueta="Ejemplo" llenas pestanas={[{ id: 'a', label: 'Comprar' }, { id: 'b', label: 'Vender' }, { id: 'c', label: 'Transferir' }]} activa={tab} onCambiar={setTab} /></div>
-            </div>
           </div>
           <div className="grid grid-cols-2 gap-4 xl:grid-cols-3">
             <Caso titulo="CampoToken · habilitado"><CampoToken valor={token} habilitado onChange={setToken} /></Caso>
@@ -188,19 +195,20 @@ export const Sistema: FC = () => {
           <HojaEstados />
         </Seccion>
 
-        <Seccion id="posicion" titulo="TarjetaPosicion" nota="Protagonista: blanca, radio 8, Shadow Mid. Resultado 24/600; faltan en #B40909 con badge Error; línea de 0 siempre visible y “faltante” en el día que cruza; un solo primario por vista.">
+        <Seccion id="posicion" titulo="TarjetaPosicion" nota="Protagonista: blanca, radio 8, Shadow Mid. Resultado 24/600; faltan en #B40909 con badge Error; línea de 0 siempre visible y “faltante” en el día que cruza; un solo primario por vista. Las filas con cantidad abren su desglose (C-55); los pagos en otras divisas van con ≈ en la cuenta de fondeo (C-54).">
           <div className="grid grid-cols-2 gap-6 xl:grid-cols-3">
-            <TarjetaPosicion divisa="USD" nombre="Dólares" saldo={centavos(2000)} pagosFuturos={{ cantidad: 3, total: centavos(3000) }} resultado={{ tipo: 'faltan', monto: centavos(1000) }} proyeccion={{ serie: [2000, 2000, 500, -1000].map(centavos), etiquetas: ['mar 6', 'mié 7', 'jue 8', 'vie 9'], etiquetaCruce: 'faltante' }} linea="≈ 18,091.18 MXN a precio de compra" accion={{ label: 'Comprar 1,000 USD', onClick: () => {} }} />
-            <TarjetaPosicion divisa="MXN" nombre="Pesos" saldo={centavos(1_180_000)} pactadasLiquidar={{ cantidad: 1, total: centavos(27_138.62) }} pagosFuturos={{ cantidad: 7, total: centavos(80_350.5) }} resultado={{ tipo: 'sobran', monto: centavos(1_072_510.88) }} />
-            <TarjetaPosicion divisa="USD" nombre="Dólares" saldo={centavos(2000)} pactadasRecibir={{ cantidad: 1, total: centavos(1000) }} pagosFuturos={{ cantidad: 3, total: centavos(3000) }} resultado={{ tipo: 'sobran', monto: 0 }} proyeccion={{ serie: [2000, 2000, 500, 0].map(centavos), etiquetas: ['mar 6', 'mié 7', 'jue 8', 'vie 9'] }} />
-            <TarjetaPosicion divisa="EUR" nombre="Euros" saldo={centavos(50_000)} resultado={{ tipo: 'nada', monto: 0 }} />
-            <TarjetaPosicion divisa="EUR" nombre="Euros" saldo={0} pagosFuturos={{ cantidad: 1, total: centavos(4200) }} resultado={{ tipo: 'faltan', monto: centavos(4200) }} proyeccion={{ serie: [0, 0, 0, -4200].map(centavos), etiquetas: ['mar 6', 'mié 7', 'jue 8', 'vie 9'], etiquetaCruce: 'faltante' }} linea="≈ 89,250.00 MXN a precio de compra" accion={{ label: 'Comprar 4,200 EUR', onClick: () => {} }} />
-            <TarjetaPosicion divisa="MXN" nombre="Pesos" saldo={centavos(420_000)} resultado={{ tipo: 'nada', monto: 0 }} />
-            <TarjetaPosicion divisa="EUR" nombre="Euros" saldo={0} resultado={{ tipo: 'nada', monto: 0 }} linea="Hotel Gran Vía Madrid: pactado en pesos, sale el vie 9" />
+            <TarjetaPosicion onDesglose={() => {}} divisa="USD" nombre="Dólares" saldo={centavos(2000)} pagosFuturos={{ cantidad: 3, total: centavos(3000) }} resultado={{ tipo: 'faltan', monto: centavos(1000) }} proyeccion={{ serie: [2000, 2000, 500, -1000].map(centavos), etiquetas: ['mar 6', 'mié 7', 'jue 8', 'vie 9'], etiquetaCruce: 'faltante' }} linea="≈ 18,091.18 MXN a precio de compra" accion={{ label: 'Comprar 1,000 USD', onClick: () => {} }} />
+            <TarjetaPosicion onDesglose={() => {}} divisa="MXN" nombre="Pesos" saldo={centavos(1_180_000)} pactadasLiquidar={{ cantidad: 1, total: centavos(27_138.62) }} pagosFuturos={{ cantidad: 7, total: centavos(80_350.5) }} resultado={{ tipo: 'sobran', monto: centavos(1_072_510.88) }} />
+            <TarjetaPosicion onDesglose={() => {}} divisa="USD" nombre="Dólares" saldo={centavos(2000)} pactadasRecibir={{ cantidad: 1, total: centavos(1000) }} pagosFuturos={{ cantidad: 3, total: centavos(3000) }} resultado={{ tipo: 'sobran', monto: 0 }} proyeccion={{ serie: [2000, 2000, 500, 0].map(centavos), etiquetas: ['mar 6', 'mié 7', 'jue 8', 'vie 9'] }} />
+            <TarjetaPosicion onDesglose={() => {}} divisa="EUR" nombre="Euros" saldo={centavos(50_000)} resultado={{ tipo: 'nada', monto: 0 }} />
+            <TarjetaPosicion onDesglose={() => {}} divisa="EUR" nombre="Euros" saldo={0} pagosFuturos={{ cantidad: 1, total: centavos(4200) }} resultado={{ tipo: 'faltan', monto: centavos(4200) }} proyeccion={{ serie: [0, 0, 0, -4200].map(centavos), etiquetas: ['mar 6', 'mié 7', 'jue 8', 'vie 9'], etiquetaCruce: 'faltante' }} linea="≈ 89,250.00 MXN a precio de compra" accion={{ label: 'Comprar 4,200 EUR', onClick: () => {} }} />
+            <TarjetaPosicion onDesglose={() => {}} divisa="MXN" nombre="Pesos" saldo={centavos(420_000)} resultado={{ tipo: 'nada', monto: 0 }} />
+            <TarjetaPosicion onDesglose={() => {}} divisa="MXN" nombre="Pesos" saldo={centavos(1_180_000)} pagosFuturos={{ cantidad: 7, total: centavos(80_350.5) }} pagosOtrasDivisas={{ cantidad: 1, total: centavos(972_000) }} resultado={{ tipo: 'sobran', monto: centavos(127_649.5) }} aprox />
+            <TarjetaPosicion onDesglose={() => {}} divisa="EUR" nombre="Euros" saldo={0} resultado={{ tipo: 'nada', monto: 0 }} linea="Hotel Gran Vía Madrid: pactado en pesos, sale el vie 9" />
           </div>
         </Seccion>
 
-        <Seccion id="origen" titulo="OpcionOrigen" nota="Radio 20 px; seleccionada = borde indigo + bg #F0F1FD. El chip sale del cálculo de posición: cubre el faltante, te faltarían X el día que cruza, o te quedan X.">
+        <Seccion id="origen" titulo="OpcionOrigen" nota="Radio 20 px; seleccionada = borde indigo + bg #F0F1FD. El chip sale del cálculo de posición: cubre el faltante o te faltarían X el día que cruza; deshabilitada sin saldo o sin par con la divisa del destino (C-54).">
           <div role="radiogroup" aria-label="Ejemplo" className="grid grid-cols-2 gap-2.5">
             <OpcionOrigen cuenta="Cuenta Principal MXN" saldo="Saldo 1,180,000.00 MXN" pagas="Pagas ≈ 27,136.77 MXN" consecuencia={{ texto: 'Cubre el faltante en USD', tono: 'success' }} seleccionada={origen === 'mxn'} onElegir={() => setOrigen('mxn')} />
             <OpcionOrigen cuenta="Cuenta USD" saldo="Saldo 2,000.00 USD" pagas="Pagas 1,500.00 USD" consecuencia={{ texto: 'Te faltarían 1,000.00 USD para tus pagos del vie 9', tono: 'warning' }} seleccionada={origen === 'usd'} onElegir={() => setOrigen('usd')} />
@@ -208,6 +216,7 @@ export const Sistema: FC = () => {
             <OpcionOrigen cuenta="Cuenta EUR" saldo="Saldo 50,000.00 EUR" pagas={`Pagas ≈ ${fmt.monto(pagasEur, 'EUR')}`} consecuencia={null} seleccionada={false} onElegir={() => {}} />
             <OpcionOrigen cuenta="Cuenta Principal MXN" saldo="Saldo 420,000.00 MXN · incluye el cobro de hoy" pagas="Pagas ≈ 89,250.00 MXN" consecuencia={{ texto: 'Cubre el faltante en EUR', tono: 'success' }} seleccionada onElegir={() => {}} />
             <OpcionOrigen cuenta="Cuenta EUR" saldo="Saldo 0.00 EUR" pagas="Pagas 4,200.00 EUR" consecuencia={{ texto: 'Sin saldo', tono: 'neutral' }} seleccionada={false} deshabilitada onElegir={() => {}} />
+            <OpcionOrigen cuenta="Cuenta USD" saldo="Saldo 2,000.00 USD" pagas="" consecuencia={{ texto: 'Sin par disponible', tono: 'neutral' }} seleccionada={false} deshabilitada onElegir={() => {}} />
           </div>
         </Seccion>
 
@@ -224,7 +233,7 @@ export const Sistema: FC = () => {
           </div>
         </Seccion>
 
-        <Seccion id="ventana" titulo="Bloques de la ventana de pago" nota="Origen, Revisión, Precio y Confirmación van en dos columnas (C-47, C-50): a la izquierda BloqueMonto (con factura, editable sin factura, de solo lectura con el precio ejecutable en vivo o un solo monto en la misma divisa); a la derecha ResumenPago, con el tipo de cambio siempre arriba (indicativo, ejecutable con la cuenta regresiva para confirmar, en los últimos 30 s, vencido o sin tipo de cambio), la comisión y las filas de lo que significa la decisión. CajaTdcValiu queda para Operar clásico.">
+        <Seccion id="ventana" titulo="Bloques de la ventana de pago" nota="Origen, Revisión, Precio y Confirmación van en dos columnas (C-47, C-50): a la izquierda BloqueMonto (con factura, editable sin factura, de solo lectura con el precio ejecutable en vivo o un solo monto en la misma divisa); a la derecha ResumenPago, con el tipo de cambio siempre arriba (indicativo, ejecutable con la cuenta regresiva para confirmar, en los últimos 30 s, vencido o sin tipo de cambio), la comisión y las filas de lo que significa la decisión.">
           <div className="grid grid-cols-2 gap-6 xl:grid-cols-3">
             <Caso titulo="BloqueMonto · con factura"><BloqueMonto pagas={{ monto: centavos(27_136.77), divisa: 'MXN' }} recibe={{ monto: centavos(1500), divisa: 'USD', destinatario: 'Shenzhen Parts Co. recibe' }} ladoFijo="recibe" conTdc /></Caso>
             <Caso titulo="BloqueMonto · sin factura (editable)"><BloqueMonto pagas={{ monto: centavos(18_091.18), divisa: 'MXN' }} recibe={{ monto: centavos(1000), divisa: 'USD', destinatario: 'Tu Cuenta USD recibe' }} ladoFijo="recibe" conTdc editable onCambiar={() => {}} /></Caso>
@@ -237,11 +246,12 @@ export const Sistema: FC = () => {
             <Caso titulo="ResumenPago · vencido (badge sobre el precio que venció)"><ResumenPago vista={{ tdc: { valor: 18_092_415, unidad: 'MXN por USD', estado: 'vencido', segundos: 0, porVencer: false, pausado: false }, sinPrecio: null, filas: [{ k: 'Comisión', v: '0%' }, { k: 'Sale de', v: 'Cuenta Principal MXN' }, { k: 'Sale el dinero', v: 'Hoy' }, { k: 'Tu cuenta queda en', v: '≈ 1,152,863.23 MXN' }], aviso: null, nota: null }} /></Caso>
             <Caso titulo="ResumenPago · transferencia en la misma divisa"><ResumenPago vista={{ tdc: null, sinPrecio: 'Sin tipo de cambio', filas: [{ k: 'Comisión', v: '0%' }, { k: 'Shenzhen Parts Co. recibe', v: '1,500.00 USD' }, { k: 'Sale de', v: 'Cuenta USD' }, { k: 'Tu cuenta queda en', v: '500.00 USD' }], aviso: null, nota: null }} />
             <Caso titulo="ResumenPago · comisión distinta de 0 (ejemplo)"><ResumenPago vista={{ tdc: { valor: 18_092_415, unidad: 'MXN por USD', estado: 'ejecutable', segundos: 95, porVencer: false, pausado: false }, linea: 'Se mueve con el mercado hasta que confirmas.', sinPrecio: null, filas: [{ k: 'Comisión', v: `${fmt.tasa(50)} · ${fmt.monto(centavos(135.69), 'MXN')}` }, { k: 'Sale de', v: 'Cuenta Principal MXN' }, { k: 'Sale el dinero', v: 'Hoy' }, { k: 'Tu cuenta queda en', v: '1,152,725.69 MXN' }], aviso: null, nota: null }} /></Caso></Caso>
-            <Caso titulo="CajaTdcValiu · Operar clásico"><div className="flex flex-wrap gap-3"><CajaTdcValiu tdc={18_091_183} unidad="MXN por USD" tipo="Indicativo" /><CajaTdcValiu tdc={18_092_415} unidad="MXN por USD" tipo="Ejecutable" /><CajaTdcValiu tdc={18_091_183} unidad="MXN por USD" tipo="Último cierre" apagada /></div></Caso>
+            <Caso titulo="DesglosePosicion · Pagos futuros en USD"><DesglosePosicion items={DESGLOSE_USD.desglose!.items} onPagar={() => {}} /></Caso>
+            <Caso titulo="DesglosePosicion · Pagos en otras divisas"><DesglosePosicion items={DESGLOSE_OTRAS.desglose!.items} onPagar={() => {}} /></Caso>
           </div>
         </Seccion>
 
-        <Seccion id="home" titulo="Módulos del inicio" nota="FranjaNuevo, FilaMovimiento (badge solo en estados no finales, D-23), TarjetaTipoDeCambio con el par de la decisión primero y los demás pares de las posiciones compactos (D-33), y ModuloCuentas.">
+        <Seccion id="home" titulo="Módulos del inicio" nota="FranjaNuevo, FilaMovimiento (badge solo en estados no finales, D-23), TarjetaTipoDeCambio con el selector de par (Tus pares y Otros pares), los demás pares de Tus pares compactos y el cotizador abierto al entrar (C-53), y ModuloCuentas.">
           <div className="grid grid-cols-2 gap-6 xl:grid-cols-3">
             <div className="col-span-2 flex flex-col gap-4">
               <FranjaNuevo monto={centavos(180_000)} divisa="MXN" origen="Comercial Norte" meta="Hoy 10:42 · BBVA México · Ref. factura 2231" onUsar={() => {}} />
@@ -250,11 +260,12 @@ export const Sistema: FC = () => {
                 <FilaMovimiento fecha="jue 8" nombre="Shenzhen Parts Co." detalle="27,138.62 MXN a 18.092415" monto={centavos(-1500)} divisa="USD" estado={{ texto: 'Pactada', tono: 'pactada' }} />
                 <FilaMovimiento fecha="Hoy" nombre="Shenzhen Parts Co." detalle="1,500.00 USD a 18.092415" monto={centavos(-27_138.62)} divisa="MXN" estado={{ texto: 'En proceso', tono: 'warning' }} />
                 <FilaMovimiento fecha="Hoy" nombre="Comercial Norte" monto={centavos(180_000)} divisa="MXN" />
+                <FilaMovimiento fecha="vie 9" nombre="Thames Tooling Ltd." detalle="≈ 972,000.00 MXN hoy" monto={centavos(-40_000)} divisa="GBP" onPagar={() => {}} />
               </div>
             </div>
             <div className="flex flex-col gap-4">
-              <TarjetaTipoDeCambio par="USD/MXN" compra={18_091_183} venta={18_032_135} tendencia={[18.062, 18.071, 18.068, 18.084, 18.079, 18.095, 18.088, 18.091]} hora="10:42" enVivo otros={[{ par: 'EUR/MXN', base: 'EUR', compra: 21_250_000, venta: 21_100_000 }]} />
-              <TarjetaTipoDeCambio par="EUR/MXN" compra={21_250_000} venta={21_100_000} tendencia={[21.231, 21.238, 21.235, 21.246, 21.242, 21.255, 21.249, 21.25]} hora="10:42" enVivo otros={[{ par: 'USD/MXN', base: 'USD', compra: 18_091_183, venta: 18_032_135 }]} />
+              <TarjetaTipoDeCambioViva arquetipo="importadora" />
+              <TarjetaTipoDeCambioViva arquetipo="turismo" />
               <ModuloCuentas cuentas={[{ id: 'mxn', nombre: 'Cuenta Principal MXN', mascara: '1025', saldo: centavos(1_180_000), divisa: 'MXN' }, { id: 'usd', nombre: 'Cuenta USD', mascara: '2024', saldo: centavos(2000), divisa: 'USD' }]} />
             </div>
           </div>

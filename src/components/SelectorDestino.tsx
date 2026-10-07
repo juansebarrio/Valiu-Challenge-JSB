@@ -1,7 +1,7 @@
 'use client';
 import type { FC } from 'react';
 import type { GrupoDestino } from '@/state/vistas';
-import { CampoSelector, OpcionLista, TituloGrupo } from './ui/Campo';
+import { OpcionLista, TituloGrupo } from './ui/Campo';
 import { ChipDivisa } from './ui/ChipDivisa';
 import { Icono } from './ui/Icono';
 import { Boton } from './ui/Boton';
@@ -12,13 +12,6 @@ export interface SelectorDestinoProps {
   onBusqueda: (texto: string) => void;
   onElegir: (item: GrupoDestino['items'][number]) => void;
   onAgregar?: () => void;
-  /** campo: dropdown dentro de un formulario · lista: siempre abierto (paso Destino de la ventana de pago). */
-  modo: 'campo' | 'lista';
-  valor?: string | null;
-  abierto?: boolean;
-  onAbrir?: (abierto: boolean) => void;
-  etiqueta?: string;
-  placeholder?: string;
   vacio?: string;
 }
 
@@ -41,28 +34,16 @@ const Items: FC<Pick<SelectorDestinoProps, 'grupos' | 'onElegir' | 'onAgregar' |
   </>
 );
 
-/**
- * Buscador y grupos: el mismo componente en la ventana de pago ("Destinatarios" y "Tus cuentas": se elige un destinatario, no un pago, C-49)
- * y en Transferir del clásico ("Tus cuentas" y "Destinatarios en X").
- */
-export const SelectorDestino: FC<SelectorDestinoProps> = ({ modo, grupos, busqueda, onBusqueda, onElegir, onAgregar, valor = null, abierto = false, onAbrir, etiqueta = 'Destino', placeholder = 'Elige una cuenta', vacio }) => {
-  if (modo === 'campo') {
-    return (
-      <CampoSelector etiqueta={etiqueta} valor={valor} placeholder={placeholder} abierto={abierto} onAbrir={(ab) => onAbrir?.(ab)} busqueda={{ texto: busqueda, onCambiar: onBusqueda, placeholder: 'Busca una cuenta o destinatario' }}>
-        <div data-component="SelectorDestino" className="contents"><Items grupos={grupos} onElegir={onElegir} onAgregar={onAgregar} vacio={vacio} /></div>
-      </CampoSelector>
-    );
-  }
-  return (
-    <div data-component="SelectorDestino" className="flex flex-col gap-3">
-      <label className="flex min-h-(--app-input-h) items-center gap-2 rounded-sm border border-app-accent bg-app-surface px-3">
-        <Icono nombre="search" tamano="sm" className="text-app-ink-2" />
-        <span className="sr-only">Buscar destino</span>
-        <input autoFocus value={busqueda} placeholder="Busca un destinatario o una cuenta" onChange={(e) => onBusqueda(e.target.value)} role="combobox" aria-expanded aria-autocomplete="list" aria-controls="destino-lista" className="min-w-0 flex-1 bg-transparent text-body outline-none placeholder:text-app-ink-3" />
-      </label>
-      <div id="destino-lista" role="listbox" aria-label="Destinos" className="flex flex-col gap-0.5 rounded-sm border border-app-divider p-2">
-        <Items grupos={grupos} onElegir={onElegir} onAgregar={onAgregar} vacio={vacio} />
-      </div>
+/** Buscador y grupos, siempre abiertos: el paso Destino de la ventana de pago (desde "Pagar", desde el cotizador y en "Cargar un pago"). */
+export const SelectorDestino: FC<SelectorDestinoProps> = ({ grupos, busqueda, onBusqueda, onElegir, onAgregar, vacio }) => (
+  <div data-component="SelectorDestino" className="flex flex-col gap-3">
+    <label className="flex min-h-(--app-input-h) items-center gap-2 rounded-sm border border-app-accent bg-app-surface px-3">
+      <Icono nombre="search" tamano="sm" className="text-app-ink-2" />
+      <span className="sr-only">Buscar destino</span>
+      <input autoFocus value={busqueda} placeholder="Busca un destinatario o una cuenta" onChange={(e) => onBusqueda(e.target.value)} role="combobox" aria-expanded aria-autocomplete="list" aria-controls="destino-lista" className="min-w-0 flex-1 bg-transparent text-body outline-none placeholder:text-app-ink-3" />
+    </label>
+    <div id="destino-lista" role="listbox" aria-label="Destinos" className="flex flex-col gap-0.5 rounded-sm border border-app-divider p-2">
+      <Items grupos={grupos} onElegir={onElegir} onAgregar={onAgregar} vacio={vacio} />
     </div>
-  );
-};
+  </div>
+);

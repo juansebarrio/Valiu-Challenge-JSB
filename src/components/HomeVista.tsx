@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState, type FC, type RefObject } from 'react';
 import * as fmt from '@/lib/format';
 import { AVISO_FUERA_DEL_PROTOTIPO, HOY } from '@/data/escenario';
 import { ONBOARDING_PASOS, type Accion, type EstadoApp } from '@/state/estado';
-import { vistaControl, vistaDestinatarios, vistaHome, vistaMonitoreo, vistaOperar, vistaPanel, type VistaFila } from '@/state/vistas';
+import { vistaControl, vistaDestinatarios, vistaHome, vistaMonitoreo, vistaPanel, type VistaFila } from '@/state/vistas';
 import { notificaciones } from '@/state/derivados';
 import { SeccionControl, SeccionDestinatarios, SeccionMonitoreo } from './Secciones';
 import { AppShell, type ModoShell } from './AppShell';
@@ -11,17 +11,13 @@ import { AvisoResultado } from './AvisoResultado';
 import { TarjetaPosicion } from './TarjetaPosicion';
 import { FranjaNuevo } from './FranjaNuevo';
 import { ListaMovimientos } from './FilaMovimiento';
-import { TarjetaTipoDeCambio } from './TarjetaTipoDeCambio';
+import { TarjetaTipoDeCambio, accionesCotizador } from './TarjetaTipoDeCambio';
 import { ModuloCuentas } from './ModuloCuentas';
-import { AvisoVistaAnterior } from './AvisoVistaAnterior';
-import { FormularioOperar } from './FormularioOperar';
 import { CapaOperacion, type Contenedor } from './CapaOperacion';
 import { PasoOnboarding, PASOS_ONBOARDING } from './PasoOnboarding';
 import { Boton } from './ui/Boton';
 import { Icono } from './ui/Icono';
-import { Pestanas } from './ui/Pestanas';
 import { Toast } from './ui/Toast';
-import { descargarComprobante, htmlComprobante } from './comprobante';
 
 export interface HomeVistaProps {
   estado: EstadoApp;
@@ -34,7 +30,6 @@ export interface HomeVistaProps {
 export const HomeVista: FC<HomeVistaProps> = ({ estado, dispatch, modo = 'app', raizRef }) => {
   const home = useMemo(() => vistaHome(estado), [estado]);
   const panel = useMemo(() => vistaPanel(estado), [estado]);
-  const operar = useMemo(() => vistaOperar(estado), [estado]);
   const [verTotal, setVerTotal] = useState(false);
   // Contenedor desde el que se pidieron los datos para depositar (C-47): desde el inicio, el panel lateral.
   const [depositoEn, setDepositoEn] = useState<Contenedor>('panel');
@@ -80,7 +75,7 @@ export const HomeVista: FC<HomeVistaProps> = ({ estado, dispatch, modo = 'app', 
           </>
         }
       >
-        {estado.aviso && (estado.seccion !== 'inicio' || estado.pestana === 'posicion') ? <AvisoResultado tipo={estado.aviso.tipo} texto={estado.aviso.texto} onCerrar={() => dispatch({ tipo: 'cerrarAviso' })} /> : null}
+        {estado.aviso ? <AvisoResultado tipo={estado.aviso.tipo} texto={estado.aviso.texto} onCerrar={() => dispatch({ tipo: 'cerrarAviso' })} /> : null}
 
         {estado.seccion === 'control' || estado.seccion === 'destinatarios' || estado.seccion === 'monitoreo' ? (
           <SeccionGenerica estado={estado} dispatch={dispatch} home={home} noDisponible={noDisponible} />
@@ -102,7 +97,7 @@ export const HomeVista: FC<HomeVistaProps> = ({ estado, dispatch, modo = 'app', 
                 <ListaMovimientos modo="completa" resumen={home.resumenProximos} proximos={home.proximosTodos.map(fila)} realizados={home.realizados.map(fila)} />
               </div>
               <div className="flex min-w-0 flex-col gap-5">
-                <TarjetaTipoDeCambio {...home.tdc} />
+                <TarjetaTipoDeCambio {...home.tdc} {...accionesCotizador(dispatch)} />
                 <ModuloCuentas cuentas={home.cuentas} onVerTodas={() => dispatch({ tipo: 'abrirCuentas' })} />
               </div>
             </div>
@@ -120,79 +115,58 @@ export const HomeVista: FC<HomeVistaProps> = ({ estado, dispatch, modo = 'app', 
           </div>
         </div>
 
-        <Pestanas
-          etiqueta="Vistas del inicio"
-          pestanas={[{ id: 'posicion', label: 'Posición consolidada' }, { id: 'operar', label: 'Operar clásico' }]}
-          activa={estado.pestana}
-          onCambiar={(id) => dispatch({ tipo: 'pestana', pestana: id })}
-          tour={{ operar: 'clasico' }}
-        />
-
-        {estado.pestana === 'posicion' ? (
-          <div className="flex flex-col gap-5">
-            <section data-tour="posicion" aria-labelledby="posicion-titulo" className="flex flex-col gap-2.5">
-              <div className="flex items-baseline justify-between">
-                <h2 id="posicion-titulo" className="text-h3 font-semibold">Posición por divisa</h2>
-                <Boton variante="link-caption" aria-pressed={verTotal} onClick={() => setVerTotal((v) => !v)}>{verTotal ? 'Ocultar total en MXN' : 'Ver total en MXN'}</Boton>
-              </div>
-              {verTotal ? <span className="text-body text-app-ink-2 tabular-nums">Total de tus posiciones ≈ <span className="font-semibold text-app-ink">{fmt.monto(home.totalMXN, 'MXN')}</span> a precio de venta</span> : null}
-              <div className="grid grid-cols-3 gap-6">
-                {home.posiciones.map((p) => (
-                  <TarjetaPosicion
-                    key={p.id}
-                    divisa={p.divisa}
-                    nombre={p.nombre}
-                    saldo={p.saldo}
-                    pactadasRecibir={p.pactadasRecibir}
-                    pactadasLiquidar={p.pactadasLiquidar}
-                    pagosFuturos={p.pagosFuturos}
-                    resultado={p.resultado}
-                    proyeccion={p.proyeccion}
-                    linea={p.linea}
-                    accion={p.accion ? { label: p.accion.label, onClick: () => dispatch({ tipo: 'abrirPanel', orden: p.accion!.orden }) } : null}
-                    enlace={p.enlace ? { label: p.enlace.label, onClick: () => { setDepositoEn('panel'); dispatch({ tipo: 'abrirDepositar' }); } } : null}
-                  />
-                ))}
-              </div>
-            </section>
-
-            <div className="grid grid-cols-3 items-start gap-6">
-              <div className="col-span-2 flex min-w-0 flex-col gap-5">
-                {home.nuevo ? (
-                  <section aria-labelledby="nuevo-titulo" className="flex flex-col gap-2">
-                    <h2 id="nuevo-titulo" className="text-h3 font-semibold">Cobraste hoy</h2>
-                    <FranjaNuevo monto={home.nuevo.monto} divisa={home.nuevo.divisa} origen={home.nuevo.de} meta={home.nuevo.meta} onComprobante={() => dispatch({ tipo: 'abrirDetalle', id: home.nuevo!.id })} onUsar={() => dispatch({ tipo: 'abrirCobro', cobroId: home.nuevo!.id })} />
-                  </section>
-                ) : null}
-                <ListaMovimientos
-                  tour="movimientos"
-                  onAgendar={() => dispatch({ tipo: 'abrirAgendar' })}
-                  onVerTodos={() => dispatch({ tipo: 'seccion', seccion: 'movimientos' })}
-                  proximos={home.proximos.map(fila)}
-                  realizados={home.realizados.map(fila)}
+        <div className="flex flex-col gap-5">
+          <section data-tour="posicion" aria-labelledby="posicion-titulo" className="flex flex-col gap-2.5">
+            <div className="flex items-baseline justify-between">
+              <h2 id="posicion-titulo" className="text-h3 font-semibold">Posición por divisa</h2>
+              <Boton variante="link-caption" aria-pressed={verTotal} onClick={() => setVerTotal((v) => !v)}>{verTotal ? 'Ocultar total en MXN' : 'Ver total en MXN'}</Boton>
+            </div>
+            {verTotal ? <span className="text-body text-app-ink-2 tabular-nums">Total de tus posiciones ≈ <span className="font-semibold text-app-ink">{fmt.monto(home.totalMXN, 'MXN')}</span> a precio de venta</span> : null}
+            <div className="grid grid-cols-3 gap-6">
+              {home.posiciones.map((p) => (
+                <TarjetaPosicion
+                  key={p.id}
+                  divisa={p.divisa}
+                  nombre={p.nombre}
+                  saldo={p.saldo}
+                  pactadasRecibir={p.pactadasRecibir}
+                  pactadasLiquidar={p.pactadasLiquidar}
+                  pagosFuturos={p.pagosFuturos}
+                  pagosOtrasDivisas={p.pagosOtrasDivisas}
+                  resultado={p.resultado}
+                  aprox={p.aprox}
+                  proyeccion={p.proyeccion}
+                  linea={p.linea}
+                  accion={p.accion ? { label: p.accion.label, onClick: () => dispatch({ tipo: 'abrirPanel', orden: p.accion!.orden }) } : null}
+                  enlace={p.enlace ? { label: p.enlace.label, onClick: () => { setDepositoEn('panel'); dispatch({ tipo: 'abrirDepositar' }); } } : null}
+                  onDesglose={(f) => dispatch({ tipo: 'abrirDesglose', cuentaId: p.id, fila: f })}
                 />
-              </div>
-              <div className="flex min-w-0 flex-col gap-5">
-                <TarjetaTipoDeCambio tour="tdc" {...home.tdc} />
-                <ModuloCuentas cuentas={home.cuentas} onVerTodas={() => dispatch({ tipo: 'abrirCuentas' })} />
-              </div>
+              ))}
+            </div>
+          </section>
+
+          <div className="grid grid-cols-3 items-start gap-6">
+            <div className="col-span-2 flex min-w-0 flex-col gap-5">
+              {home.nuevo ? (
+                <section aria-labelledby="nuevo-titulo" className="flex flex-col gap-2">
+                  <h2 id="nuevo-titulo" className="text-h3 font-semibold">Cobraste hoy</h2>
+                  <FranjaNuevo monto={home.nuevo.monto} divisa={home.nuevo.divisa} origen={home.nuevo.de} meta={home.nuevo.meta} onComprobante={() => dispatch({ tipo: 'abrirDetalle', id: home.nuevo!.id })} onUsar={() => dispatch({ tipo: 'abrirCobro', cobroId: home.nuevo!.id })} />
+                </section>
+              ) : null}
+              <ListaMovimientos
+                tour="movimientos"
+                onAgendar={() => dispatch({ tipo: 'abrirAgendar' })}
+                onVerTodos={() => dispatch({ tipo: 'seccion', seccion: 'movimientos' })}
+                proximos={home.proximos.map(fila)}
+                realizados={home.realizados.map(fila)}
+              />
+            </div>
+            <div className="flex min-w-0 flex-col gap-5">
+              <TarjetaTipoDeCambio tour="tdc" {...home.tdc} {...accionesCotizador(dispatch)} />
+              <ModuloCuentas cuentas={home.cuentas} onVerTodas={() => dispatch({ tipo: 'abrirCuentas' })} />
             </div>
           </div>
-        ) : (
-          <div className="flex flex-col gap-4">
-            <AvisoVistaAnterior onProbar={() => dispatch({ tipo: 'abrirPanel', orden: null })} />
-            <div className="flex items-center justify-between gap-4">
-              <span className="text-body text-app-ink-2">¿Qué quieres hacer hoy?</span>
-              <div className="flex gap-5">
-                <Boton variante="link-caption" onClick={noDisponible}>Horarios de operación</Boton>
-              </div>
-            </div>
-            <div className="grid grid-cols-3 items-start gap-6">
-              <div className="col-span-2 min-w-0"><FormularioOperar vista={operar} dispatch={dispatch} onNoDisponible={noDisponible} onAgregarDestinatario={() => dispatch({ tipo: 'abrirDestinatarioNuevo' })} onComprobante={(c) => descargarComprobante(`comprobante-${estado.operar.ultima?.id ?? 'operacion'}`, htmlComprobante({ titulo: c.titulo, sub: `${c.destino} · ${c.referencia || '—'}`, empresa: home.empresa, filas: c.filasComprobante, nota: c.fondeo }))} /></div>
-              <ModuloCuentas cuentas={home.cuentas} onVerTodas={() => dispatch({ tipo: 'abrirCuentas' })} className="self-start" />
-            </div>
-          </div>
-        )}
+        </div>
         </>
         )}
       </AppShell>
@@ -232,7 +206,7 @@ const SeccionGenerica: FC<{ estado: EstadoApp; dispatch: (a: Accion) => void; ho
             {destinatarios ? <SeccionDestinatarios items={destinatarios.items} dispatch={dispatch} /> : null}
           </div>
           <div className="flex min-w-0 flex-col gap-5">
-            <TarjetaTipoDeCambio {...home.tdc} />
+            <TarjetaTipoDeCambio {...home.tdc} {...accionesCotizador(dispatch)} />
             <ModuloCuentas cuentas={home.cuentas} onVerTodas={() => dispatch({ tipo: 'abrirCuentas' })} />
           </div>
         </div>

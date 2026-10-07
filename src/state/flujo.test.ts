@@ -3,9 +3,9 @@ import { aplicar, estadoInicial, pagoPorId, type Accion } from './estado';
 import { cuentasActuales, destinoDeCuenta, destinoDeDestinatario, notificaciones, ordenDePago } from './derivados';
 import { ARQUETIPO_IDS } from '@/data/arquetipos';
 import { estadoDeEscenario } from './escenarios';
-import { vistaControl, vistaDestinatarios, vistaHome, vistaMonitoreo, vistaPanel, vistaOperar } from './vistas';
+import { vistaControl, vistaDestinatarios, vistaHome, vistaMonitoreo, vistaPanel, vistaTipoDeCambio } from './vistas';
 import { centavos, porTdc } from '@/lib/dinero';
-import { ejecutable } from '@/lib/fx';
+import { ejecutable, PARES } from '@/lib/fx';
 import * as fmt from '@/lib/format';
 
 const base = estadoInicial('faltante');
@@ -298,76 +298,109 @@ describe('escenario sin-saldo', () => {
   });
 });
 
-describe('operar clásico 08 → 16', () => {
-  const e08 = aplicar([{ tipo: 'pestana', pestana: 'operar' }], base);
-  it('08 · vacío con CTA deshabilitado', () => {
-    const v = vistaOperar(e08);
-    expect(v.cta).toEqual({ label: 'Pedir precio', habilitado: false, accion: 'pedirPrecio' });
-    expect(fmt.tdc(v.cotizacion.tdc!.valor)).toBe('18.091183');
+describe('C-53 · cotizador en la tarjeta de tipo de cambio', () => {
+  const escribir = (lado: 'recibe' | 'pagas', valor: string): Accion[] => [{ tipo: 'cotEditando', lado }, { tipo: 'cotMonto', lado, valor }, { tipo: 'cotEditando', lado: null }];
+  const cot = (acciones: Accion[], e = base) => vistaTipoDeCambio(aplicar(acciones, e)).cotizador;
+  const diezMil = aplicar([...escribir('recibe', '10000'), { tipo: 'cotContinuar' }], base);
+  it('al entrar: el par de la semana, "Operar con este par" desplegado y vacío; recibes dólares y pagas desde la Cuenta Principal MXN', () => {
+    const t = vistaTipoDeCambio(base);
+    expect(t).toMatchObject({ par: 'USD/MXN', compra: 18_091_183, venta: 18_032_135 });
+    expect(t.cotizador).toEqual({ abierto: true, recibe: { divisa: 'USD', valor: '' }, pagas: { divisa: 'MXN', valor: '' }, ladoFijo: null, invertir: true, desde: 'Desde Cuenta Principal MXN · saldo 1,180,000.00', error: null, mercadoCerrado: null, continuar: false });
   });
-  it('09 · GBP/MXN avisa que no está en el prototipo', () => {
-    const v = vistaOperar(aplicar([{ tipo: 'opPar', par: 'GBP/MXN' }], e08));
-    expect(v.par.aviso).toBe('Este par no está en el prototipo.');
+  it('selector: "Tus pares" (los de tus posiciones) y "Otros pares" (el resto); debajo, los demás de "Tus pares"', () => {
+    const t = vistaTipoDeCambio(base);
+    expect(t.selector.grupos.map((g) => [g.titulo, g.items.map((i) => i.par)])).toEqual([['Tus pares', ['USD/MXN', 'EUR/MXN']], ['Otros pares', ['EUR/USD', 'GBP/MXN', 'CAD/MXN']]]);
+    expect(t.otros.map((o) => o.par)).toEqual(['EUR/MXN']);
+    const eur = vistaTipoDeCambio(aplicar([{ tipo: 'cotPar', par: 'EUR/MXN' }], base));
+    expect(eur).toMatchObject({ par: 'EUR/MXN', compra: 21_250_000, cotizador: { recibe: { divisa: 'EUR' }, pagas: { divisa: 'MXN' } } });
+    expect(eur.otros.map((o) => o.par)).toEqual(['USD/MXN']);
+    expect(aplicar([{ tipo: 'cotPar', par: 'ARS/MXN' }], base).cotizador.par).toBe('USD/MXN');
   });
-  const e10 = aplicar([{ tipo: 'opMonto', lado: 'izq', valor: '1000' }, { tipo: 'opMontoEditando', lado: null }, { tipo: 'opOrigen', origenId: 'mxn' }, { tipo: 'opDestino', destinoId: 'usd' }, { tipo: 'opMotivo', motivo: 'Compra de divisas' }, { tipo: 'opReferencia', referencia: 'Cobertura pagos USD' }], e08);
-  it('10 · compra completa con indicativo 18,091.18', () => {
-    const v = vistaOperar(e10);
-    expect(v.montoIzq).toBe('1,000.00');
-    expect(v.montoDer).toBe('18,091.18');
-    expect(v.cta.habilitado).toBe(true);
+  it('escribir Recibes fija ese lado y calcula Pagas al indicativo; escribir Pagas, al revés', () => {
+    expect(cot(escribir('recibe', '10000'))).toMatchObject({ recibe: { valor: '10,000.00' }, pagas: { valor: '180,911.83' }, ladoFijo: 'recibe', continuar: true });
+    expect(cot(escribir('pagas', '18091.18'))).toMatchObject({ recibe: { valor: '1,000.00' }, pagas: { valor: '18,091.18' }, ladoFijo: 'pagas', continuar: true });
   });
-  const e11 = aplicar([{ tipo: 'opPedirPrecio' }, { tipo: 'opToken', token: '47' }], e10);
-  it('11 · precio ejecutable 18.092415 y 18,092.42, con 2:00 para confirmar y la comisión', () => {
-    const v = vistaOperar(e11);
-    expect(v.montoDer).toBe('18,092.42');
-    expect(v.cotizacion.badge).toEqual({ texto: 'Confirma en 2:00', tono: 'success' });
-    expect(v.cotizacion.linea).toBe('Se mueve con el mercado hasta que confirmas.');
-    expect(v.cotizacion.comision).toEqual({ k: 'Comisión', v: '0%' });
-    expect(v.nota).toBe('Ten tu token a mano: tienes 2 minutos para confirmar.');
-    expect(v.cotizacion.tdc).toMatchObject({ valor: 18_092_415, tipo: 'Ejecutable' });
-    expect(v.token).toMatchObject({ visible: true, valor: '47' });
+  it('el lado que no escribiste sigue al indicativo en vivo; el que escribiste no se mueve', () => {
+    const e = aplicar(escribir('recibe', '10000'), base);
+    const sube = { ...base.tdcVivo, 'USD/MXN': { compra: 18_100_000, venta: 18_040_000 } };
+    expect(cot([{ tipo: 'tdcVivo', pares: sube }], e)).toMatchObject({ recibe: { valor: '10,000.00' }, pagas: { valor: '181,000.00' } });
+    expect(cot([{ tipo: 'cotEditando', lado: 'recibe' }, { tipo: 'tdcVivo', pares: sube }], e).pagas.valor).toBe('181,000.00');
+    expect(cot([{ tipo: 'cotEditando', lado: 'pagas' }, { tipo: 'tdcVivo', pares: sube }], e).pagas.valor).toBe('180,911.83');
   });
-  it('12 · vencido', () => {
-    const v = vistaOperar(aplicar(tick(120), e11));
-    expect(v.vencido).toBe(true);
-    expect(v.montoDer).toBe('18,091.18');
-    expect(v.token.visible).toBe(false);
-    expect(v.cta).toEqual({ label: 'Pedir precio', habilitado: true, accion: 'pedirPrecio' });
+  it('invertir: lo que escribiste queda en su divisa, ahora del otro lado, y sale de tu cuenta en esa divisa', () => {
+    const v = cot([...escribir('recibe', '1000'), { tipo: 'cotInvertir' }]);
+    expect(v).toMatchObject({ recibe: { divisa: 'MXN', valor: '18,032.14' }, pagas: { divisa: 'USD', valor: '1,000.00' }, ladoFijo: 'pagas', desde: 'Desde Cuenta USD · saldo 2,000.00', continuar: true });
   });
-  it('confirmar deja el inicio igual que "Comprar 1,000 USD con Hoy" y muestra la confirmación en la tarjeta', () => {
-    const e = aplicar([{ tipo: 'opToken', token: '123456' }, { tipo: 'opConfirmar' }, { tipo: 'opConfirmado', hora: '10:44' }], e11);
-    const v = vistaOperar(e);
-    expect(v.paso).toBe('confirmacion');
-    expect(v.confirmacion!.titulo).toBe('Compra en proceso');
-    expect(pos(e, 'USD')).toMatchObject({ saldo: centavos(3000), resultado: { tipo: 'sobran', monto: 0 } });
-    expect(pos(e, 'MXN')).toMatchObject({ saldo: centavos(1_161_907.58), resultado: { tipo: 'sobran', monto: centavos(1_081_557.08) } });
-    expect(vistaOperar(aplicar([{ tipo: 'opNueva' }], e)).montoIzq).toBe('');
+  it('GBP/MXN y CAD/MXN se operan; invertir queda deshabilitado sin cuenta en la divisa que pagarías', () => {
+    const gbp = aplicar([{ tipo: 'cotPar', par: 'GBP/MXN' }, ...escribir('recibe', '40000')], base);
+    expect(vistaTipoDeCambio(gbp).cotizador).toMatchObject({ recibe: { divisa: 'GBP', valor: '40,000.00' }, pagas: { divisa: 'MXN', valor: '972,000.00' }, invertir: false, continuar: true });
+    expect(aplicar([{ tipo: 'cotInvertir' }], gbp).cotizador).toEqual(gbp.cotizador);
+    expect(cot([{ tipo: 'cotPar', par: 'CAD/MXN' }, ...escribir('recibe', '10000')])).toMatchObject({ pagas: { valor: '132,000.00' }, invertir: false, continuar: true });
   });
-  it('13 · vender con error de saldo', () => {
-    const v = vistaOperar(aplicar([{ tipo: 'opTipo', valor: 'vender' }, { tipo: 'opMonto', lado: 'izq', valor: '5000' }, { tipo: 'opOrigen', origenId: 'usd' }, { tipo: 'opDestino', destinoId: 'mxn' }, { tipo: 'opMotivo', motivo: 'Venta de divisas' }], e08));
-    expect(v.montoDer).toBe('90,160.68');
-    expect(v.error).toBe('Supera tu saldo disponible: 2,000.00 USD.');
-    expect(v.cta.habilitado).toBe(false);
+  it('si no alcanza el saldo: el error de siempre bajo Pagas y Continuar deshabilitado (forzado, no abre nada)', () => {
+    const e = aplicar(escribir('recibe', '100000'), base);
+    expect(vistaTipoDeCambio(e).cotizador).toMatchObject({ error: 'Supera tu saldo disponible: 1,180,000.00 MXN.', continuar: false });
+    expect(aplicar([{ tipo: 'cotContinuar' }], e).panel.abierto).toBe(false);
+    expect(cot(escribir('recibe', '0'))).toMatchObject({ error: null, continuar: false });
   });
-  const e14 = aplicar([{ tipo: 'opTipo', valor: 'transferir' }, { tipo: 'opOrigen', origenId: 'usd' }, { tipo: 'opDestinoBusqueda', texto: 'Logí' }], e08);
-  it('14 · transferir con selector de destino', () => {
-    const v = vistaOperar(e14);
-    expect(v.destino.grupos.map((g) => [g.titulo, g.items.map((i) => i.nombre)])).toEqual([['Destinatarios en USD', ['Logística Pacífico']]]);
-    expect(v.cta.label).toBe('Continuar');
-  });
-  it('15 · transferencia lista con token', () => {
-    const v = vistaOperar(aplicar([{ tipo: 'opDestino', destinoId: 'log' }, { tipo: 'opMonto', lado: 'izq', valor: '1000' }, { tipo: 'opMotivo', motivo: 'Pago a proveedores' }, { tipo: 'opReferencia', referencia: 'Flete OCT-02' }, { tipo: 'opContinuar' }], e14));
-    expect(v.destino.valor).toBe('Logística Pacífico · Citibanamex **** 0931');
-    expect(v.token.visible).toBe(true);
-    expect(v.cta.label).toBe('Confirmar transferencia');
-  });
-  it('16 · mercado cerrado sin horario ni "Programar"', () => {
-    const v = vistaOperar(aplicar([{ tipo: 'pestana', pestana: 'operar' }], estadoDeEscenario('mercado-cerrado')));
-    expect(v.cerrado).toBe(true);
-    expect(v.avisoCerrado?.texto).not.toContain('6:30');
-    expect(v.cta.habilitado).toBe(false);
-    const panel = vistaPanel(aplicar([{ tipo: 'abrirPanel', orden: ordenDePago(pagoPorId(base, 'p1')!) }, { tipo: 'irPaso', paso: 'revision' }], estadoDeEscenario('mercado-cerrado')))!;
+  it('mercado cerrado: el aviso de siempre (sin horario ni "Programar") y Continuar deshabilitado', () => {
+    const cerrado = estadoDeEscenario('mercado-cerrado');
+    const v = cot(escribir('recibe', '1000'), cerrado);
+    expect(v.mercadoCerrado).toEqual({ titulo: 'Mercado cerrado.', texto: 'No se puede pedir precio hasta que abra.' });
+    expect(v.continuar).toBe(false);
+    const panel = vistaPanel(aplicar([{ tipo: 'abrirPanel', orden: ordenDePago(pagoPorId(base, 'p1')!) }, { tipo: 'irPaso', paso: 'revision' }], cerrado))!;
     expect(panel.primario).toMatchObject({ label: 'Pedir precio', habilitado: false });
+  });
+  it('se pliega y se despliega con el chevron; al volver a entrar en la sesión queda como lo dejaste', () => {
+    expect(aplicar([{ tipo: 'cotAbierto', abierto: false }], base).cotizador.abierto).toBe(false);
+    expect(estadoDeEscenario('faltante', { cotizadorAbierto: false }).cotizador.abierto).toBe(false);
+    expect(estadoDeEscenario('faltante').cotizador.abierto).toBe(true);
+  });
+  it('Continuar abre la ventana de pago en Destino con el monto, el lado fijo y el origen cargados', () => {
+    const p = vistaPanel(diezMil)!;
+    expect(p).toMatchObject({ tipo: 'pago', paso: 'destino', titulo: '¿A dónde llegan los 10,000.00 USD?', sub: '', secundario: { label: 'Cancelar', accion: 'cancelar' } });
+    expect(p.destino!.titulo).toBeNull();
+    expect(p.destino!.grupos.map((g) => [g.titulo, g.items.map((i) => i.nombre)])).toEqual([['Tus cuentas', ['Cuenta USD']], ['Destinatarios en USD', ['Shenzhen Parts Co.', 'Logística Pacífico', 'Asia Packaging']]]);
+    expect(diezMil.panel.origenId).toBe('mxn');
+  });
+  it('a tu Cuenta USD: Revisión sin pasar por Origen, una compra; "Volver" regresa a Destino con el mismo monto', () => {
+    const usd = vistaPanel(diezMil)!.destino!.grupos[0].items[0].destino;
+    const rev = aplicar([{ tipo: 'elegirDestino', destino: usd }], diezMil);
+    const p = vistaPanel(rev)!;
+    expect(p).toMatchObject({ paso: 'revision', titulo: 'Pasar a tu Cuenta USD', secundario: { label: 'Volver', accion: 'volverDestino' } });
+    expect(rev.panel.origenId).toBe('mxn');
+    expect(fmt.monto(p.revision!.recibe, 'USD')).toBe('10,000.00 USD');
+    expect(fmt.monto(p.revision!.pagas, 'MXN')).toBe('180,911.83 MXN');
+    expect(vistaPanel(aplicar([{ tipo: 'irPaso', paso: 'destino' }], rev))!.titulo).toBe('¿A dónde llegan los 10,000.00 USD?');
+    const editado = aplicar([{ tipo: 'monto', lado: 'recibe', valor: centavos(12_000) }, { tipo: 'irPaso', paso: 'destino' }], rev);
+    expect(vistaPanel(editado)!.titulo).toBe('¿A dónde llegan los 12,000.00 USD?');
+    const hecha = aplicar([{ tipo: 'pedirPrecio' }, ...TOKEN], rev);
+    expect(vistaPanel(hecha)!.confirmacion!.titulo).toBe('Compra en proceso');
+    expect(pos(aplicar([{ tipo: 'volverInicio' }], hecha), 'USD').saldo).toBe(centavos(12_000));
+  });
+  it('a un destinatario en USD: un pago (clase deducida del destino), con la revisión y la confirmación de siempre', () => {
+    const sz = vistaPanel(diezMil)!.destino!.grupos[1].items[0].destino;
+    const rev = aplicar([{ tipo: 'elegirDestino', destino: sz }], diezMil);
+    expect(vistaPanel(rev)).toMatchObject({ paso: 'revision', titulo: 'Pagar a Shenzhen Parts Co.' });
+    expect(vistaPanel(aplicar([{ tipo: 'pedirPrecio' }, ...TOKEN], rev))!.confirmacion!.titulo).toBe('Pago en proceso');
+  });
+  it('escribiendo Pagas, el título lleva "≈" y la revisión mantiene Pagas fijo', () => {
+    const e = aplicar([...escribir('pagas', '18091.18'), { tipo: 'cotContinuar' }], base);
+    expect(vistaPanel(e)!.titulo).toBe('¿A dónde llegan los ≈ 1,000.00 USD?');
+    const rev = aplicar([{ tipo: 'elegirDestino', destino: vistaPanel(e)!.destino!.grupos[0].items[0].destino }], e);
+    expect(vistaPanel(rev)!.revision).toMatchObject({ ladoFijo: 'pagas', pagas: centavos(18_091.18) });
+  });
+  it('invertido: vendes dólares desde la Cuenta USD y llegan pesos a tu cuenta o a un destinatario en MXN', () => {
+    const e = aplicar([...escribir('recibe', '1000'), { tipo: 'cotInvertir' }, { tipo: 'cotContinuar' }], base);
+    expect(e.panel.origenId).toBe('usd');
+    const p = vistaPanel(e)!;
+    expect(p.titulo).toBe('¿A dónde llegan los ≈ 18,032.14 MXN?');
+    expect(p.destino!.grupos.map((g) => g.titulo)).toEqual(['Tus cuentas', 'Destinatarios en MXN']);
+    const venta = aplicar([{ tipo: 'elegirDestino', destino: p.destino!.grupos[0].items[0].destino }, { tipo: 'pedirPrecio' }, ...TOKEN], e);
+    expect(vistaPanel(venta)!.confirmacion!.titulo).toBe('Venta en proceso');
+  });
+  it('el destinatario nuevo desde ahí viene en la divisa que llega', () => {
+    expect(aplicar([{ tipo: 'abrirDestinatarioNuevo' }], diezMil).panel.destinatarioNuevo.divisa).toBe('USD');
   });
 });
 
@@ -377,9 +410,9 @@ describe('onboarding y tipo de cambio en vivo', () => {
     expect(estadoDeEscenario('faltante', { recorrido: false }).onboarding.activo).toBe(false);
     expect(estadoDeEscenario('resuelta', { recorrido: true }).onboarding.activo).toBe(false);
   });
-  it('cuatro pasos y Empezar cierra', () => {
-    const e = aplicar([{ tipo: 'onboardingIniciar' }, { tipo: 'onboardingSiguiente' }, { tipo: 'onboardingSiguiente' }, { tipo: 'onboardingSiguiente' }], base);
-    expect(e.onboarding).toEqual({ activo: true, paso: 3 });
+  it('tres pasos y Empezar cierra', () => {
+    const e = aplicar([{ tipo: 'onboardingIniciar' }, { tipo: 'onboardingSiguiente' }, { tipo: 'onboardingSiguiente' }], base);
+    expect(e.onboarding).toEqual({ activo: true, paso: 2 });
     expect(aplicar([{ tipo: 'onboardingSiguiente' }], e).onboarding.activo).toBe(false);
   });
   it('congelar fija el indicativo', () => {
@@ -747,7 +780,7 @@ describe('pendientes: destinatario nuevo, secciones del menú, notificaciones y 
     expect(c.grupos.map((g) => [g.titulo, g.filas.length])).toEqual([['Pactadas (1)', 1], ['En proceso (0)', 0], ['Realizadas (3)', 3]]);
     expect(c.grupos[0].filas[0]).toMatchObject({ nombre: 'Shenzhen Parts Co.', badge: { texto: 'Pactada', tono: 'pactada' }, detalle: '1,500.00 USD a 18.092415' });
     const m = vistaMonitoreo(base);
-    expect(m.pares.map((p) => p.par)).toEqual(['USD/MXN', 'EUR/MXN', 'EUR/USD']);
+    expect(m.pares.map((p) => p.par)).toEqual(['USD/MXN', 'EUR/MXN', 'EUR/USD', 'GBP/MXN', 'CAD/MXN']);
     expect(fmt.tdc(m.pares[0].ejecutableCompra)).toBe('18.092415');
     expect(m.pares[2]).toMatchObject({ compra: 1_175_000, venta: 1_171_000, enPosiciones: false });
   });
@@ -788,7 +821,6 @@ describe('pendientes: destinatario nuevo, secciones del menú, notificaciones y 
 
 describe('ningún recorrido deja saldo negativo (C-37)', () => {
   type Estado = ReturnType<typeof estadoInicial>;
-  const TOKEN_CLASICO: Accion[] = [{ tipo: 'opToken', token: '123456' }, { tipo: 'opConfirmar' }, { tipo: 'opConfirmado', hora: '10:43' }];
   const saldos = (e: Estado) => Object.fromEntries(cuentasActuales(e).map((c) => [c.id, c.saldo]));
   const sinNegativos = (e: Estado, paso: string) => {
     for (const c of cuentasActuales(e)) expect(c.saldo, `${e.arquetipo} · ${paso} · ${c.nombre}`).toBeGreaterThanOrEqual(0);
@@ -813,23 +845,22 @@ describe('ningún recorrido deja saldo negativo (C-37)', () => {
     }
     return s;
   };
-  /** Transferencia, compra o venta por el clásico, también forzada. */
-  const operarClasico = (e: Estado, tipo: 'transferir' | 'comprar' | 'vender', origenId: 'mxn' | 'usd' | 'eur', destinoId: string, monto: string, par?: string): Estado => {
-    const pasos: Accion[][] = [
-      [{ tipo: 'opTipo', valor: tipo }, ...(par ? [{ tipo: 'opPar' as const, par }] : [])],
-      [{ tipo: 'opMonto', lado: 'izq', valor: monto }, { tipo: 'opMontoEditando', lado: null }],
-      [{ tipo: 'opOrigen', origenId }],
-      [{ tipo: 'opDestino', destinoId }],
-      [{ tipo: 'opMotivo', motivo: 'Pago a proveedores' }],
-      [tipo === 'transferir' ? { tipo: 'opContinuar' } : { tipo: 'opPedirPrecio' }],
-      TOKEN_CLASICO,
-      [{ tipo: 'opNueva' }],
-    ];
+  /** Desde el cotizador (C-53), también forzado: Continuar, el primer destino de la lista, precio y token aunque la vista los muestre deshabilitados. */
+  const operarCotizador = (e: Estado, par: string, invertir: boolean, monto: string): Estado => {
     let s = e;
-    for (const acciones of pasos) {
+    const paso = (acciones: Accion[], nombre: string) => {
       s = aplicar(acciones, s);
-      sinNegativos(s, `clásico ${tipo} ${monto} desde ${origenId} a ${destinoId} · ${acciones[0].tipo}`);
-    }
+      sinNegativos(s, `cotizador ${par}${invertir ? ' invertido' : ''} ${monto} · ${nombre}`);
+    };
+    paso([{ tipo: 'cotPar', par }, ...(invertir ? [{ tipo: 'cotInvertir' as const }] : [])], 'par');
+    paso([{ tipo: 'cotMonto', lado: 'pagas', valor: monto }, { tipo: 'cotEditando', lado: null }], 'monto');
+    paso([{ tipo: 'cotContinuar' }], 'continuar');
+    const destino = vistaPanel(s)?.destino?.grupos[0]?.items[0]?.destino;
+    if (!destino) return s;
+    paso([{ tipo: 'elegirDestino', destino }], 'destino');
+    paso([{ tipo: 'pedirPrecio' }], 'precio');
+    paso(TOKEN, 'token');
+    paso([{ tipo: 'volverInicio' }], 'inicio');
     return s;
   };
 
@@ -845,17 +876,19 @@ describe('ningún recorrido deja saldo negativo (C-37)', () => {
         }
       }
     });
-    it(`${arquetipo}: transferencias, compras y ventas por el clásico con montos que superan el saldo`, () => {
-      for (const c of inicio.datos.cuentas) {
-        for (const d of inicio.datos.destinatarios.filter((x) => x.divisa === c.divisa)) {
-          operarClasico(inicio, 'transferir', c.id, d.id, String(c.saldo / 100 + 1));
-          operarClasico(inicio, 'transferir', c.id, d.id, String(Math.max(c.saldo / 100, 1)));
+    it(`${arquetipo}: compras, ventas y pagos desde el cotizador en cada par y sentido, con montos que superan el saldo`, () => {
+      for (const par of Object.keys(PARES)) {
+        for (const invertir of [false, true]) {
+          for (const c of inicio.datos.cuentas) {
+            operarCotizador(inicio, par, invertir, String(c.saldo / 100 + 1));
+            operarCotizador(inicio, par, invertir, String(Math.max(c.saldo / 100, 1)));
+          }
         }
       }
-      let s = operarClasico(inicio, 'comprar', 'mxn', 'usd', '1000000', 'USD/MXN');
-      s = operarClasico(s, 'comprar', 'mxn', 'usd', '1000', 'USD/MXN');
-      s = operarClasico(s, 'vender', 'usd', 'mxn', '1000000', 'USD/MXN');
-      operarClasico(s, 'comprar', 'usd', 'eur', '100000', 'EUR/USD');
+      let s = operarCotizador(inicio, 'USD/MXN', false, '1000000');
+      s = operarCotizador(s, 'USD/MXN', false, '1000');
+      s = operarCotizador(s, 'USD/MXN', true, '1000000');
+      operarCotizador(s, 'EUR/USD', false, '100000');
     });
   }
 
@@ -871,14 +904,6 @@ describe('ningún recorrido deja saldo negativo (C-37)', () => {
     const dosPagados = pagarPorPanel(unoPagado, 'p2', 'usd');
     expect(saldos(dosPagados).usd).toBe(centavos(500));
     expect(dosPagados.operaciones.map((o) => o.origenId)).toEqual(['mxn', 'usd']);
-  });
-  it('clásico · Transferir: la cuenta sin saldo para el monto queda deshabilitada con su motivo y el reducer la rechaza', () => {
-    const e = aplicar([{ tipo: 'opTipo', valor: 'transferir' }, { tipo: 'opMonto', lado: 'izq', valor: '2500' }, { tipo: 'opMontoEditando', lado: null }], base);
-    const v = vistaOperar(e);
-    expect(v.origen.opciones.map((o) => [o.nombre, o.deshabilitado, o.motivo])).toEqual([['Cuenta Principal MXN', false, null], ['Cuenta USD', true, 'No alcanza el saldo'], ['Cuenta EUR', false, null]]);
-    expect(aplicar([{ tipo: 'opOrigen', origenId: 'usd' }], e).operar.origenId).toBeNull();
-    const t = estadoInicial('faltante', {}, 'turismo');
-    expect(vistaOperar(aplicar([{ tipo: 'opTipo', valor: 'transferir' }], t)).origen.opciones.find((o) => o.id === 'eur')).toMatchObject({ deshabilitado: true, motivo: 'Sin saldo' });
   });
 });
 
@@ -980,13 +1005,6 @@ describe('C-48 · el precio ejecutable sigue al mercado hasta que confirmas', ()
     expect(vencido.panel.precio).toEqual({ estado: 'vencido', tdc: ejecutable(18_100_000, 'comprar') });
     expect(vistaPanel(vencido)!.precio).toMatchObject({ estado: 'vencido', pagasAprox: true, pagas: porTdc(centavos(1500), 18_100_000) });
   });
-  it('en el clásico: el lado que escribiste queda y el otro sigue al ejecutable', () => {
-    const e10 = aplicar([{ tipo: 'pestana', pestana: 'operar' }, { tipo: 'opMonto', lado: 'izq', valor: '1000' }, { tipo: 'opMontoEditando', lado: null }, { tipo: 'opOrigen', origenId: 'mxn' }, { tipo: 'opDestino', destinoId: 'usd' }, { tipo: 'opMotivo', motivo: 'Compra de divisas' }, { tipo: 'opPedirPrecio' }], base);
-    const v = vistaOperar(aplicar([{ tipo: 'tdcVivo', pares: sube }], e10));
-    expect(v.montoIzq).toBe('1,000.00');
-    expect(v.montoDer).toBe(fmt.numero(porTdc(centavos(1000), ejecutable(18_100_000, 'comprar'))));
-    expect(v.cotizacion.tdc).toMatchObject({ valor: ejecutable(18_100_000, 'comprar'), tipo: 'Ejecutable' });
-  });
 });
 
 describe('C-49 · menos contenido en Origen, Destino e Inicio', () => {
@@ -1032,7 +1050,7 @@ describe('C-49 · menos contenido en Origen, Destino e Inicio', () => {
 
 describe('C-50 · comisión y qué sale, qué llega', () => {
   const conTasa = (bp: number) => ({ ...base, datos: { ...base.datos, comisiones: { pago: bp, compra: bp, venta: bp, transferencia: bp } } });
-  it('"Comisión 0%" en pago, compra, venta y transferencia, en la ventana, la confirmación y el clásico', () => {
+  it('"Comisión 0%" en pago, compra, venta y transferencia, en la ventana y la confirmación', () => {
     const fila = { k: 'Comisión', v: '0%' };
     const pago = aplicar([{ tipo: 'abrirPanel', orden: shenzhen }, { tipo: 'irPaso', paso: 'revision' }, { tipo: 'pedirPrecio' }], base);
     expect(vistaPanel(pago)!.resumen?.filas[0]).toEqual(fila);
@@ -1044,9 +1062,6 @@ describe('C-50 · comisión y qué sale, qué llega', () => {
     expect(vistaPanel(venta)!.resumen?.filas[0]).toEqual(fila);
     const transferencia = aplicar([{ tipo: 'abrirPanel', orden: shenzhen }, { tipo: 'elegirOrigen', origenId: 'usd' }, { tipo: 'irPaso', paso: 'revision' }], base);
     expect(vistaPanel(transferencia)!.resumen?.filas[0]).toEqual(fila);
-    for (const tipo of ['comprar', 'vender', 'transferir'] as const) {
-      expect(vistaOperar(aplicar([{ tipo: 'pestana', pestana: 'operar' }, { tipo: 'opTipo', valor: tipo }], base)).cotizacion.comision).toEqual(fila);
-    }
   });
   it('con una tasa distinta de 0, Pagas = lo que recibe al precio × (1 + tasa) y la fila lleva el monto en la divisa de origen', () => {
     const e = aplicar([{ tipo: 'abrirPanel', orden: shenzhen }, { tipo: 'irPaso', paso: 'revision' }, { tipo: 'pedirPrecio' }], conTasa(50));
@@ -1069,10 +1084,11 @@ describe('C-50 · comisión y qué sale, qué llega', () => {
     expect(vistaPanel(misma)!.revision!.pagas).toBe(centavos(1500) + centavos(3.75));
     const conCambio = aplicar([{ tipo: 'abrirPanel', orden: shenzhen }, { tipo: 'irPaso', paso: 'revision' }], tasas);
     expect(vistaPanel(conCambio)!.resumen?.filas[0]).toEqual({ k: 'Comisión', v: '0.50% · 135.68 MXN' });
-    const transferir = aplicar([{ tipo: 'pestana', pestana: 'operar' }, { tipo: 'opTipo', valor: 'transferir' }], tasas);
-    expect(vistaOperar(transferir).cotizacion.comision).toEqual({ k: 'Comisión', v: '0.25%' });
-    expect(vistaOperar(aplicar([{ tipo: 'pestana', pestana: 'operar' }, { tipo: 'opTipo', valor: 'comprar' }], tasas)).cotizacion.comision).toEqual({ k: 'Comisión', v: '0.10%' });
-    expect(vistaOperar(aplicar([{ tipo: 'pestana', pestana: 'operar' }, { tipo: 'opTipo', valor: 'vender' }], tasas)).cotizacion.comision).toEqual({ k: 'Comisión', v: '0.20%' });
+    // Desde el cotizador la clase se deduce del destino: a tu Cuenta USD es una compra; a un destinatario en USD, un pago.
+    const cotizado = aplicar([{ tipo: 'cotMonto', lado: 'recibe', valor: '1000' }, { tipo: 'cotContinuar' }], tasas);
+    const [cuentas, destinatarios] = vistaPanel(cotizado)!.destino!.grupos;
+    expect(vistaPanel(aplicar([{ tipo: 'elegirDestino', destino: cuentas.items[0].destino }], cotizado))!.resumen?.filas[0]).toEqual({ k: 'Comisión', v: '0.10% · 18.09 MXN' });
+    expect(vistaPanel(aplicar([{ tipo: 'elegirDestino', destino: destinatarios.items[0].destino }], cotizado))!.resumen?.filas[0]).toEqual({ k: 'Comisión', v: '0.50% · 90.46 MXN' });
   });
 });
 
@@ -1083,5 +1099,94 @@ describe('C-51 · fecha de liquidación: el beneficio de elegir otro día', () =
     expect(vistaPanel(aplicar([{ tipo: 'fechaValor', fecha: JUE8 }], rev))!.revision!.notaFecha).toBe('Cierras el precio hoy y el dinero sale el jue 8. No necesitas tener el saldo hasta ese día.');
     const sinSaldo = aplicar([{ tipo: 'abrirPanel', orden: shenzhen, origenId: 'mxn' }, { tipo: 'irPaso', paso: 'revision' }], estadoDeEscenario('sin-saldo'));
     expect(vistaPanel(sinSaldo)!.revision!.notaFecha).toBe('Hoy no te alcanza el saldo. Elige otro día: cierras el precio hoy y fondeas antes de esa fecha.');
+  });
+});
+
+describe('C-54 · pagos en divisas sin cuenta (?escenario=otras-divisas)', () => {
+  const VIE9 = new Date(2026, 9, 9);
+  const otras = estadoDeEscenario('otras-divisas');
+  const pagarLibras = (extra: Accion[] = []): Accion[] => [{ tipo: 'abrirPanel', orden: ordenDePago(pagoPorId(otras, 'x1')!) }, { tipo: 'irPaso', paso: 'revision' }, ...extra, { tipo: 'pedirPrecio' }, ...TOKEN, { tipo: 'volverInicio' }];
+  it('el escenario base no cambia: sin pagos en otras divisas ni "≈"', () => {
+    expect(vistaHome(base).posiciones.map((p) => [p.divisa, p.pagosOtrasDivisas, p.aprox])).toEqual([['USD', null, false], ['MXN', null, false], ['EUR', null, false]]);
+  });
+  it('tarjeta MXN: "Pagos en otras divisas (1)" ≈ −972,000.00 a 24.300000 y "Sobran ≈ 127,649.50"; no hay tarjeta en libras', () => {
+    expect(otras.tdcVivo['GBP/MXN'].compra).toBe(24_300_000);
+    expect(pos(otras, 'MXN')).toMatchObject({ pagosFuturos: { cantidad: 7, total: centavos(80_350.5) }, pagosOtrasDivisas: { cantidad: 1, total: centavos(972_000) }, resultado: { tipo: 'sobran', monto: centavos(127_649.5) }, aprox: true });
+    expect(vistaHome(otras).posiciones.map((p) => p.divisa)).toEqual(['USD', 'MXN', 'EUR']);
+    expect(pos(otras, 'USD').resultado).toEqual({ tipo: 'faltan', monto: centavos(1000) });
+  });
+  it('Movimientos: −40,000.00 GBP con "≈ 972,000.00 MXN hoy" y "Pagar"', () => {
+    const f = vistaHome(otras).proximos.find((x) => x.id === 'x1')!;
+    expect(f).toMatchObject({ nombre: 'Thames Tooling Ltd.', fecha: 'vie 9', monto: centavos(-40_000), divisa: 'GBP', detalle: '≈ 972,000.00 MXN hoy' });
+    expect(f.orden).toMatchObject({ pagoId: 'x1', monto: centavos(40_000) });
+  });
+  it('GBP/MXN entra a "Tus pares" mientras el pago está pendiente', () => {
+    const t = vistaTipoDeCambio(otras);
+    expect(t.selector.grupos.map((g) => [g.titulo, g.items.map((i) => i.par)])).toEqual([['Tus pares', ['USD/MXN', 'EUR/MXN', 'GBP/MXN']], ['Otros pares', ['EUR/USD', 'CAD/MXN']]]);
+    expect(t.otros.map((o) => o.par)).toEqual(['EUR/MXN', 'GBP/MXN']);
+  });
+  it('Pagar: Origen con la cuenta de fondeo preseleccionada y "Pagas ≈"; las cuentas sin par con libras, deshabilitadas', () => {
+    const e = aplicar([{ tipo: 'abrirPanel', orden: ordenDePago(pagoPorId(otras, 'x1')!) }], otras);
+    const p = vistaPanel(e)!;
+    expect(p).toMatchObject({ titulo: 'Pagar a Thames Tooling Ltd.', sub: '40,000.00 GBP · vence vie 9 · Factura TT-3381' });
+    expect(e.panel.origenId).toBe('mxn');
+    expect(p.origenes.map((o) => [o.nombre, o.pagas, o.deshabilitada])).toEqual([['Cuenta Principal MXN', 'Pagas ≈ 972,000.00 MXN', false], ['Cuenta USD', '', true], ['Cuenta EUR', '', true]]);
+    expect(p.origenes.slice(1).map((o) => o.consecuencia?.texto)).toEqual(['Sin par disponible', 'Sin par disponible']);
+    expect(aplicar([{ tipo: 'elegirOrigen', origenId: 'usd' }], e).panel.origenId).toBe('mxn');
+  });
+  it('con Hoy: sale de Próximos y de "Pagos en otras divisas"; GBP/MXN deja "Tus pares"', () => {
+    const e = aplicar(pagarLibras(), otras);
+    expect(e.operaciones[0]).toMatchObject({ origenId: 'mxn', recibe: centavos(40_000), tdc: ejecutable(24_300_000, 'comprar') });
+    expect(pos(e, 'MXN')).toMatchObject({ pagosOtrasDivisas: null, aprox: false, saldo: centavos(1_180_000) - e.operaciones[0].pagas });
+    expect(vistaHome(e).proximos.some((f) => f.id === 'x1')).toBe(false);
+    expect(vistaTipoDeCambio(e).selector.grupos[0].items.map((i) => i.par)).toEqual(['USD/MXN', 'EUR/MXN']);
+  });
+  it('con fecha valor: pactado, en "Pactadas por liquidar" con el monto exacto y sin "≈"', () => {
+    const e = aplicar(pagarLibras([{ tipo: 'fechaValor', fecha: VIE9 }]), otras);
+    const op = e.operaciones[0];
+    expect(op.pagas).toBe(porTdc(centavos(40_000), ejecutable(24_300_000, 'comprar')));
+    expect(pos(e, 'MXN')).toMatchObject({ pagosOtrasDivisas: null, pactadasLiquidar: { cantidad: 1, total: op.pagas }, aprox: false, saldo: centavos(1_180_000) });
+    expect(vistaHome(e).proximos.find((f) => f.id === 'x1')).toMatchObject({ badge: { texto: 'Pactada' }, detalle: `${fmt.monto(op.pagas, 'MXN')} a ${fmt.tdc(op.tdc!)}` });
+  });
+  it('turismo: el pago en libras también lo paga la cuenta en pesos', () => {
+    const t = estadoDeEscenario('otras-divisas', {}, 'turismo');
+    expect(pos(t, 'MXN')).toMatchObject({ pagosOtrasDivisas: { cantidad: 1, total: centavos(97_200) }, aprox: true });
+    expect(vistaHome(t).proximos.find((f) => f.nombre === 'London Hotels Group')).toMatchObject({ monto: centavos(-4000), divisa: 'GBP', detalle: '≈ 97,200.00 MXN hoy' });
+  });
+});
+
+describe('C-55 · desglose de las filas de la posición', () => {
+  const desglose = (e: ReturnType<typeof estadoInicial>, cuentaId: 'mxn' | 'usd' | 'eur', fila: 'pagosFuturos' | 'pagosOtrasDivisas' | 'pactadasLiquidar' | 'pactadasRecibir') => aplicar([{ tipo: 'abrirDesglose', cuentaId, fila }], e);
+  it('"Pagos futuros (3)" en USD: el título lleva la divisa, el subtítulo es el de la tarjeta y los pagos van por fecha', () => {
+    const p = vistaPanel(desglose(base, 'usd', 'pagosFuturos'))!;
+    expect(p).toMatchObject({ tipo: 'desglose', titulo: 'Pagos futuros en USD', sub: '3 pagos · −3,000.00 USD', primario: { label: 'Cerrar', habilitado: true, accion: 'cerrar' }, secundario: null });
+    expect(p.desglose!.items.map((i) => [i.dia, i.nombre, i.monto, i.linea, i.pagoId])).toEqual([
+      ['jue 8', 'Shenzhen Parts Co.', '−1,500.00 USD', null, 'p1'],
+      ['vie 9', 'Logística Pacífico', '−1,000.00 USD', null, 'p2'],
+      ['vie 9', 'Asia Packaging', '−500.00 USD', null, 'p3'],
+    ]);
+    expect(p.desglose!.items[0].referencia).toBe('Factura 0457');
+  });
+  it('"Pagar" sigue el flujo de pago en la misma ventana; "Volver" en el primer paso regresa a la lista', () => {
+    const pagar = aplicar([{ tipo: 'pagarDesdeDesglose', pagoId: 'p1' }], desglose(base, 'usd', 'pagosFuturos'));
+    expect(vistaPanel(pagar)).toMatchObject({ tipo: 'pago', paso: 'origen', titulo: 'Pagar a Shenzhen Parts Co.', secundario: { label: 'Volver', accion: 'volverDesglose' } });
+    expect(vistaPanel(aplicar([{ tipo: 'volverDesglose' }], pagar))).toMatchObject({ tipo: 'desglose', titulo: 'Pagos futuros en USD' });
+    const pagado = aplicar([{ tipo: 'irPaso', paso: 'revision' }, { tipo: 'pedirPrecio' }, ...TOKEN, { tipo: 'volverInicio' }], pagar);
+    expect(pos(pagado, 'USD').pagosFuturos).toEqual({ cantidad: 2, total: centavos(1500) });
+    expect(vistaPanel(aplicar([{ tipo: 'pagarDesdeDesglose', pagoId: 'p1' }], base))).toBeNull();
+  });
+  it('"Pagos en otras divisas": el monto en su divisa y debajo "≈ 972,000.00 MXN a 24.300000"', () => {
+    const p = vistaPanel(desglose(estadoDeEscenario('otras-divisas'), 'mxn', 'pagosOtrasDivisas'))!;
+    expect(p).toMatchObject({ titulo: 'Pagos en otras divisas', sub: '1 pago · ≈ −972,000.00 MXN' });
+    expect(p.desglose!.items).toEqual([{ id: 'x1', dia: 'vie 9', nombre: 'Thames Tooling Ltd.', referencia: 'Factura TT-3381', monto: '−40,000.00 GBP', linea: '≈ 972,000.00 MXN a 24.300000', pagoId: 'x1' }]);
+  });
+  it('pactadas: el día que sale o entra y el precio cerrado, sin acción', () => {
+    const liquidar = vistaPanel(desglose(estadoDeEscenario('pactada'), 'mxn', 'pactadasLiquidar'))!;
+    expect(liquidar).toMatchObject({ titulo: 'Pactadas por liquidar en MXN', sub: '1 pactada · −27,138.62 MXN' });
+    expect(liquidar.desglose!.items.map((i) => [i.dia, i.nombre, i.monto, i.linea, i.pagoId])).toEqual([['jue 8', 'Shenzhen Parts Co.', '−27,138.62 MXN', '1,500.00 USD a 18.092415', null]]);
+    const compra = aplicar([{ tipo: 'abrirPanel', orden: pos(base, 'USD').accion!.orden }, { tipo: 'irPaso', paso: 'revision' }, { tipo: 'fechaValor', fecha: new Date(2026, 9, 9) }, { tipo: 'pedirPrecio' }, ...TOKEN, { tipo: 'volverInicio' }], base);
+    const recibir = vistaPanel(desglose(compra, 'usd', 'pactadasRecibir'))!;
+    expect(recibir).toMatchObject({ titulo: 'Pactadas por recibir en USD', sub: '1 pactada · +1,000.00 USD' });
+    expect(recibir.desglose!.items.map((i) => [i.dia, i.monto, i.linea, i.pagoId])).toEqual([['vie 9', '+1,000.00 USD', '18,092.42 MXN a 18.092415', null]]);
   });
 });

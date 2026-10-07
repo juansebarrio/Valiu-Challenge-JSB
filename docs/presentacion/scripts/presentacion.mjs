@@ -102,26 +102,40 @@ async function frameEntero(page, id, archivo) {
     if (v.x < f.x || v.y < f.y || v.x + v.width > f.x + f.width || v.y + v.height > f.y + f.height) throw new Error(`frame ${id}: la ventana de pago no entra en el frame`);
     await recortar(page, archivo, v, `frame ${id} · ModalOperar entera`);
   }
-  // d4-recorrido: frame 20, columna principal hasta 24 px debajo de la tarjeta del recorrido; exige el recorte sobre la pestaña
+  // d1-otras-divisas: frame O1, la tarjeta en pesos con "Pagos en otras divisas (1)" con 16 px de aire (C-54)
   {
-    const { sec, f, columna } = await frame(page, '20');
-    const c = await caja(sec.locator('[data-component="PasoOnboarding"]'), 'tarjeta del recorrido del frame 20');
-    const pos = await sec.locator('[data-component="PasoOnboarding"]').evaluate((el) => `${el.style.left},${el.style.top}`);
-    if (pos === '16px,16px') throw new Error('frame 20: la tarjeta del recorrido quedó en la posición de respaldo (16, 16)');
-    const recorte = sec.locator('div[aria-hidden][style*="height"]');
-    if (!(await recorte.count())) throw new Error('frame 20: no hay recorte sobre el objetivo');
-    const r = await caja(recorte, 'recorte del frame 20');
-    const tab = await caja(sec.getByRole('tab', { name: 'Operar clásico' }), 'pestaña Operar clásico del frame 20');
-    if (!(r.x <= tab.x && r.y <= tab.y && r.x + r.width >= tab.x + tab.width && r.y + r.height >= tab.y + tab.height)) throw new Error('frame 20: el recorte no rodea la pestaña Operar clásico');
-    if (c.y < tab.y + tab.height) throw new Error('frame 20: la tarjeta no queda debajo de la pestaña');
-    log.push(`frame 20: recorte ${Math.round(r.x)},${Math.round(r.y)} ${Math.round(r.width)}×${Math.round(r.height)} rodea la pestaña; tarjeta en ${pos}`);
-    await recortar(page, 'd4-recorrido.png', { x: columna.x, y: f.y, width: columna.width, height: c.y + c.height + 24 - f.y }, 'frame 20 · columna principal hasta la tarjeta + 24 px');
+    const { sec } = await frame(page, 'O1');
+    const t = await caja(sec.locator('[data-component="TarjetaPosicion"][aria-label="Posición en pesos"]'), 'tarjeta MXN del frame O1');
+    await recortar(page, 'd1-otras-divisas.png', { x: t.x - 16, y: t.y - 16, width: t.width + 32, height: t.height + 32 }, 'frame O1 · TarjetaPosicion en pesos + 16 px');
   }
-  // d4-operar-clasico: frame 08, columna principal hasta 8 px debajo de Comprar / Vender / Transferir
+  // d1-desglose: frame G1, la ventana de pago entera (una columna, 560 px css) con el desglose de "Pagos futuros en USD" (C-55)
   {
-    const { sec, f, columna } = await frame(page, '08');
-    const tab = await caja(sec.getByRole('tab', { name: 'Transferir' }), 'pestaña Transferir del frame 08');
-    await recortar(page, 'd4-operar-clasico.png', { x: columna.x, y: f.y, width: columna.width, height: tab.y + tab.height + 8 - f.y }, 'frame 08 · columna principal hasta las pestañas + 8 px');
+    const { sec, f } = await frame(page, 'G1');
+    const v = await caja(sec.locator('[data-component="ModalOperar"]'), 'ventana del desglose del frame G1');
+    if (v.x < f.x || v.y < f.y || v.x + v.width > f.x + f.width || v.y + v.height > f.y + f.height) throw new Error('frame G1: la ventana no entra en el frame');
+    await recortar(page, 'd1-desglose.png', v, 'frame G1 · ModalOperar entera');
+  }
+  // d4-cotizador: frame C1, la tarjeta de tipo de cambio con el cotizador desplegado y 10,000.00 USD, con 16 px de aire (C-53)
+  {
+    const { sec } = await frame(page, 'C1');
+    const t = await caja(sec.locator('[data-component="TarjetaTipoDeCambio"]'), 'tarjeta de tipo de cambio del frame C1');
+    await recortar(page, 'd4-cotizador.png', { x: t.x - 16, y: t.y - 16, width: t.width + 32, height: t.height + 32 }, 'frame C1 · TarjetaTipoDeCambio + 16 px');
+  }
+  // d4-recorrido: frame 19 (paso 3 de 3), columna principal de 24 px sobre el recorte a 24 px debajo; exige el recorte sobre la tarjeta de tipo de cambio
+  {
+    const { sec, columna } = await frame(page, '19');
+    const c = await caja(sec.locator('[data-component="PasoOnboarding"]'), 'tarjeta del recorrido del frame 19');
+    const pos = await sec.locator('[data-component="PasoOnboarding"]').evaluate((el) => `${el.style.left},${el.style.top}`);
+    if (pos === '16px,16px') throw new Error('frame 19: la tarjeta del recorrido quedó en la posición de respaldo (16, 16)');
+    const recorte = sec.locator('div[aria-hidden][style*="height"]');
+    if (!(await recorte.count())) throw new Error('frame 19: no hay recorte sobre el objetivo');
+    const r = await caja(recorte, 'recorte del frame 19');
+    const tdc = await caja(sec.locator('[data-component="TarjetaTipoDeCambio"]'), 'tarjeta de tipo de cambio del frame 19');
+    if (!(r.x <= tdc.x && r.y <= tdc.y && r.x + r.width >= tdc.x + tdc.width && r.y + r.height >= tdc.y + tdc.height)) throw new Error('frame 19: el recorte no rodea la tarjeta de tipo de cambio');
+    if (c.x + c.width > r.x) throw new Error('frame 19: la tarjeta del recorrido no queda a la izquierda del recorte');
+    log.push(`frame 19: recorte ${Math.round(r.x)},${Math.round(r.y)} ${Math.round(r.width)}×${Math.round(r.height)} rodea la tarjeta de tipo de cambio; tarjeta en ${pos}`);
+    const y0 = Math.min(r.y, c.y) - 24;
+    await recortar(page, 'd4-recorrido.png', { x: columna.x, y: y0, width: columna.width, height: Math.max(r.y + r.height, c.y + c.height) + 24 - y0 }, 'frame 19 · columna principal, de 24 px sobre el recorte a 24 px debajo');
   }
   // d5-pactada-inicio: frame 07B, columna principal hasta 16 px debajo de Posición por divisa
   {
@@ -129,8 +143,8 @@ async function frameEntero(page, id, archivo) {
     const s = await caja(sec.locator('[data-tour="posicion"]'), 'sección posición del frame 07B');
     await recortar(page, 'd5-pactada-inicio.png', { x: columna.x, y: f.y, width: columna.width, height: s.y + s.height + 16 - f.y }, 'frame 07B · columna principal hasta Posición por divisa + 16 px');
   }
-  // Los frames 17–20 tienen que tener la tarjeta junto al objetivo (C-46)
-  for (const id of ['17', '18', '19', '20']) {
+  // Los frames 17–19 tienen que tener la tarjeta junto al objetivo (C-46)
+  for (const id of ['17', '18', '19']) {
     const { sec } = await frame(page, id);
     const pos = await sec.locator('[data-component="PasoOnboarding"]').evaluate((el) => `${el.style.left},${el.style.top}`);
     const conRecorte = await sec.locator('div[aria-hidden][style*="height"]').count();
@@ -181,7 +195,7 @@ await browser.close();
 
 // Esquinas redondeadas de la ventana de pago (rounded-lg = 16 px css → 32 px a dsf 2) transparentes: fuera de la ventana solo hay fondo oscurecido.
 // Las cuatro en las que la toman entera; las dos de arriba en d2-destino, que la corta debajo de Asia Packaging.
-const esquinas = spawnSync('python3', [path.join(aqui, 'esquinas.py'), out, '32', 'd2-destino.png=arriba', 'd2-origen.png', 'd3-precio-token.png', 'd5-fecha-valor.png'], { encoding: 'utf8' });
+const esquinas = spawnSync('python3', [path.join(aqui, 'esquinas.py'), out, '32', 'd2-destino.png=arriba', 'd2-origen.png', 'd3-precio-token.png', 'd5-fecha-valor.png', 'd1-desglose.png'], { encoding: 'utf8' });
 log.push((esquinas.stdout || '').trim() || `esquinas.py salió con ${esquinas.status}: ${esquinas.stderr}`);
 if (esquinas.status !== 0) process.exitCode = 1;
 console.log(log.join('\n'));

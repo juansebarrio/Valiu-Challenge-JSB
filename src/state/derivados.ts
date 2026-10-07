@@ -3,7 +3,7 @@
 import type { Centavos } from '@/lib/dinero';
 import { monto as fmtMonto, diaCorto } from '@/lib/format';
 import { deducir, type Divisa } from '@/lib/fx';
-import { agregar, diasSemana, evaluarPagoConCobro, posicion, proyeccion, type Movimiento, type PagoEvaluado, type Posicion } from '@/lib/posicion';
+import { diasSemana, evaluarPagoConCobro, posicionesDe, proyeccion, type Movimiento, type PagoEvaluado, type Posicion, type PosicionesCalculadas } from '@/lib/posicion';
 import { HOY, type Cobro, type Cuenta, type CuentaId, type Destinatario, type PagoFuturo, type Realizado } from '@/data/escenario';
 import type { Destino, EstadoApp, OperacionHecha, Orden } from './estado';
 
@@ -65,30 +65,41 @@ export function finDeSemana(hoy: Date): Date {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59);
 }
 
-/** Posición = saldo + pactadas por recibir − pagos futuros pendientes − pactadas por liquidar. */
-export function posiciones(e: Pick<EstadoApp, 'datos' | 'operaciones'>): Record<CuentaId, Posicion> {
-  const pend = pagosPendientes(e).filter((p) => !p.pactada);
-  const pact = pactadas(e);
-  const out = {} as Record<CuentaId, Posicion>;
-  for (const c of cuentasActuales(e)) {
-    const futuros = agregar(pend.filter((p) => p.divisa === c.divisa));
-    const liquidar = agregar(pact.filter((o) => o.origenId === c.id).map((o) => ({ monto: o.pagas })));
-    const recibir = agregar(pact.filter((o) => o.destino.cuentaId === c.id).map((o) => ({ monto: o.recibe })));
-    out[c.id] = posicion(c.divisa, c.saldo, futuros, liquidar, recibir);
-  }
-  return out;
+type ConPosicion = Pick<EstadoApp, 'datos' | 'operaciones' | 'tdcVivo'>;
+
+/**
+ * Posición de cada cuenta (C-54, posicionesDe en posicion.ts): saldo + pactadas por recibir − pagos futuros − pagos en otras divisas −
+ * pactadas por liquidar. Un pago cargado cuenta contra la cuenta que lo va a pagar; sin cuenta en su divisa, contra la de fondeo, al indicativo de compra.
+ */
+export function calculoPosiciones(e: ConPosicion): PosicionesCalculadas {
+  const pendientes = pagosPendientes(e).filter((p) => !p.pactada);
+  const pact = pactadas(e).map((o) => ({ origenId: o.origenId, pagas: o.pagas, destinoCuentaId: o.destino.cuentaId, recibe: o.recibe }));
+  return posicionesDe({ cuentas: cuentasActuales(e), pendientes, pactadas: pact, fondeoId: e.datos.cuentaFondeo, pares: e.tdcVivo });
 }
 
-export function posicionesPorDivisa(e: Pick<EstadoApp, 'datos' | 'operaciones'>): Partial<Record<Divisa, Posicion>> {
+export const posiciones = (e: ConPosicion): Record<CuentaId, Posicion> => calculoPosiciones(e).porCuenta as Record<CuentaId, Posicion>;
+
+/** Dónde cuenta hoy un pago cargado pendiente: en su divisa con su monto o, sin cuenta en ella, en la cuenta de fondeo convertido (C-54). */
+export function pagoEnPosicion(e: ConPosicion, pago: PagoFuturo): { divisa: Divisa; monto: Centavos; fecha: Date } | null {
+  const conv = calculoPosiciones(e).convertidos[pago.id];
+  if (!conv) return e.datos.cuentas.some((c) => c.divisa === pago.divisa) ? { divisa: pago.divisa, monto: pago.monto, fecha: pago.fecha } : null;
+  return { divisa: cuentaPorId(e, conv.cuentaId as CuentaId)!.divisa, monto: conv.monto, fecha: pago.fecha };
+}
+
+export function posicionesPorDivisa(e: ConPosicion): Partial<Record<Divisa, Posicion>> {
   const p = posiciones(e);
   const out: Partial<Record<Divisa, Posicion>> = {};
   for (const c of e.datos.cuentas) out[c.divisa] = p[c.id];
   return out;
 }
 
-/** Movimientos fechados de una cuenta: pagos pendientes (salida), pactadas por liquidar (salida) y por recibir (entrada). */
-export function movimientosDe(e: Pick<EstadoApp, 'datos' | 'operaciones'>, cuenta: Cuenta): Movimiento[] {
-  const pend = pagosPendientes(e).filter((p) => !p.pactada && p.divisa === cuenta.divisa).map((p): Movimiento => ({ id: p.id, monto: -p.monto, divisa: p.divisa, fecha: p.fecha }));
+/** Movimientos fechados de una cuenta: pagos pendientes (salida; los de otras divisas que paga, convertidos), pactadas por liquidar (salida) y por recibir (entrada). */
+export function movimientosDe(e: ConPosicion, cuenta: Cuenta): Movimiento[] {
+  const { convertidos } = calculoPosiciones(e);
+  const pend = pagosPendientes(e).filter((p) => !p.pactada).flatMap((p): Movimiento[] => {
+    if (convertidos[p.id]) return convertidos[p.id].cuentaId === cuenta.id ? [{ id: p.id, monto: -convertidos[p.id].monto, divisa: cuenta.divisa, fecha: p.fecha }] : [];
+    return p.divisa === cuenta.divisa ? [{ id: p.id, monto: -p.monto, divisa: p.divisa, fecha: p.fecha }] : [];
+  });
   const pact = pactadas(e);
   const liquidar = pact.filter((o) => o.origenId === cuenta.id).map((o): Movimiento => ({ id: `${o.id}-sale`, monto: -o.pagas, divisa: cuenta.divisa, fecha: o.fechaValor }));
   const recibir = pact.filter((o) => o.destino.cuentaId === cuenta.id).map((o): Movimiento => ({ id: `${o.id}-entra`, monto: o.recibe, divisa: cuenta.divisa, fecha: o.fechaValor }));
@@ -100,14 +111,15 @@ export interface Proyeccion {
   dias: Date[];
 }
 
-/** Proyección de la semana (hoy → vie 9) de las divisas con pagos pendientes dentro de la semana. */
-export function proyecciones(e: Pick<EstadoApp, 'datos' | 'operaciones'>): Partial<Record<Divisa, Proyeccion>> {
+/** Proyección de la semana (hoy → vie 9) de las cuentas con pagos pendientes dentro de la semana (los de otras divisas, en la que los paga). */
+export function proyecciones(e: ConPosicion): Partial<Record<Divisa, Proyeccion>> {
   const dias = diasSemana(HOY);
   const fin = dias[dias.length - 1].getTime() + 86_400_000;
   const out: Partial<Record<Divisa, Proyeccion>> = {};
+  const { convertidos } = calculoPosiciones(e);
   for (const c of cuentasActuales(e)) {
     const movs = movimientosDe(e, c);
-    const pendientesSemana = pagosPendientes(e).filter((p) => !p.pactada && p.divisa === c.divisa && p.fecha.getTime() < fin);
+    const pendientesSemana = pagosPendientes(e).filter((p) => !p.pactada && p.fecha.getTime() < fin && (convertidos[p.id] ? convertidos[p.id].cuentaId === c.id : p.divisa === c.divisa));
     if (pendientesSemana.length === 0) continue;
     out[c.divisa] = { serie: proyeccion(c.saldo, movs, dias), dias };
   }

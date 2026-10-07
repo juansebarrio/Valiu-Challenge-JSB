@@ -95,8 +95,6 @@
   --text-tdc--line-height: var(--app-lh-tdc);
   --text-cta-xl: var(--app-fs-cta-xl);
   --text-cta-xl--line-height: var(--app-lh-cta-xl);
-  --text-tab: var(--app-fs-tab);
-  --text-tab--line-height: var(--app-lh-tab);
   --text-token: var(--app-fs-token);
   --text-token--line-height: var(--app-lh-token);
 

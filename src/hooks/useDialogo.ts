@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useRef, type RefObject } from 'react';
+import { useEffect, useRef, useState, type RefObject } from 'react';
 
 const FOCUSABLES = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
@@ -15,13 +15,14 @@ const tabulables = (nodo: HTMLElement) =>
 export function useDialogo(ref: RefObject<HTMLElement | null>, onCerrar: () => void, activo: boolean) {
   const cerrarRef = useRef(onCerrar);
   useEffect(() => { cerrarRef.current = onCerrar; }, [onCerrar]);
+  // Dónde estaba el foco al abrir, leído al montar: un autoFocus del contenido (el buscador de Destino) lo mueve adentro antes del efecto.
+  const [previo] = useState(() => (typeof document === 'undefined' ? null : (document.activeElement as HTMLElement | null)));
 
   useEffect(() => {
     if (!activo) return;
-    const previo = document.activeElement as HTMLElement | null;
     const nodo = ref.current;
     const inicial = nodo?.querySelector<HTMLElement>('input:not([disabled]), [role="radio"][tabindex="0"]') ?? nodo;
-    inicial?.focus();
+    if (!nodo?.contains(document.activeElement)) inicial?.focus();
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') { e.stopPropagation(); cerrarRef.current(); return; }
       if (e.key !== 'Tab' || !nodo) return;
@@ -36,5 +37,5 @@ export function useDialogo(ref: RefObject<HTMLElement | null>, onCerrar: () => v
     };
     window.addEventListener('keydown', onKey);
     return () => { window.removeEventListener('keydown', onKey); previo?.focus?.(); };
-  }, [activo, ref]);
+  }, [activo, ref, previo]);
 }

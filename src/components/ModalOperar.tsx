@@ -37,7 +37,7 @@ export const ModalOperar: FC<ModalOperarProps> = ({ titulo, sub, primario, secun
           role="dialog"
           aria-modal="true"
           aria-labelledby="modal-titulo"
-          aria-describedby="modal-sub"
+          aria-describedby={sub ? 'modal-sub' : undefined}
           data-component="ModalOperar"
           data-ancho={ancho}
           className={[
@@ -53,7 +53,7 @@ export const ModalOperar: FC<ModalOperarProps> = ({ titulo, sub, primario, secun
                 <Icono nombre="times" tamano="lg" />
               </button>
             </div>
-            <span id="modal-sub" className="text-body text-app-ink-2 tabular-nums">{sub}</span>
+            {sub ? <span id="modal-sub" className="text-body text-app-ink-2 tabular-nums">{sub}</span> : null}
           </div>
           <div data-cuerpo className={['min-h-0 flex-1 px-6 py-5', esApp ? 'overflow-y-auto' : ''].join(' ')}>{children}</div>
           <div className="flex shrink-0 justify-end gap-3 border-t border-app-divider px-6 pb-5 pt-4">

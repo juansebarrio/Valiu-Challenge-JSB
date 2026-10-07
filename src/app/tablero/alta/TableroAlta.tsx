@@ -36,7 +36,7 @@ export const TableroAlta: FC = () => {
       <header className="flex flex-wrap items-center gap-6 border-b border-app-ink-disabled bg-app-surface px-6 py-3.5">
         <div className="flex flex-col gap-0.5">
           <span className="text-body font-bold">Valiu · Tablero (alta)</span>
-          <span className="text-caption text-app-ink-2">01–07 · fecha valor 03B–07B · Estados · Operar clásico 08–16 · Movimientos D1–D5 y A1–A4 · Turismo S01–S08 · Onboarding 17–20 · frames de 1280 px generados desde el estado del prototipo, sin capturas</span>
+          <span className="text-caption text-app-ink-2">01–07 · fecha valor 03B–07B · Estados · Cotizador C1–C4 · Otras divisas O1–O4 · Desglose G1 · Movimientos D1–D3 y A1–A4 · Turismo S01–S08 · Paneles N4–N6 · Onboarding 17–19 · frames de 1280 px generados desde el estado del prototipo, sin capturas</span>
         </div>
         <nav className="ml-auto flex gap-4">
           <Link href="/" className="text-caption font-semibold text-app-ink underline hover:text-app-primary">Prototipo</Link>

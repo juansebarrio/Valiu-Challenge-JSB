@@ -12,8 +12,6 @@ export interface Par {
   venta: TdcMicro;
   /** Valor inventado (no viene del brief). */
   ejemplo: boolean;
-  /** El par existe en el selector pero no se puede operar en el prototipo. */
-  sinPrototipo?: boolean;
 }
 
 export type TablaPares = Record<string, Pick<Par, 'compra' | 'venta'>>;
@@ -21,14 +19,15 @@ export type TablaPares = Record<string, Pick<Par, 'compra' | 'venta'>>;
 /**
  * El par siempre es BASE/COTIZADA. USD/MXN viene del handoff; EUR/MXN 21.250000 / 21.100000 y EUR/USD 1.175000 / 1.171000 cierran con él:
  * ninguna vuelta MXN → USD → EUR → MXN (ni la inversa) termina con más de lo que empezó (C-45). Una sola tabla para los dos arquetipos;
- * el EUR/MXN 19.619888 / 19.474706 del handoff de la importadora no cerraba (19.474706 / 18.091183 = 1.0765 USD por EUR contra 1.171 directo). GBP y CAD solo pueblan el selector.
+ * el EUR/MXN 19.619888 / 19.474706 del handoff de la importadora no cerraba (19.474706 / 18.091183 = 1.0765 USD por EUR contra 1.171 directo).
+ * GBP/MXN y CAD/MXN son inventados y se operan como los demás (C-53, C-54).
  */
 export const PARES: Record<string, Par> = {
   'USD/MXN': { compra: 18_091_183, venta: 18_032_135, ejemplo: false },
   'EUR/USD': { compra: 1_175_000, venta: 1_171_000, ejemplo: false },
   'EUR/MXN': { compra: 21_250_000, venta: 21_100_000, ejemplo: false },
-  'GBP/MXN': { compra: 24_300_000, venta: 24_100_000, ejemplo: true, sinPrototipo: true },
-  'CAD/MXN': { compra: 13_200_000, venta: 13_050_000, ejemplo: true, sinPrototipo: true },
+  'GBP/MXN': { compra: 24_300_000, venta: 24_100_000, ejemplo: true },
+  'CAD/MXN': { compra: 13_200_000, venta: 13_050_000, ejemplo: true },
 };
 
 export interface Operacion {

@@ -55,7 +55,7 @@ Frames: S01–S08 del archivo de diseño (capturas en `docs/design/frames/S0*.pn
 - **"Incluye el cobro de hoy"** aparece en la cuenta donde entró el cobro solo al entrar desde el cobro (`panel.cobroId`); desde "Pagar" de la fila no, para no cambiar las pantallas de la importadora.
 - **Tecla P**: ~~pausa en cualquier parte salvo en campos de texto libre~~ Desde la sección 7 nunca se dispara con el foco en un campo, y desde C-40 solo funciona con `?demo=1`.
 - **Escenarios por URL** (`?escenario=`) funcionan también en `/turismo`: resuelta y pactada pagan el Hotel desde la cuenta en pesos; sin-saldo deja la cuenta en pesos en 20,000.00 sin el cobro.
-- **Operar clásico** en `/turismo` usa las cuentas y el tipo de cambio de Viajes Altavista con el mismo formulario del flujo principal.
+- ~~**Operar clásico** en `/turismo` usa las cuentas y el tipo de cambio de Viajes Altavista con el mismo formulario del flujo principal.~~ Desde C-53 no hay clásico: el cotizador de la tarjeta de tipo de cambio usa los pares y las cuentas de Viajes Altavista (EUR/MXN primero).
 
 ## Sección 7 del brief (aplicada después del flujo secundario)
 
@@ -69,8 +69,8 @@ Cambios pedidos sobre el brief original, en orden, con lo que había antes en el
 | BloqueMonto | Lado fijo sin factura | Dos campos, "Pagas" arriba y "Recibe · {destino}" abajo (C-39, como en el diseño); el que el usuario escribe queda fijo (tag Fijo) y el otro se recalcula en vivo con el indicativo. Con factura sigue "Pagas" en vivo y "{destinatario} recibe" fijo | Los dos campos ya eran editables; el orden era Pagas / recibe en ambos casos | 03 (Comprar 1,000 USD) |
 | fx.ts | EUR/USD | 1.175000 / 1.171000 en los dos arquetipos: Shenzhen desde Cuenta EUR ≈ 1,280.96 EUR; Hotel desde Cuenta USD ≈ 4,935.00 USD y "Te faltarían 1,435.00 USD el jue 8"; muestras de /sistema calculadas con `cotizar()` | 1.0845 / 1.080000 (flujo principal: 1,388.89 EUR) y 1.085 (turismo: 4,557.00 USD, 1,057.00) | 02, S03 |
 | Tecla P (D-32) | Dónde se dispara | Nunca con el foco en un campo (input, textarea, select, contenteditable) | Pausaba también desde el token y los campos numéricos | — |
-| Revisión y Cargar un pago | "Concepto" | Campo de texto opcional "Concepto", precargado solo con el pago cargado (vacío sin factura); las filas del detalle y la confirmación dicen "Concepto"; el clásico conserva "Motivo de pago" | "Motivo de pago", lista cerrada precargada según el caso (C-05, del handoff de alta) | 03, 06, A2 |
-| FranjaNuevo | "Comprobante" | Abre el detalle del cobro de hoy; "Descargar comprobante" y "Descargar confirmación" (ventana de pago, detalle y clásico) descargan un .html con las mismas filas que muestra la pantalla | Toast "Esta sección no está en el prototipo." | 01, 06, D2 |
+| Revisión y Cargar un pago | "Concepto" | Campo de texto opcional "Concepto", precargado solo con el pago cargado (vacío sin factura); las filas del detalle y la confirmación dicen "Concepto"; ~~el clásico conserva "Motivo de pago"~~ (sin clásico desde C-53) | "Motivo de pago", lista cerrada precargada según el caso (C-05, del handoff de alta) | 03, 06, A2 |
+| FranjaNuevo | "Comprobante" | Abre el detalle del cobro de hoy; "Descargar comprobante" y "Descargar confirmación" (ventana de pago y detalle) descargan un .html con las mismas filas que muestra la pantalla | Toast "Esta sección no está en el prototipo." | 01, 06, D2 |
 | Estados de token incorrecto, origen sin saldo y pactada sin saldo | Alcance | Se dejan como están (000000, "Hoy no alcanza" / escenario sin-saldo, "Sin saldo" en turismo), sin seguir desarrollándolos | — | — |
 
 ## Ventana de pago (C-47)
@@ -92,13 +92,30 @@ Precio en vivo, menos contenido, qué sale y qué llega, fecha de liquidación y
 
 | Componente | Propiedad | Valor en código (ahora) | Valor anterior / en diseño | Frame |
 |---|---|---|---|---|
-| ResumenPago y Cotización del clásico | Precio pedido | "Confirma en m:ss" (Success; Warning en los últimos 30 s) y "Se mueve con el mercado hasta que confirmas."; el ejecutable sigue al indicativo hasta confirmar (C-48) | "Precio fijo por m:ss"; el precio quedaba fijo al pedirlo | 04, 04B, 11, S05 |
+| ResumenPago | Precio pedido | "Confirma en m:ss" (Success; Warning en los últimos 30 s) y "Se mueve con el mercado hasta que confirmas."; el ejecutable sigue al indicativo hasta confirmar (C-48) | "Precio fijo por m:ss"; el precio quedaba fijo al pedirlo | 04, 04B, 11, S05 |
 | BloqueMonto | Paso Precio | "Fijo" en el lado que eligió el usuario y "se actualiza en vivo" en el otro, sin "≈" (C-48) | Los dos montos exactos y fijos | 04, 04B, S05 |
 | OpcionOrigen / OpcionPago | Contenido | Sin monto, solo nombre y saldo; con monto, "Pagas ≈ X" y como mucho un chip Success o Warning (C-49) | "El monto se elige después" y chips neutros ("Te quedan X", "Sale de tu Cuenta USD, sin tipo de cambio") | 02, S02, S03 |
 | Revisión | Pago cargado del destinatario | "Tienes un pago cargado para … vence …" con "Usar este pago" sobre el monto (C-49) | Grupo "Pagos próximos" en el paso Destino | — |
-| ResumenPago, confirmación, comprobante, detalle y clásico | Comisión | "Comisión 0%" siempre (C-50) | Sin comisión | 02–06, 11, 12, S03–S07 |
+| ResumenPago, confirmación, comprobante y detalle | Comisión | "Comisión 0%" siempre (C-50) | Sin comisión | 02–06, 11, 12, S03–S07 |
 | Confirmación | Montos y filas | BloqueMonto de solo lectura con los montos finales; "Sale de", "Sale el dinero", "Tipo de cambio", "Comisión", "Concepto" y "Referencia"; en la ventana, dos columnas (C-50) | "Enviaste" / "Pagaste" y la frase "Cerraste el precio…" de la pactada | 06, 06B, 12, S07, S07H |
 | FechaLiquidacion | Texto bajo el control | Según lo elegido: el beneficio de elegir otro día (C-51) | "El precio queda cerrado hoy, elijas el día que elijas." | 03, 03B, S04 |
 | Aviso de fondeo | Pactada | "Ten 27,138.62 MXN en tu Cuenta Principal MXN el jue 8." (C-51) | "… para que el pago salga." | 06B, 07B, S07 |
 | AppShell | Menú lateral | Solo Inicio navega; las otras entradas, deshabilitadas (C-52) | Todas navegaban | todos |
 | Inicio | Cobro de hoy y TarjetaPosicion | "Cobraste hoy"; sin "Incluye los 180,000.00 de Comercial Norte" (C-49) | "Lo nuevo" y la línea "Incluye los …" | 01, S01 |
+
+## Cotizador, pagos en otras divisas y desglose (C-53 a C-55)
+
+Motivo y alcance en `docs/decisiones.md` (C-53 a C-55). Los frames del archivo de diseño (`docs/design/frames/`) siguen mostrando la pestaña Operar clásico (08–16) y el recorrido de 4 pasos (17–20); en `/tablero/alta` esos frames ya no están y en su lugar van C1–C4, O1–O4, G1 y 17–19.
+
+| Componente | Propiedad | Valor en código (ahora) | Valor anterior / en diseño | Frame |
+|---|---|---|---|---|
+| Inicio | Pestañas | Sin pestañas: la posición y el resto del inicio van directo (C-53) | "Posición consolidada" / "Operar clásico" | 01, 08–16 |
+| TarjetaTipoDeCambio | Par | Selector con "Tus pares" (posiciones y pagos cargados) y "Otros pares" (el resto de `PARES`); debajo, en una línea, los demás de "Tus pares"; sin "Solo los pares de tus posiciones" (C-53) | Par fijo de la decisión con EUR/MXN debajo y la nota "Solo los pares de tus posiciones" | 01, S01 |
+| TarjetaTipoDeCambio | Operar | "Operar con este par", desplegado al entrar: Recibes y Pagas apilados, invertir, "Desde {cuenta} · saldo X" y Continuar, que abre la ventana de pago en Destino (C-53) | Formulario de Operar clásico (Comprar, Vender, Transferir) en otra pestaña | 08–16 |
+| ModalOperar · Destino | Desde el cotizador | "¿A dónde llegan los 10,000.00 USD?", "Tus cuentas" en esa divisa y "Destinatarios en USD"; después Revisión, Precio y Confirmación sin Origen (C-53) | — | — |
+| fx.ts | GBP/MXN y CAD/MXN | Operables: 24.300000 / 24.100000 y 13.200000 / 13.050000, de ejemplo (C-53) | "Este par no está en el prototipo." | 09 |
+| TarjetaPosicion | Pagos en otras divisas | "Pagos en otras divisas (n) ≈ −X" en la cuenta de fondeo, y "≈" en el resultado (C-54) | — | — |
+| FilaMovimiento | Pago en una divisa sin cuenta | Monto en su divisa y debajo "≈ X MXN hoy"; sin par, "Sin par disponible" (C-54) | — | — |
+| OpcionOrigen | Cuenta sin par con la divisa del pago | Deshabilitada con "Sin par disponible"; la de fondeo, preseleccionada (C-54) | — | — |
+| TarjetaPosicion | Filas con cantidad | Botones con chevron a la derecha del monto que abren su desglose en la ventana de pago; "Saldo" no (C-55) | Texto | 01, S01 |
+| PasoOnboarding | Pasos | Tres: el 3 rodea la tarjeta de tipo de cambio entera, "El tipo de cambio, y operar desde ahí" (C-53) | Cuatro: el 3 sobre el tipo de cambio y el 4 sobre la pestaña Operar clásico | 17–20 |

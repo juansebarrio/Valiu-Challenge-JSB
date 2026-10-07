@@ -1,6 +1,6 @@
 // src/lib/posicion.ts — posición por divisa, proyección de la semana y consecuencia de cada cuenta de origen.
 import type { Centavos } from './dinero';
-import { cotizar, esFinDeSemana, type Divisa, type TablaPares } from './fx';
+import { cotizar, deducir, esFinDeSemana, type Divisa, type TablaPares } from './fx';
 import * as fmt from './format';
 
 export interface Movimiento {
@@ -26,7 +26,11 @@ export interface Posicion {
   pactadasRecibir: Agregado | null;
   pactadasLiquidar: Agregado | null;
   pagosFuturos: Agregado | null;
+  /** Pagos cargados en divisas en las que la empresa no tiene cuenta y que paga esta (la de fondeo), al indicativo de compra (C-54). */
+  pagosOtrasDivisas: Agregado | null;
   resultado: Resultado;
+  /** Con pagos en otras divisas el resultado se mueve con el precio: lleva "≈" (C-54). */
+  aprox: boolean;
 }
 
 const finDelDia = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999);
@@ -62,15 +66,71 @@ export function agregar(movs: { monto: Centavos }[]): Agregado | null {
   return movs.length ? { cantidad: movs.length, total: movs.reduce((a, m) => a + m.monto, 0) } : null;
 }
 
-/** Posición = saldo + pactadas por recibir − pagos futuros pendientes − pactadas por liquidar. */
-export function resultado(saldo: Centavos, pagosFuturos: Agregado | null, pactadasLiquidar: Agregado | null, pactadasRecibir: Agregado | null): Resultado {
-  if (!pagosFuturos && !pactadasLiquidar && !pactadasRecibir) return { tipo: 'nada', monto: 0 };
-  const neto = saldo + (pactadasRecibir?.total ?? 0) - (pagosFuturos?.total ?? 0) - (pactadasLiquidar?.total ?? 0);
+/** Posición = saldo + pactadas por recibir − pagos futuros pendientes − pagos en otras divisas − pactadas por liquidar. */
+export function resultado(saldo: Centavos, pagosFuturos: Agregado | null, pactadasLiquidar: Agregado | null, pactadasRecibir: Agregado | null, pagosOtrasDivisas: Agregado | null = null): Resultado {
+  if (!pagosFuturos && !pactadasLiquidar && !pactadasRecibir && !pagosOtrasDivisas) return { tipo: 'nada', monto: 0 };
+  const neto = saldo + (pactadasRecibir?.total ?? 0) - (pagosFuturos?.total ?? 0) - (pagosOtrasDivisas?.total ?? 0) - (pactadasLiquidar?.total ?? 0);
   return neto < 0 ? { tipo: 'faltan', monto: -neto } : { tipo: 'sobran', monto: neto };
 }
 
-export function posicion(divisa: Divisa, saldo: Centavos, pagosFuturos: Agregado | null, pactadasLiquidar: Agregado | null = null, pactadasRecibir: Agregado | null = null): Posicion {
-  return { divisa, saldo, pactadasRecibir, pactadasLiquidar, pagosFuturos, resultado: resultado(saldo, pagosFuturos, pactadasLiquidar, pactadasRecibir) };
+export function posicion(divisa: Divisa, saldo: Centavos, pagosFuturos: Agregado | null, pactadasLiquidar: Agregado | null = null, pactadasRecibir: Agregado | null = null, pagosOtrasDivisas: Agregado | null = null): Posicion {
+  return { divisa, saldo, pactadasRecibir, pactadasLiquidar, pagosFuturos, pagosOtrasDivisas, resultado: resultado(saldo, pagosFuturos, pactadasLiquidar, pactadasRecibir, pagosOtrasDivisas), aprox: !!pagosOtrasDivisas };
+}
+
+/**
+ * Cuenta que paga un pago cargado (C-54): la de su divisa, si la empresa tiene una (como siempre); si no, la cuenta de fondeo, con tipo de cambio.
+ * Si la de fondeo no tiene par con esa divisa, la primera cuenta que sí; null si ningún par conecta la divisa con una cuenta de la empresa.
+ */
+export function cuentaQuePaga<C extends { id: string; divisa: Divisa }>(divisa: Divisa, cuentas: C[], fondeoId: string): { cuenta: C; convierte: boolean } | null {
+  const propia = cuentas.find((c) => c.divisa === divisa);
+  if (propia) return { cuenta: propia, convierte: false };
+  const fondeo = cuentas.find((c) => c.id === fondeoId);
+  const conPar = [...(fondeo ? [fondeo] : []), ...cuentas.filter((c) => c.id !== fondeoId)].find((c) => deducir(c.divisa, divisa) != null);
+  return conPar ? { cuenta: conPar, convierte: true } : null;
+}
+
+/** Lo que cuesta hoy un pago en la divisa de la cuenta que lo paga: al precio indicativo de compra de su divisa, sin comisión (C-54). */
+export const enDivisaDeCuenta = (pago: { monto: Centavos; divisa: Divisa }, divisaCuenta: Divisa, pares: TablaPares): Centavos | null =>
+  cotizar({ origen: divisaCuenta, destino: pago.divisa, monto: pago.monto, ladoFijo: 'recibe', pares })?.pagas ?? null;
+
+export interface CuentaParaPosicion { id: string; divisa: Divisa; saldo: Centavos }
+export interface PagoParaPosicion { id: string; monto: Centavos; divisa: Divisa; fecha: Date }
+export interface PactadaParaPosicion { origenId: string; pagas: Centavos; destinoCuentaId?: string; recibe: Centavos }
+
+export interface PosicionesCalculadas {
+  porCuenta: Record<string, Posicion>;
+  /** Pagos sin cuenta en su divisa: qué cuenta los paga y cuánto cuestan hoy en su divisa. */
+  convertidos: Record<string, { cuentaId: string; monto: Centavos }>;
+  /** Pagos que ningún par conecta con una cuenta de la empresa: no entran en la posición. */
+  sinPar: string[];
+}
+
+/**
+ * Posición de cada cuenta (C-54): un pago cargado cuenta contra la cuenta que lo va a pagar. Con cuenta en su divisa, en "Pagos futuros";
+ * sin cuenta, en "Pagos en otras divisas" de la cuenta de fondeo, convertido al indicativo de compra (≈). Las pactadas, con su monto exacto.
+ */
+export function posicionesDe(args: { cuentas: CuentaParaPosicion[]; pendientes: PagoParaPosicion[]; pactadas: PactadaParaPosicion[]; fondeoId: string; pares: TablaPares }): PosicionesCalculadas {
+  const { cuentas, pendientes, pactadas, fondeoId, pares } = args;
+  const propios = new Map<string, { monto: Centavos }[]>();
+  const otras = new Map<string, { monto: Centavos }[]>();
+  const convertidos: PosicionesCalculadas['convertidos'] = {};
+  const sinPar: string[] = [];
+  const sumar = (m: Map<string, { monto: Centavos }[]>, id: string, monto: Centavos) => m.set(id, [...(m.get(id) ?? []), { monto }]);
+  for (const p of pendientes) {
+    const quien = cuentaQuePaga(p.divisa, cuentas, fondeoId);
+    const monto = quien?.convierte ? enDivisaDeCuenta(p, quien.cuenta.divisa, pares) : p.monto;
+    if (!quien || monto == null) { sinPar.push(p.id); continue; }
+    if (!quien.convierte) { sumar(propios, quien.cuenta.id, p.monto); continue; }
+    sumar(otras, quien.cuenta.id, monto);
+    convertidos[p.id] = { cuentaId: quien.cuenta.id, monto };
+  }
+  const porCuenta: Record<string, Posicion> = {};
+  for (const c of cuentas) {
+    const liquidar = agregar(pactadas.filter((o) => o.origenId === c.id).map((o) => ({ monto: o.pagas })));
+    const recibir = agregar(pactadas.filter((o) => o.destinoCuentaId === c.id).map((o) => ({ monto: o.recibe })));
+    porCuenta[c.id] = posicion(c.divisa, c.saldo, agregar(propios.get(c.id) ?? []), liquidar, recibir, agregar(otras.get(c.id) ?? []));
+  }
+  return { porCuenta, convertidos, sinPar };
 }
 
 /** Neto de una posición con signo (negativo = faltan). Sin movimientos, el neto es el saldo. */
@@ -111,6 +171,11 @@ export function evaluarOrigen(args: {
   destinoPropio: boolean;
   /** Con un pago cargado, el monto ya está en los pagos futuros del destino y sale de ahí al pagarlo. */
   pagoCargado: boolean;
+  /**
+   * Dónde cuenta hoy el pago cargado (C-54): en la posición de su divisa con su monto o, sin cuenta en esa divisa, en la de la cuenta de fondeo
+   * convertido. Por defecto, en la divisa del destino con el monto.
+   */
+  pagoEn?: { divisa: Divisa; monto: Centavos; fecha: Date } | null;
   posiciones: Partial<Record<Divisa, Posicion>>;
   /** Proyección de la semana por divisa, para fechar el faltante. */
   proyecciones: Partial<Record<Divisa, { serie: Centavos[]; dias: Date[] }>>;
@@ -119,6 +184,7 @@ export function evaluarOrigen(args: {
   comisionBp?: number;
 }): OrigenEvaluado {
   const { origen, monto, divisaDestino, destinoPropio, pagoCargado, posiciones, proyecciones, pares, comisionBp } = args;
+  const pagoEn = args.pagoEn ?? { divisa: divisaDestino, monto, fecha: null };
   const mismaDivisa = origen.divisa === divisaDestino;
   const cot = cotizar({ origen: origen.divisa, destino: divisaDestino, monto, ladoFijo: 'recibe', pares, comisionBp });
   const pagas = cot ? cot.pagas : null;
@@ -128,29 +194,33 @@ export function evaluarOrigen(args: {
       ? 'Sin tipo de cambio para este par'
       : `Pagas ≈ ${fmt.monto(pagas, origen.divisa)}`;
 
-  const vacio = (p?: Posicion) => (p ? neto(p) : 0);
-  const antesOrigen = vacio(posiciones[origen.divisa]);
-  const antesDestino = vacio(posiciones[divisaDestino]);
-  // Después: el origen pierde lo que paga; el destino deja de tener el pago pendiente (o recibe el monto si es propio).
-  let despuesOrigen = antesOrigen - (pagas ?? 0);
-  let despuesDestino = antesDestino + (pagoCargado || destinoPropio ? monto : 0);
-  if (mismaDivisa) {
-    despuesOrigen = antesOrigen - (pagoCargado ? 0 : monto) + (destinoPropio ? monto : 0);
-    despuesDestino = despuesOrigen;
-  }
+  // Después: el origen pierde lo que paga; el pago cargado deja de contar donde contaba (su divisa o la de fondeo) y una cuenta propia recibe el monto.
+  const delta = new Map<Divisa, Centavos>();
+  const sumar = (d: Divisa, v: Centavos) => delta.set(d, (delta.get(d) ?? 0) + v);
+  sumar(origen.divisa, -(pagas ?? 0));
+  if (pagoCargado) sumar(pagoEn.divisa, pagoEn.monto);
+  if (destinoPropio) sumar(divisaDestino, monto);
+  const antesOrigen = posiciones[origen.divisa] ? neto(posiciones[origen.divisa]!) : 0;
+  const despuesOrigen = antesOrigen + (delta.get(origen.divisa) ?? 0);
+  // Sin cuenta en la divisa del destino no hay posición que cubrir ni que dejar en faltante.
+  const posDestino = posiciones[divisaDestino];
+  const antesDestino = posDestino ? neto(posDestino) : null;
+  const despuesDestino = antesDestino == null ? null : mismaDivisa ? despuesOrigen : antesDestino + (delta.get(divisaDestino) ?? 0);
 
   let consecuencia: Consecuencia | null;
   if (pagas != null && pagas > origen.saldo) {
     consecuencia = { texto: 'Hoy no alcanza', tono: 'warn', hoyNoAlcanza: true, ayuda: 'Puedes cerrar el precio y fondear antes del día que elijas.' };
-  } else if (!mismaDivisa && antesDestino < 0 && despuesDestino >= 0 && despuesOrigen >= 0) {
+  } else if (!mismaDivisa && antesDestino != null && despuesDestino != null && antesDestino < 0 && despuesDestino >= 0 && despuesOrigen >= 0) {
     consecuencia = { texto: `Cubre el faltante en ${divisaDestino}`, tono: 'ok', hoyNoAlcanza: false };
-  } else if (despuesOrigen < 0 || despuesDestino < 0) {
+  } else if (despuesOrigen < 0 || (despuesDestino != null && despuesDestino < 0)) {
     const divisa = despuesOrigen < 0 ? origen.divisa : divisaDestino;
-    const falta = despuesOrigen < 0 ? -despuesOrigen : -despuesDestino;
+    const falta = despuesOrigen < 0 ? -despuesOrigen : -(despuesDestino ?? 0);
     const proy = proyecciones[divisa];
     let dia = '';
     if (proy) {
-      const serie = divisa === origen.divisa && !mismaDivisa ? proy.serie.map((v) => v - (pagas ?? 0)) : proy.serie;
+      // Pagar hoy desde el origen: sale hoy lo que pagas; si el pago contaba en esta misma cuenta (fondeo), deja de salir el día de su vencimiento.
+      const devuelve = (d: Date) => (pagoCargado && pagoEn.divisa === origen.divisa && pagoEn.fecha && d.getTime() >= pagoEn.fecha.getTime() ? pagoEn.monto : 0);
+      const serie = divisa === origen.divisa && !mismaDivisa ? proy.serie.map((v, i) => v - (pagas ?? 0) + devuelve(proy.dias[i])) : proy.serie;
       const i = diaDeCruce(serie);
       if (i >= 0) dia = i === 0 ? ' para tus pagos de hoy' : ` para tus pagos del ${DIAS3[proy.dias[i].getDay()]} ${proy.dias[i].getDate()}`;
     }

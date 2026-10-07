@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { diasSemana, proyeccion, diaDeCruce, posicion, evaluarOrigen, agregar } from './posicion';
+import { diasSemana, proyeccion, diaDeCruce, posicion, evaluarOrigen, agregar, posicionesDe, cuentaQuePaga } from './posicion';
 import { centavos } from './dinero';
 import { PARES } from './fx';
 
@@ -83,5 +83,57 @@ describe('evaluarOrigen (frame 02)', () => {
   it('compra a cuenta propia: cubre el faltante', () => {
     const r = evaluarOrigen({ ...base, monto: centavos(1000), destinoPropio: true, pagoCargado: false, origen: { divisa: 'MXN', saldo: centavos(1_180_000) } });
     expect(r.consecuencia?.texto).toBe('Cubre el faltante en USD');
+  });
+});
+
+describe('pagos en divisas sin cuenta (C-54): cada pago cuenta contra la cuenta que lo va a pagar', () => {
+  const VIE9 = new Date(2026, 9, 9);
+  const CUENTAS = [
+    { id: 'mxn', divisa: 'MXN' as const, saldo: centavos(1_180_000) },
+    { id: 'usd', divisa: 'USD' as const, saldo: centavos(2000) },
+    { id: 'eur', divisa: 'EUR' as const, saldo: centavos(50_000) },
+  ];
+  const pago = (id: string, monto: number, divisa: 'MXN' | 'USD' | 'EUR' | 'GBP' | 'CAD') => ({ id, monto: centavos(monto), divisa, fecha: VIE9 });
+  const calcular = (pendientes: ReturnType<typeof pago>[], extra: Partial<Parameters<typeof posicionesDe>[0]> = {}) =>
+    posicionesDe({ cuentas: CUENTAS, pendientes, pactadas: [], fondeoId: 'mxn', pares: PARES, ...extra });
+
+  it('con cuenta en su divisa y saldo suficiente: en "Pagos futuros" de esa cuenta, sin convertir y sin "≈"', () => {
+    const r = calcular([pago('p1', 1500, 'USD')]);
+    expect(r.porCuenta.usd).toMatchObject({ pagosFuturos: { cantidad: 1, total: centavos(1500) }, pagosOtrasDivisas: null, resultado: { tipo: 'sobran', monto: centavos(500) }, aprox: false });
+    expect(r.porCuenta.mxn.resultado.tipo).toBe('nada');
+    expect(r.convertidos).toEqual({});
+  });
+  it('con cuenta en su divisa y faltante: el faltante queda en esa cuenta; la de fondeo no lo absorbe', () => {
+    const r = calcular([pago('p1', 3000, 'USD')]);
+    expect(r.porCuenta.usd.resultado).toEqual({ tipo: 'faltan', monto: centavos(1000) });
+    expect(r.porCuenta.mxn).toMatchObject({ pagosOtrasDivisas: null, resultado: { tipo: 'nada' } });
+  });
+  it('sin cuenta y la de fondeo alcanza: "Pagos en otras divisas" al indicativo de compra (40,000.00 GBP a 24.300000) y "≈"', () => {
+    expect(cuentaQuePaga('GBP', CUENTAS, 'mxn')).toEqual({ cuenta: CUENTAS[0], convierte: true });
+    const r = calcular([pago('x1', 40_000, 'GBP')]);
+    expect(r.convertidos.x1).toEqual({ cuentaId: 'mxn', monto: centavos(972_000) });
+    expect(r.porCuenta.mxn).toMatchObject({ pagosFuturos: null, pagosOtrasDivisas: { cantidad: 1, total: centavos(972_000) }, resultado: { tipo: 'sobran', monto: centavos(208_000) }, aprox: true });
+  });
+  it('sin cuenta y la de fondeo no alcanza: faltan ≈ en la de fondeo', () => {
+    const r = calcular([pago('x1', 50_000, 'GBP')]);
+    expect(r.porCuenta.mxn).toMatchObject({ pagosOtrasDivisas: { cantidad: 1, total: centavos(1_215_000) }, resultado: { tipo: 'faltan', monto: centavos(35_000) }, aprox: true });
+  });
+  it('dos pagos sin cuenta en divisas distintas: una sola fila en la de fondeo con los dos convertidos', () => {
+    const r = calcular([pago('x1', 40_000, 'GBP'), pago('x2', 10_000, 'CAD')]);
+    expect(r.convertidos.x2).toEqual({ cuentaId: 'mxn', monto: centavos(132_000) });
+    expect(r.porCuenta.mxn.pagosOtrasDivisas).toEqual({ cantidad: 2, total: centavos(1_104_000) });
+    expect(r.porCuenta.mxn.resultado).toEqual({ tipo: 'sobran', monto: centavos(76_000) });
+  });
+  it('sin par disponible: no entra en la posición de ninguna cuenta', () => {
+    const sinPesos = CUENTAS.filter((c) => c.id !== 'mxn');
+    expect(cuentaQuePaga('GBP', sinPesos, 'usd')).toBeNull();
+    const r = posicionesDe({ cuentas: sinPesos, pendientes: [pago('x1', 40_000, 'GBP')], pactadas: [], fondeoId: 'usd', pares: PARES });
+    expect(r.sinPar).toEqual(['x1']);
+    expect(r.convertidos).toEqual({});
+    expect(Object.values(r.porCuenta).map((p) => [p.divisa, p.resultado.tipo, p.aprox])).toEqual([['USD', 'nada', false], ['EUR', 'nada', false]]);
+  });
+  it('sin cuenta y ya pactado: sale de "Pagos en otras divisas" y entra a "Pactadas por liquidar" con el monto exacto, sin "≈"', () => {
+    const r = calcular([], { pactadas: [{ origenId: 'mxn', pagas: centavos(972_486), recibe: centavos(40_000) }] });
+    expect(r.porCuenta.mxn).toMatchObject({ pagosOtrasDivisas: null, pactadasLiquidar: { cantidad: 1, total: centavos(972_486) }, resultado: { tipo: 'sobran', monto: centavos(207_514) }, aprox: false });
   });
 });

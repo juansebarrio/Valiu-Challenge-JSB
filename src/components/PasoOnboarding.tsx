@@ -126,6 +126,5 @@ export const PasoOnboarding: FC<PasoOnboardingProps> = ({ paso, total, objetivo,
 export const PASOS_ONBOARDING: { objetivo: string; lado: PasoOnboardingProps['lado']; titulo: string; texto: string }[] = [
   { objetivo: 'posicion', lado: 'abajo', titulo: 'Tu posición por divisa, de un vistazo', texto: 'Saldo, pagos futuros y lo que te falta o te sobra en cada moneda, con la proyección de la semana. Si falta, el botón te lleva a comprar justo lo necesario.' },
   { objetivo: 'movimientos', lado: 'derecha', titulo: 'Paga desde el movimiento', texto: 'Próximos y realizados en una sola lista, separados por Hoy. Pagar abre una ventana de pago con destinatario, monto y referencia ya cargados: eliges la cuenta y confirmas.' },
-  { objetivo: 'tdc', lado: 'izquierda', titulo: 'El tipo de cambio, en contexto', texto: 'Solo los pares de tus posiciones, con el precio para comprar y para vender en vivo. Al pedir precio ves el precio ejecutable en vivo y tienes dos minutos para confirmar con tu token.' },
-  { objetivo: 'clasico', lado: 'abajo', titulo: '¿Prefieres operar como siempre?', texto: 'En la pestaña Operar clásico tienes el formulario de siempre: Comprar, Vender y Transferir. Las dos vistas comparten tus cuentas y movimientos.' },
+  { objetivo: 'tdc', lado: 'izquierda', titulo: 'El tipo de cambio, y operar desde ahí', texto: 'Elige el par y mira el precio para comprar y para vender en vivo. Si vienes a operar, escribe el monto acá mismo y continúa: es el mismo flujo de pago, empezando por el precio.' },
 ];

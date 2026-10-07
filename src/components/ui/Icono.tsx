@@ -25,6 +25,7 @@ import UilQuestionCircle from '@iconscout/react-unicons/icons/uil-question-circl
 import UilLightbulbAlt from '@iconscout/react-unicons/icons/uil-lightbulb-alt';
 import UilAngleLeftB from '@iconscout/react-unicons/icons/uil-angle-left-b';
 import UilAngleRightB from '@iconscout/react-unicons/icons/uil-angle-right-b';
+import UilArrowsVAlt from '@iconscout/react-unicons/icons/uil-arrows-v-alt';
 
 export const ICONOS = {
   estate: UilEstate,
@@ -52,6 +53,7 @@ export const ICONOS = {
   'lightbulb-alt': UilLightbulbAlt,
   'angle-left-b': UilAngleLeftB,
   'angle-right-b': UilAngleRightB,
+  'arrows-v-alt': UilArrowsVAlt,
 } as const;
 
 export type NombreIcono = keyof typeof ICONOS;

@@ -69,15 +69,17 @@ export function filasTablero(): FilaTablero[] {
   const s07h = aplicar([...revision, ...precio, ...TOKEN], s03);
   const s08h = aplicar([{ tipo: 'volverInicio' }], s07h);
 
-  const operar = aplicar([{ tipo: 'pestana', pestana: 'operar' }], base);
-  const compraLlena = aplicar([{ tipo: 'opMonto', lado: 'izq', valor: '1000' }, { tipo: 'opMontoEditando', lado: null }, { tipo: 'opOrigen', origenId: 'mxn' }, { tipo: 'opDestino', destinoId: 'usd' }, { tipo: 'opMotivo', motivo: 'Compra de divisas' }, { tipo: 'opReferencia', referencia: 'Cobertura pagos USD' }], operar);
-  const precioOp = aplicar([{ tipo: 'opPedirPrecio' }, { tipo: 'opToken', token: '47' }], compraLlena);
-  const transfer = aplicar([{ tipo: 'opTipo', valor: 'transferir' }, { tipo: 'opOrigen', origenId: 'usd' }], operar);
-  const cerrado = aplicar([{ tipo: 'pestana', pestana: 'operar' }, { tipo: 'opMonto', lado: 'izq', valor: '1000' }, { tipo: 'opMontoEditando', lado: null }, { tipo: 'opOrigen', origenId: 'mxn' }, { tipo: 'opDestino', destinoId: 'usd' }, { tipo: 'opMotivo', motivo: 'Compra de divisas' }, { tipo: 'opReferencia', referencia: 'Cobertura pagos USD' }], estadoInicial('mercado-cerrado'));
+  // Cotizador de la tarjeta de tipo de cambio (C-53): 10,000.00 USD con pesos, plegado, selector de par y Destino desde el cotizador.
+  const conMonto = aplicar([{ tipo: 'cotMonto', lado: 'recibe', valor: '10000' }, { tipo: 'cotEditando', lado: null }], base);
+  const desdeCotizador = aplicar([{ tipo: 'cotContinuar' }], conMonto);
+
+  // Otras divisas (C-54): el base más un pago de 40,000.00 GBP sin cuenta en libras, que paga la cuenta en pesos.
+  const otras = estadoDeEscenario('otras-divisas');
+  const origenLibras = aplicar([{ tipo: 'abrirPanel', orden: ordenDePago(pagoPorId(otras, 'x1')!) }], otras);
 
   return [
     {
-      titulo: 'Flujo principal · Posición consolidada',
+      titulo: 'Flujo principal',
       nota: 'Importadora: faltan dólares → paga a Shenzhen Parts Co. con pesos → posición resuelta',
       frames: [
         { n: '01', titulo: 'Inicio con faltante', nota: 'Posición por divisa calculada desde el modelo de datos; "Cobraste hoy" con el cobro de Comercial Norte; "Pagar" en la fila de Shenzhen Parts Co. abre la ventana de pago.', estado: base },
@@ -101,18 +103,30 @@ export function filasTablero(): FilaTablero[] {
       ],
     },
     {
-      titulo: 'Pestaña Operar clásico',
-      nota: 'El formulario clásico con el mismo motor que la ventana de pago',
+      titulo: 'Cotizador · Tipo de cambio',
+      nota: 'Dos puertas al mismo flujo: desde la obligación ("Pagar" en una fila o en el encabezado) y desde el precio (el cotizador, abierto al entrar). Las dos terminan en la misma ventana de pago',
       frames: [
-        { n: '08', titulo: 'Operar clásico · Comprar, vacío', nota: 'Badge de mercado, TDC indicativo visible desde el inicio, "Pedir precio" deshabilitado hasta completar los campos.', estado: operar },
-        { n: '09', titulo: 'Operar clásico · Selector de par', nota: 'Selector agrupado: primero los pares de tus posiciones, después el resto. GBP/MXN y CAD/MXN avisan que no están en el prototipo.', estado: aplicar([{ tipo: 'opParAbierto', abierto: true }], operar) },
-        { n: '10', titulo: 'Operar clásico · Compra completa, precio indicativo', nota: 'El lado que escribes queda fijo y el otro se calcula en vivo; el CTA se habilita con los campos completos.', estado: compraLlena },
-        { n: '11', titulo: 'Operar clásico · Precio ejecutable y token', nota: 'Precio ejecutable en vivo con "Confirma en 2:00", la línea "Se mueve con el mercado hasta que confirmas.", la comisión y el token dentro del formulario.', estado: precioOp },
-        { n: '12', titulo: 'Operar clásico · Precio vencido', nota: 'Al acabarse el tiempo para confirmar, los montos vuelven al indicativo y la única acción principal es pedir precio de nuevo.', estado: aplicar(vencer(), precioOp) },
-        { n: '13', titulo: 'Operar clásico · Vender con error de saldo', nota: 'Error inline bajo el campo, con el saldo disponible; "Pedir precio" deshabilitado.', estado: aplicar([{ tipo: 'opTipo', valor: 'vender' }, { tipo: 'opMonto', lado: 'izq', valor: '5000' }, { tipo: 'opMontoEditando', lado: null }, { tipo: 'opOrigen', origenId: 'usd' }, { tipo: 'opDestino', destinoId: 'mxn' }, { tipo: 'opMotivo', motivo: 'Venta de divisas' }], operar) },
-        { n: '14', titulo: 'Operar clásico · Transferir, selector de destino', nota: 'Destino con buscador y grupos; el mismo componente que el paso Destino de la ventana de pago.', estado: aplicar([{ tipo: 'opDestinoBusqueda', texto: 'Logí' }], transfer) },
-        { n: '15', titulo: 'Operar clásico · Transferencia lista, token', nota: 'Transferencia en la misma divisa: sin TDC ni precio; el token se pide al confirmar.', estado: aplicar([{ tipo: 'opDestino', destinoId: 'log' }, { tipo: 'opMonto', lado: 'izq', valor: '1000' }, { tipo: 'opMontoEditando', lado: null }, { tipo: 'opMotivo', motivo: 'Pago a proveedores' }, { tipo: 'opReferencia', referencia: 'Flete OCT-02' }, { tipo: 'opContinuar' }], transfer) },
-        { n: '16', titulo: 'Operar clásico · Mercado cerrado', nota: 'Escenario mercado-cerrado: formulario editable y "Pedir precio" deshabilitado. Sin horario mientras el dato no esté confirmado.', estado: cerrado },
+        { n: 'C1', titulo: 'Inicio · Cotizador con un monto', nota: 'USD/MXN elegido; "Operar con este par" desplegado con Recibes 10,000.00 USD (lo que escribiste queda fijo) y Pagas 180,911.83 MXN al indicativo, la cuenta de la que sale con su saldo y "Continuar".', estado: conMonto },
+        { n: 'C2', titulo: 'Inicio · Cotizador plegado', nota: 'El chevron pliega "Operar con este par"; queda como lo dejaste durante la sesión.', estado: aplicar([{ tipo: 'cotAbierto', abierto: false }], base) },
+        { n: 'C3', titulo: 'Inicio · Selector de par', nota: '"Tus pares" (los de tus posiciones y tus pagos cargados) y "Otros pares"; compra, venta y tendencia son las del par elegido.', estado: aplicar([{ tipo: 'cotParAbierto', abierto: true }], base) },
+        { n: 'C4', titulo: 'Ventana de pago · Destino desde el cotizador', nota: '"¿A dónde llegan los 10,000.00 USD?": tu Cuenta USD (una compra) o un destinatario en USD (un pago). Elegido el destino sigue la revisión, sin pasar por Origen.', estado: desdeCotizador },
+      ],
+    },
+    {
+      titulo: 'Otras divisas',
+      nota: 'Escenario otras-divisas: un pago cargado de 40,000.00 GBP sin cuenta en libras cuenta contra la cuenta de fondeo (pesos), al indicativo de compra, y se paga con tipo de cambio',
+      frames: [
+        { n: 'O1', titulo: 'Inicio con un pago en libras', nota: 'MXN suma "Pagos en otras divisas (1) ≈ −972,000.00" y "Sobran ≈ 127,649.50"; la fila del pago, −40,000.00 GBP con "≈ 972,000.00 MXN hoy"; GBP/MXN entra en "Tus pares".', estado: otras },
+        { n: 'O2', titulo: 'Desglose · Pagos en otras divisas', nota: 'La fila de la tarjeta abre su desglose en la ventana de pago: el pago en libras con su equivalente al indicativo y "Pagar".', estado: aplicar([{ tipo: 'abrirDesglose', cuentaId: 'mxn', fila: 'pagosOtrasDivisas' }], otras) },
+        { n: 'O3', titulo: 'Ventana de pago · Origen del pago en libras', nota: 'La cuenta de fondeo viene preseleccionada con "Pagas ≈ 972,000.00 MXN"; la Cuenta USD y la Cuenta EUR no tienen par con libras: "Sin par disponible".', estado: origenLibras },
+        { n: 'O4', titulo: 'Ventana de pago · Revisión del pago en libras', nota: 'Como cualquier pago con tipo de cambio: GBP/MXN indicativo, fecha valor, comisión y la cuenta en pesos después del pago.', estado: aplicar(revision, origenLibras) },
+      ],
+    },
+    {
+      titulo: 'Desglose de la posición',
+      nota: 'Las filas con cantidad de TarjetaPosicion abren su desglose en la ventana de pago, porque desde ahí se paga',
+      frames: [
+        { n: 'G1', titulo: 'Desglose · Pagos futuros en USD', nota: 'Los tres pagos de la semana por fecha, con su referencia, su monto y "Pagar", que sigue con el flujo de pago en la misma ventana ("Volver" en Origen regresa a la lista).', estado: aplicar([{ tipo: 'abrirDesglose', cuentaId: 'usd', fila: 'pagosFuturos' }], base) },
       ],
     },
     {
@@ -156,10 +170,10 @@ export function filasTablero(): FilaTablero[] {
     },
     {
       titulo: 'Onboarding',
-      nota: 'Recorrido contextual de 4 pasos al entrar por primera vez · Atrás / Siguiente y cierre en cualquier momento · "Empezar" o × vuelven al inicio',
-      frames: [0, 1, 2, 3].map((i) => ({
+      nota: 'Recorrido contextual de 3 pasos al entrar por primera vez · Atrás / Siguiente y cierre en cualquier momento · "Empezar" o × vuelven al inicio',
+      frames: [0, 1, 2].map((i) => ({
         n: String(17 + i),
-        titulo: `Onboarding · Paso ${i + 1} de 4`,
+        titulo: `Onboarding · Paso ${i + 1} de 3`,
         nota: '',
         estado: aplicar([{ tipo: 'onboardingIniciar' }, ...Array.from({ length: i }, () => ({ tipo: 'onboardingSiguiente' as const }))], base),
       })),

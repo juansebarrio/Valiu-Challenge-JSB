@@ -1,5 +1,5 @@
 'use client';
-import { useId, type FC, type InputHTMLAttributes, type ReactNode } from 'react';
+import { useEffect, useId, useRef, type FC, type InputHTMLAttributes, type ReactNode } from 'react';
 import { Icono } from './Icono';
 
 export type EstadoCampo = 'reposo' | 'activo' | 'error' | 'deshabilitado';
@@ -71,56 +71,50 @@ export interface CampoSelectorProps {
   children?: ReactNode;
   /** El valor seleccionado va en 600 (selector de par). */
   fuerte?: boolean;
-  /** Buscador: el texto escrito reemplaza al valor mientras está abierto. */
-  busqueda?: { texto: string; onCambiar: (t: string) => void; placeholder?: string };
   className?: string;
-  anchoLista?: 'campo' | 'ancho';
+  /** La etiqueta solo para lectores de pantalla (el selector de par de la tarjeta de tipo de cambio). */
+  etiquetaOculta?: boolean;
 }
 
-/** Dropdown del DS: campo con chevron; la lista flota debajo (radio 8, borde divisor, --shadow-md). */
-export const CampoSelector: FC<CampoSelectorProps> = ({ etiqueta, valor, placeholder, abierto, onAbrir, children, fuerte, busqueda, className, anchoLista = 'campo' }) => {
+/** Dropdown del DS: campo con chevron; la lista flota debajo (radio 8, borde divisor, --shadow-md). Se cierra con Escape o con un clic afuera. */
+export const CampoSelector: FC<CampoSelectorProps> = ({ etiqueta, valor, placeholder, abierto, onAbrir, children, fuerte, className, etiquetaOculta }) => {
   const id = useId();
-  const conBusqueda = abierto && busqueda;
+  const ref = useRef<HTMLDivElement>(null);
+  const cerrarRef = useRef(onAbrir);
+  useEffect(() => { cerrarRef.current = onAbrir; }, [onAbrir]);
+  useEffect(() => {
+    if (!abierto) return;
+    const afuera = (e: PointerEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) cerrarRef.current(false); };
+    document.addEventListener('pointerdown', afuera);
+    return () => document.removeEventListener('pointerdown', afuera);
+  }, [abierto]);
   return (
-    <div className={['relative flex flex-col gap-1.5', className].filter(Boolean).join(' ')}>
-      <Etiqueta htmlFor={id}>{etiqueta}</Etiqueta>
+    <div ref={ref} className={['relative flex flex-col gap-1.5', className].filter(Boolean).join(' ')}>
+      {etiquetaOculta ? <span className="sr-only"><Etiqueta htmlFor={id}>{etiqueta}</Etiqueta></span> : <Etiqueta htmlFor={id}>{etiqueta}</Etiqueta>}
       <div className={['flex min-h-(--app-input-h) items-center justify-between gap-2 rounded-sm bg-app-surface px-3', abierto ? BORDES.activo : BORDES.reposo].join(' ')}>
-        {conBusqueda ? (
-          <span className="flex min-w-0 flex-1 items-center gap-2">
-            <Icono nombre="search" tamano="sm" className="text-app-ink-2" />
-            <input
-              id={id}
-              autoFocus
-              value={busqueda.texto}
-              placeholder={busqueda.placeholder ?? placeholder}
-              onChange={(e) => busqueda.onCambiar(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Escape') onAbrir(false); }}
-              role="combobox"
-              aria-expanded={abierto}
-              aria-autocomplete="list"
-              aria-controls={`${id}-lista`}
-              className="min-w-0 flex-1 bg-transparent text-body outline-none placeholder:text-app-ink-3"
-            />
-          </span>
-        ) : (
-          <button
-            id={id}
-            type="button"
-            aria-haspopup="listbox"
-            aria-expanded={abierto}
-            onClick={() => onAbrir(!abierto)}
-            onKeyDown={(e) => { if (e.key === 'Escape' && abierto) onAbrir(false); }}
-            className={['flex min-w-0 flex-1 cursor-pointer items-center truncate bg-transparent text-left', fuerte ? 'text-body font-semibold' : 'text-body', valor ? 'text-app-ink' : 'text-app-ink-3'].join(' ')}
-          >
-            <span className="truncate">{valor ?? placeholder}</span>
-          </button>
-        )}
+        <button
+          id={id}
+          type="button"
+          aria-haspopup="listbox"
+          aria-expanded={abierto}
+          aria-controls={abierto ? `${id}-lista` : undefined}
+          onClick={() => onAbrir(!abierto)}
+          onKeyDown={(e) => { if (e.key === 'Escape' && abierto) { e.stopPropagation(); onAbrir(false); } }}
+          className={['flex min-w-0 flex-1 cursor-pointer items-center truncate bg-transparent text-left', fuerte ? 'text-body font-semibold' : 'text-body', valor ? 'text-app-ink' : 'text-app-ink-3'].join(' ')}
+        >
+          <span className="truncate">{valor ?? placeholder}</span>
+        </button>
         <button type="button" tabIndex={-1} aria-hidden onClick={() => onAbrir(!abierto)} className="flex cursor-pointer items-center bg-transparent text-app-ink-2">
           <Icono nombre={abierto ? 'angle-up-b' : 'angle-down-b'} tamano="sm" />
         </button>
       </div>
       {abierto ? (
-        <div id={`${id}-lista`} role="listbox" className={['absolute left-0 top-full z-10 mt-1.5 flex flex-col gap-0.5 rounded-sm border border-app-divider bg-app-surface p-2 shadow-md', anchoLista === 'ancho' ? 'w-(--app-selector-par-w)' : 'right-0'].join(' ')}>
+        <div
+          id={`${id}-lista`}
+          role="listbox"
+          onKeyDown={(e) => { if (e.key === 'Escape') { e.stopPropagation(); onAbrir(false); document.getElementById(id)?.focus(); } }}
+          className="absolute inset-x-0 top-full z-10 mt-1.5 flex flex-col gap-0.5 rounded-sm border border-app-divider bg-app-surface p-2 shadow-md"
+        >
           {children}
         </div>
       ) : null}

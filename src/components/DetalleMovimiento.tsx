@@ -10,7 +10,7 @@ import { MontosFinales } from './Confirmacion';
 /**
  * Detalle de una fila de Movimientos dentro del panel lateral: ícono + estado + monto, texto, filas y, si aplica, aviso de fondeo y la nota de la pactada.
  * Una operación hecha (en proceso o pactada) lleva, como la confirmación, los montos finales en el BloqueMonto y las mismas filas (C-50).
- * compacta (confirmación de "Cargar un pago" en la ventana de pago): el ícono al lado del título y del badge, como en Confirmacion.
+ * compacta (confirmación de "Cargar un pago" en la ventana de pago): el ícono al lado del título y del badge, como en EncabezadoConfirmacion.
  */
 export const DetalleMovimiento: FC<{ vista: VistaDetalle; compacta?: boolean }> = ({ vista: v, compacta }) => (
   <>

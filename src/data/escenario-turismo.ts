@@ -14,6 +14,8 @@ const DESTINATARIOS: Destinatario[] = [
   { id: 'hgv', nombre: 'Hotel Gran Vía Madrid', divisa: 'EUR', banco: 'CaixaBank', mascara: '6620' },
   { id: 'mc', nombre: 'Mayorista Caribe', divisa: 'USD', banco: 'Banco Popular', mascara: '3317' },
   { id: 'fo', nombre: 'Familia Ortega', divisa: 'MXN', banco: 'BBVA México', mascara: '7702' }, // inventado
+  { id: 'lhg', nombre: 'London Hotels Group', divisa: 'GBP', banco: 'Lloyds', mascara: '3390' }, // inventado (C-54)
+  { id: 'ttc', nombre: 'Toronto Tours Co.', divisa: 'CAD', banco: 'TD Canada Trust', mascara: '7254' }, // inventado (C-54)
 ];
 
 const pago = (id: string, destinatarioId: string, monto: number, fecha: Date, referencia: string, motivo = 'Pago a proveedores'): PagoFuturo => {
@@ -45,12 +47,13 @@ export const TURISMO: Arquetipo = {
   id: 'turismo',
   empresa: 'Viajes Altavista S.A. de C.V.', // inventado
   usuario: { nombre: 'Mariana L.', rol: 'Administración', iniciales: 'ML' }, // inventado
-  datos: { cuentas: CUENTAS, destinatarios: DESTINATARIOS, pagosFuturos: PAGOS, loNuevo: LO_NUEVO, realizados: REALIZADOS, mercado: 'abierto', comisiones: COMISIONES_BP },
+  datos: { cuentas: CUENTAS, cuentaFondeo: 'mxn', destinatarios: DESTINATARIOS, pagosFuturos: PAGOS, loNuevo: LO_NUEVO, realizados: REALIZADOS, mercado: 'abierto', comisiones: COMISIONES_BP },
   pares: TDC_BASE,
   paresTarjeta: ['EUR/MXN', 'USD/MXN'],
-  tendencia: [21.231, 21.238, 21.235, 21.246, 21.242, 21.255, 21.249, 21.25], // inventado
   ordenPosiciones: ['eur', 'usd', 'mxn'],
   pagoPrincipal: 't-p1',
+  // Escenario "otras-divisas" (C-54) en turismo: inventado; el monto deja que la cuenta en pesos lo pague hoy.
+  pagoOtrasDivisas: { destinatarioId: 'lhg', monto: 4_000, fecha: new Date(2026, 9, 9), referencia: 'Reserva LHG-552' },
   contexto: [
     `La ${CUENTAS[2].nombre} está en cero: faltan ${fmt.monto(PAGOS[1].monto, 'EUR')}`,
     `Cobra ${fmt.monto(LO_NUEVO.monto, 'MXN')} de ${LO_NUEVO.de} y paga al ${PAGOS[1].destinatario} el viernes`,

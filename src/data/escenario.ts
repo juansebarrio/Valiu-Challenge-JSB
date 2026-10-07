@@ -12,8 +12,8 @@ export const empresa = 'Servicios Corporativos KAAX';
 /** Arquetipos de empresa de la pantalla inicial: la importadora (flujo principal) y la minorista de turismo (flujo secundario). */
 export type ArquetipoId = 'importadora' | 'turismo';
 
-export type EscenarioNombre = 'faltante' | 'resuelta' | 'pactada' | 'sin-saldo' | 'mercado-cerrado';
-export const ESCENARIOS: EscenarioNombre[] = ['faltante', 'resuelta', 'pactada', 'sin-saldo', 'mercado-cerrado'];
+export type EscenarioNombre = 'faltante' | 'resuelta' | 'pactada' | 'sin-saldo' | 'mercado-cerrado' | 'otras-divisas';
+export const ESCENARIOS: EscenarioNombre[] = ['faltante', 'resuelta', 'pactada', 'sin-saldo', 'mercado-cerrado', 'otras-divisas'];
 
 export type CuentaId = 'mxn' | 'usd' | 'eur';
 
@@ -87,6 +87,8 @@ export const COMISIONES_BP: Record<ClaseOperacion, number> = { pago: 0, compra: 
 
 export interface Datos {
   cuentas: Cuenta[];
+  /** Cuenta que paga los pagos cargados en divisas en las que la empresa no tiene cuenta, con tipo de cambio (C-54). */
+  cuentaFondeo: CuentaId;
   destinatarios: Destinatario[];
   pagosFuturos: PagoFuturo[];
   loNuevo: Cobro | null;
@@ -104,14 +106,14 @@ export interface Arquetipo {
   datos: Datos;
   /** Tipo de cambio indicativo base por par (micro-unidades); el "en vivo" oscila alrededor de estos valores. */
   pares: TablaPares;
-  /** Pares de la tarjeta de tipo de cambio: el primero es el de la decisión de la semana y lleva la tendencia (D-33). */
+  /** Pares de tus posiciones en la tarjeta de tipo de cambio: el primero es el de la decisión de la semana y viene elegido (D-33). */
   paresTarjeta: string[];
-  /** Tendencia intradía del primer par, solo para la gráfica (inventado). */
-  tendencia: number[];
   /** Orden de las TarjetaPosicion: la divisa con faltante primero; no cambia durante la sesión (D-34). */
   ordenPosiciones: CuentaId[];
   /** Pago que resuelven los escenarios "resuelta" y "pactada". */
   pagoPrincipal: string;
+  /** Escenario "otras-divisas" (C-54): el pago cargado que se suma al base, en una divisa en la que la empresa no tiene cuenta. */
+  pagoOtrasDivisas: { destinatarioId: string; monto: number; fecha: Date; referencia: string };
   /** "Usar para pagar": paso Destino (como quedó en el código para la importadora) o paso Pago "¿Qué pagas con este cobro?" (D-30). */
   /** Tres líneas de contexto de la tarjeta de la pantalla inicial. */
   contexto: string[];
@@ -138,6 +140,8 @@ const DESTINATARIOS: Destinatario[] = [
   { id: 'sz', nombre: 'Shenzhen Parts Co.', divisa: 'USD', banco: 'HSBC Hong Kong', mascara: '4410' },
   { id: 'log', nombre: 'Logística Pacífico', divisa: 'USD', banco: 'Citibanamex', mascara: '0931' },
   { id: 'ap', nombre: 'Asia Packaging', divisa: 'USD', banco: 'DBS Singapur', mascara: '7712' },
+  { id: 'tt', nombre: 'Thames Tooling Ltd.', divisa: 'GBP', banco: 'Barclays', mascara: '6120' }, // inventado (C-54)
+  { id: 'mf', nombre: 'Maple Freight Inc.', divisa: 'CAD', banco: 'RBC', mascara: '4471' }, // inventado (C-54)
   // Proveedores mexicanos ficticios de los siete pagos en MXN
   { id: 'pin', nombre: 'Papelería Industrial del Norte', divisa: 'MXN', banco: 'BBVA México', mascara: '3301' },
   { id: 'tgo', nombre: 'Transportes del Golfo', divisa: 'MXN', banco: 'Banorte', mascara: '8824' },
@@ -184,8 +188,14 @@ const LO_NUEVO: Cobro = { id: REALIZADOS[0].id, cuentaId: 'mxn', monto: REALIZAD
 export const TDC_BASE: TablaPares = Object.fromEntries(Object.entries(PARES).map(([k, v]) => [k, { compra: v.compra, venta: v.venta }]));
 export const OSCILACION_TDC = 0.00002; // ±0.002 %
 export const OSCILACION_MS = [3000, 5000] as const; // un paso cada 3 a 5 segundos
-/** Tendencia intradía de USD/MXN, solo para la gráfica (inventado). */
-export const TENDENCIA_DIA = [18.062, 18.071, 18.068, 18.084, 18.079, 18.095, 18.088, 18.091];
+/** Tendencia intradía de cada par, solo para la gráfica de la tarjeta de tipo de cambio (inventado; termina en el indicativo de compra). */
+export const TENDENCIAS: Record<string, number[]> = {
+  'USD/MXN': [18.062, 18.071, 18.068, 18.084, 18.079, 18.095, 18.088, 18.091],
+  'EUR/MXN': [21.231, 21.238, 21.235, 21.246, 21.242, 21.255, 21.249, 21.25],
+  'EUR/USD': [1.1712, 1.1725, 1.1719, 1.1738, 1.1731, 1.1746, 1.1742, 1.175],
+  'GBP/MXN': [24.262, 24.271, 24.268, 24.284, 24.279, 24.295, 24.288, 24.3],
+  'CAD/MXN': [13.171, 13.178, 13.175, 13.186, 13.182, 13.195, 13.189, 13.2],
+};
 export const HORA_TDC = '10:42';
 
 /** La importadora del flujo principal (frames 01–20). */
@@ -193,12 +203,12 @@ export const IMPORTADORA: Arquetipo = {
   id: 'importadora',
   empresa,
   usuario: { nombre: 'Jorge R.', rol: 'Tesorería', iniciales: 'JR' },
-  datos: { cuentas: CUENTAS, destinatarios: DESTINATARIOS, pagosFuturos: [...PAGOS_USD, ...PAGOS_MXN], loNuevo: LO_NUEVO, realizados: REALIZADOS, mercado: 'abierto', comisiones: COMISIONES_BP },
+  datos: { cuentas: CUENTAS, cuentaFondeo: 'mxn', destinatarios: DESTINATARIOS, pagosFuturos: [...PAGOS_USD, ...PAGOS_MXN], loNuevo: LO_NUEVO, realizados: REALIZADOS, mercado: 'abierto', comisiones: COMISIONES_BP },
   pares: TDC_BASE,
   paresTarjeta: ['USD/MXN', 'EUR/MXN'],
-  tendencia: TENDENCIA_DIA,
   ordenPosiciones: ORDEN_POSICIONES,
   pagoPrincipal: 'p1',
+  pagoOtrasDivisas: { destinatarioId: 'tt', monto: 40_000, fecha: new Date(2026, 9, 9), referencia: 'Factura TT-3381' /* inventado */ },
   contexto: [
     `Faltan ${fmt.monto(PAGOS_USD.reduce((acc, p) => acc + p.monto, 0) - CUENTAS[1].saldo, 'USD')} para los pagos de la semana`,
     `Paga ${fmt.monto(PAGOS_USD[0].monto, 'USD')} a ${PAGOS_USD[0].destinatario} con pesos`,
@@ -206,13 +216,24 @@ export const IMPORTADORA: Arquetipo = {
   ],
 };
 
+/** Pago cargado de un arquetipo a uno de sus destinatarios. */
+export const pagoA = (destinatarios: Destinatario[], id: string, destinatarioId: string, monto: number, fecha: Date, referencia: string, motivo = 'Pago a proveedores'): PagoFuturo => {
+  const dst = destinatarios.find((x) => x.id === destinatarioId)!;
+  return { id, destinatarioId, destinatario: dst.nombre, monto: centavos(monto), divisa: dst.divisa, fecha, referencia, motivo, cuentaDestino: { divisa: dst.divisa, banco: dst.banco, mascara: dst.mascara } };
+};
+
 /**
  * Datos del escenario pedido para un arquetipo. "resuelta" y "pactada" parten del base y aplican el pago principal (src/state/escenarios.ts);
- * "sin-saldo" deja la cuenta en pesos en 20,000.00 sin el cobro de hoy y sin pagos en pesos; "mercado-cerrado" solo cambia el mercado.
+ * "sin-saldo" deja la cuenta en pesos en 20,000.00 sin el cobro de hoy y sin pagos en pesos; "mercado-cerrado" solo cambia el mercado;
+ * "otras-divisas" suma al base un pago cargado en una divisa sin cuenta (C-54).
  */
 export function datosEscenario(nombre: EscenarioNombre, arquetipo: Arquetipo = IMPORTADORA): Datos {
   const d = arquetipo.datos;
   const base: Datos = { ...d, cuentas: d.cuentas.map((c) => ({ ...c })), pagosFuturos: [...d.pagosFuturos] };
+  if (nombre === 'otras-divisas') {
+    const o = arquetipo.pagoOtrasDivisas;
+    return { ...base, pagosFuturos: [...base.pagosFuturos, pagoA(d.destinatarios, 'x1', o.destinatarioId, o.monto, o.fecha, o.referencia)] };
+  }
   if (nombre === 'sin-saldo') {
     const cobro = d.loNuevo;
     return {
@@ -237,16 +258,6 @@ export const TOKEN_INCORRECTO = '000000';
 /** Horario de operación: dato sin verificar, queda vacío; mientras esté vacío, el aviso de mercado cerrado no muestra horario. */
 export const HORARIO: { abre: string; cierra: string } = { abre: '', cierra: '' };
 
-/** Motivos de pago (lista cerrada). Los tres primeros salen del export; el resto completa la lista a falta de docs/ui-actual.md. */
-export const MOTIVOS = ['Pago a proveedores', 'Compra de divisas', 'Venta de divisas', 'Transferencia entre cuentas', 'Pago de servicios', 'Nómina', 'Otro'];
-
-/** Pares del selector de Operar clásico: primero los de tus posiciones, después el resto. */
-export const PARES_SELECTOR: { titulo: string; items: { par: string; nombre: string }[] }[] = [
-  { titulo: 'Tus posiciones', items: [{ par: 'USD/MXN', nombre: 'Dólar · Peso' }, { par: 'EUR/MXN', nombre: 'Euro · Peso' }] },
-  { titulo: 'Otros pares', items: [{ par: 'EUR/USD', nombre: 'Euro · Dólar' }, { par: 'GBP/MXN', nombre: 'Libra · Peso' }, { par: 'CAD/MXN', nombre: 'Dólar canadiense · Peso' }] },
-];
-
-export const AVISO_PAR_SIN_PROTOTIPO = 'Este par no está en el prototipo.';
 export const AVISO_FUERA_DEL_PROTOTIPO = 'Esta sección no está en el prototipo.';
 export const ANCHO_MINIMO = 1024;
 

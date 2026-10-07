@@ -13,9 +13,10 @@ import { GrupoOrigen, GrupoPago } from './OpcionOrigen';
 import { BloqueMonto } from './BloqueMonto';
 import { FechaLiquidacion } from './FechaLiquidacion';
 import { CampoToken } from './CampoToken';
-import { AvisoConfirmacion, Confirmacion, EncabezadoConfirmacion, MontosFinales } from './Confirmacion';
+import { AvisoConfirmacion, EncabezadoConfirmacion, MontosFinales } from './Confirmacion';
 import { DetalleMovimiento } from './DetalleMovimiento';
 import { AgendarPago } from './AgendarPago';
+import { DesglosePosicion } from './DesglosePosicion';
 import { SelectorDestino } from './SelectorDestino';
 import { Boton } from './ui/Boton';
 import { Alerta } from './ui/Alerta';
@@ -23,12 +24,16 @@ import { CampoTexto, MensajeError } from './ui/Campo';
 import { ListaDetalle } from './ui/ListaDetalle';
 import { descargarComprobante, htmlComprobante } from './comprobante';
 
-/** Dónde se muestra cada tipo (C-47): operar en la ventana de pago, consultar en el panel lateral. */
+/**
+ * Dónde se muestra cada tipo (C-47): operar en la ventana de pago, consultar en el panel lateral. El desglose de la posición va en la ventana
+ * porque desde ahí se paga (C-55); el detalle de un movimiento, las notificaciones y las cuentas siguen en el panel lateral.
+ */
 export type Contenedor = 'modal' | 'panel';
 const CONTENEDOR: Record<Exclude<VistaPanel['tipo'], 'depositar'>, Contenedor> = {
   pago: 'modal',
   agendar: 'modal',
   destinatario: 'modal',
+  desglose: 'modal',
   detalle: 'panel',
   notificaciones: 'panel',
   cuentas: 'panel',
@@ -102,6 +107,7 @@ export const CapaOperacion: FC<CapaOperacionProps> = ({ vista: v, estado, dispat
           case 'volverDestino': dispatch({ tipo: 'irPaso', paso: 'destino' }); break;
           case 'cancelar': dispatch({ tipo: 'cerrarPanel' }); break;
           case 'volverPago': dispatch({ tipo: 'irPaso', paso: 'pago' }); break;
+          case 'volverDesglose': dispatch({ tipo: 'volverDesglose' }); break;
           case 'comprobante': comprobante(); break;
           case 'pagar': pagar(); break;
         }
@@ -162,7 +168,7 @@ export const CapaOperacion: FC<CapaOperacionProps> = ({ vista: v, estado, dispat
       const c = v.confirmacion;
       dosColumnas = (
         <DosColumnas
-          izquierda={<><EncabezadoConfirmacion vista={c} compacta /><MontosFinales montos={c.montos} /><AvisoConfirmacion vista={c} /></>}
+          izquierda={<><EncabezadoConfirmacion vista={c} /><MontosFinales montos={c.montos} /><AvisoConfirmacion vista={c} /></>}
           derecha={<ResumenPago vista={{ tdc: null, sinPrecio: null, filas: c.detalle, aviso: null, nota: null }} />}
         />
       );
@@ -184,8 +190,8 @@ export const CapaOperacion: FC<CapaOperacionProps> = ({ vista: v, estado, dispat
 
       {v.paso === 'destino' && v.destino ? (
         <>
-          <h3 className="text-h3 font-semibold">{v.destino.titulo}</h3>
-          <SelectorDestino modo="lista" grupos={v.destino.grupos} busqueda={v.destino.busqueda} onBusqueda={(t) => dispatch({ tipo: 'busquedaDestino', texto: t })} onElegir={(d) => dispatch(v.tipo === 'agendar' ? { tipo: 'agendaDestino', destino: d.destino } : { tipo: 'elegirDestino', destino: d.destino })} onAgregar={() => (v.tipo === 'agendar' ? noDisponible() : dispatch({ tipo: 'abrirDestinatarioNuevo' }))} />
+          {v.destino.titulo ? <h3 className="text-h3 font-semibold">{v.destino.titulo}</h3> : null}
+          <SelectorDestino grupos={v.destino.grupos} busqueda={v.destino.busqueda} onBusqueda={(t) => dispatch({ tipo: 'busquedaDestino', texto: t })} onElegir={(d) => dispatch(v.tipo === 'agendar' ? { tipo: 'agendaDestino', destino: d.destino } : { tipo: 'elegirDestino', destino: d.destino })} onAgregar={() => (v.tipo === 'agendar' ? noDisponible() : dispatch({ tipo: 'abrirDestinatarioNuevo' }))} />
         </>
       ) : null}
 
@@ -198,6 +204,7 @@ export const CapaOperacion: FC<CapaOperacionProps> = ({ vista: v, estado, dispat
         </>
       ) : null}
 
+      {v.tipo === 'desglose' && v.desglose ? <DesglosePosicion items={v.desglose.items} onPagar={(pagoId) => dispatch({ tipo: 'pagarDesdeDesglose', pagoId })} /> : null}
       {v.tipo === 'notificaciones' && v.notificaciones ? <ListaNotificaciones items={v.notificaciones} dispatch={dispatch} /> : null}
       {v.tipo === 'cuentas' && v.cuentas ? <ListaCuentas items={v.cuentas} dispatch={dispatch} /> : null}
       {v.tipo === 'destinatario' && v.destinatario ? <FormularioDestinatario vista={v.destinatario} dispatch={dispatch} /> : null}
@@ -206,7 +213,6 @@ export const CapaOperacion: FC<CapaOperacionProps> = ({ vista: v, estado, dispat
       {v.tipo === 'agendar' && v.paso === 'revision' && v.agenda ? <AgendarPago vista={v.agenda} dispatch={dispatch} /> : null}
       {v.tipo === 'agendar' && v.paso === 'confirmacion' && v.detalle ? <DetalleMovimiento vista={v.detalle} compacta /> : null}
 
-      {v.paso === 'confirmacion' && v.confirmacion ? <Confirmacion vista={v.confirmacion} /> : null}
     </>
   );
 

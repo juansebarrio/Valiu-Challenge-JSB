@@ -18,16 +18,16 @@ Todo corre en el navegador, con estado en memoria (recargar reinicia el escenari
 | `/` | Pantalla inicial: elegir con qué empresa se entra (dos tarjetas con contexto, Tab/Enter). |
 | `/importadora` | Home del flujo principal. |
 | `/turismo` | Home del segundo arquetipo (minorista de turismo). |
-| `/tablero/alta` | Todos los frames (01–07, 03B–07B, Estados, 08–16, D1–D3, A1–A4, S01–S08 con S07H/S08H, N4–N6, 17–20) renderizados desde el estado del reducer a 1280 px. `/tablero` redirige acá. |
+| `/tablero/alta` | Todos los frames (01–07, 03B–07B, Estados, C1–C4, O1–O4, G1, D1–D3, A1–A4, S01–S08 con S07H/S08H, N4–N6, 17–19) renderizados desde el estado del reducer a 1280 px. `/tablero` redirige acá. |
 | `/sistema` | Guía viva: tokens del design system y cada componente en sus estados. |
 
-Parámetros: `?escenario=faltante|resuelta|pactada|sin-saldo|mercado-cerrado`, `?congelar=1` (tipo de cambio fijo), `?demo=1` (vencer precio, ver recorrido, reiniciar), `?recorrido=0`, `?pago=<id>`, `?cobro=<id>`, `?seccion=movimientos` (cualquier otra sección cae en Inicio, C-52). Tecla P: pausa el indicativo y la cuenta regresiva, solo con `?demo=1` (nunca desde un campo).
+Parámetros: `?escenario=faltante|resuelta|pactada|sin-saldo|mercado-cerrado|otras-divisas` (`otras-divisas`: el base más un pago cargado en libras, sin cuenta en libras), `?congelar=1` (tipo de cambio fijo), `?demo=1` (vencer precio, ver recorrido, reiniciar), `?recorrido=0`, `?pago=<id>`, `?cobro=<id>`, `?seccion=movimientos` (cualquier otra sección cae en Inicio, C-52). Tecla P: pausa el indicativo y la cuenta regresiva, solo con `?demo=1` (nunca desde un campo).
 
 ## 2. Qué se desarrolló, en orden
 
 ### Etapa 1 · Flujo principal desde el handoff de diseño
 - Proyecto Next.js 16 (App Router, Turbopack), React 19, TypeScript, Tailwind 4 mapeado a los tokens del DS (`src/styles/tokens.css` = copia literal del DS oficial + alias `--app-*`), Montserrat con `next/font`, Unicons. Sin librerías de componentes de terceros.
-- Home: posición por divisa con proyección de la semana (línea de cero, punto de faltante), lo nuevo, movimientos, tipo de cambio, cuentas. Flujo de pago con pasos origen → revisión → precio y token → confirmación (en un panel lateral hasta C-47; hoy en una ventana de pago centrada de dos columnas). Fecha valor. Onboarding de 4 pasos. Pestaña Operar clásico.
+- Home: posición por divisa con proyección de la semana (línea de cero, punto de faltante), lo nuevo, movimientos, tipo de cambio, cuentas. Flujo de pago con pasos origen → revisión → precio y token → confirmación (en un panel lateral hasta C-47; hoy en una ventana de pago centrada de dos columnas). Fecha valor. Onboarding de 4 pasos (3 desde C-53). Pestaña Operar clásico (reemplazada por el cotizador en C-53).
 - Deploy en Vercel y PR inicial.
 
 ### Etapa 2 · "Flujo principal en alta"
@@ -56,7 +56,7 @@ Parámetros: `?escenario=faltante|resuelta|pactada|sin-saldo|mercado-cerrado`, `
 3. Lado fijo del monto sin factura: "Pagas" y "Recibe" editables, el que se escribe queda fijo y el otro se recalcula en vivo.
 4. EUR/USD a 1.175000 / 1.171000 en los dos arquetipos: Shenzhen desde EUR ≈ 1,280.96 EUR; Hotel desde USD ≈ 4,935.00 USD (faltarían 1,435.00 USD el jue 8). Tests, escenarios y muestras de `/sistema` recalculados desde `fx.ts`.
 5. Tecla P: nunca se dispara con el foco en un campo (y desde la etapa 8, solo con `?demo=1`).
-6. "Concepto" opcional en lugar de "Motivo de pago" (ventana de pago y Cargar un pago; el clásico conserva "Motivo de pago"); "Comprobante" de Lo nuevo abre el detalle del cobro y las descargas de comprobante generan un .html real. Los estados de token incorrecto, origen sin saldo y pactada sin saldo quedaron como estaban.
+6. "Concepto" opcional en lugar de "Motivo de pago" (ventana de pago y Cargar un pago; el clásico conservaba "Motivo de pago" hasta C-53); "Comprobante" de Lo nuevo abre el detalle del cobro y las descargas de comprobante generan un .html real. Los estados de token incorrecto, origen sin saldo y pactada sin saldo quedaron como estaban.
 
 ### Etapa 7 · Pendientes del prototipo
 - Alta de destinatario ("Agregar destinatario" en el paso Destino, en Destinatarios y en el clásico): nombre, divisa, banco y cuenta o CLABE; desde el paso Destino, "Guardar y pagar" sigue con el pago.
@@ -68,7 +68,7 @@ Parámetros: `?escenario=faltante|resuelta|pactada|sin-saldo|mercado-cerrado`, `
 ### Etapa 8 · Ajustes de cierre (C-35 a C-44)
 1. Sin "Cancelar pacto": el detalle de una pactada remite a WhatsApp desde Contáctanos; se eliminaron el flujo, sus acciones, tests y frames D4–D5 (C-27 revertida).
 2. "Agendar un pago" pasa a "Cargar un pago" en toda la interfaz, frames A1–A4 y docs; la confirmación es "Pago cargado · Queda en Próximos para que lo pagues cuando quieras.".
-3. Ningún recorrido deja saldo negativo: misma regla de "No alcanza el saldo" en Origen y en Transferir del clásico, guardias en el reducer y un test que recorre todos los pagos desde todas las cuentas en ambos arquetipos.
+3. Ningún recorrido deja saldo negativo: misma regla de "No alcanza el saldo" en Origen y en Transferir del clásico (desde C-53, el error de saldo del cotizador), guardias en el reducer y un test que recorre todos los pagos desde todas las cuentas en ambos arquetipos.
 4. "Usar para pagar" abre "¿Qué pagas con este cobro?" también en la importadora.
 5. Bloque de montos siempre "Pagas" arriba y "Recibe" abajo.
 6. Un solo control al pie de Movimientos: "Ver todos los movimientos".
@@ -91,6 +91,12 @@ Criterio: sus usuarios son tesoreros poco sofisticados que se marean rápido; en
 4. Fecha de liquidación: el texto dice el beneficio de elegir otro día; aviso de fondeo sin "para que el pago salga" (C-51).
 5. Menú: solo Inicio navega; la lista completa de movimientos es una vista de Inicio (C-52).
 
+### Etapa 11 · Cotizador, pagos en otras divisas y desglose (C-53 a C-55)
+Del check-in con Mateo: no quieren conservar Comprar / Vender / Transferir; el tipo de cambio es lo primero que miran y miran pares que no son los de sus cuentas; una empresa puede cargar pagos en cualquier divisa de Valiu, tenga o no cuenta en ella.
+1. Cotizador abierto en la tarjeta de tipo de cambio: selector de par ("Tus pares" y "Otros pares"), Recibes y Pagas, invertir, la cuenta de la que sale y Continuar, que abre la ventana de pago en Destino y sigue sin Origen; GBP/MXN y CAD/MXN operables; se van las pestañas y Operar clásico, con sus frames 08–16; recorrido de 3 pasos (C-53).
+2. Pagos en divisas sin cuenta: cuentan contra la cuenta de fondeo al indicativo de compra ("Pagos en otras divisas (n) ≈"), se pagan con tipo de cambio desde ahí y, pactados, pasan exactos a "Pactadas por liquidar"; `?escenario=otras-divisas` (C-54).
+3. Desglose: las filas con cantidad de la posición abren en la ventana de pago lo que las compone, con "Pagar" en los pendientes (C-55).
+
 ## 3. Estado actual por área
 
 ### Flujos que funcionan de punta a punta
@@ -99,7 +105,8 @@ Criterio: sus usuarios son tesoreros poco sofisticados que se marean rápido; en
 - Compra o venta a cuenta propia desde "Comprar X", desde el "Pagar" del encabezado o desde "Pagar a otro destinatario", con montos "Recibe" / "Pagas" editables.
 - Entrada desde el cobro ("Usar para pagar"): paso "¿Qué pagas con este cobro?" en los dos arquetipos.
 - Detalle de movimientos, cargar pagos, comprobantes descargables, lista completa de movimientos ("Ver todos los movimientos"), alta de destinatario, notificaciones y panel de cuentas; el menú solo navega a Inicio (C-52).
-- Operar clásico (Comprar, Vender, Transferir) con el mismo motor, aviso de par sin prototipo, mercado cerrado por escenario.
+- Cotizador en la tarjeta de tipo de cambio (C-53): compra o venta a tu cuenta, o pago a un destinatario en esa divisa, desde el precio; error de saldo y mercado cerrado por escenario.
+- Pagos cargados en divisas sin cuenta, pagados desde la cuenta de fondeo con Hoy o con fecha valor (C-54), y el desglose de cada fila de la posición con "Pagar" (C-55).
 - Onboarding, modo demo (con la tecla P), escenarios por URL, TDC en vivo.
 
 ### Motor y datos
@@ -108,17 +115,18 @@ Criterio: sus usuarios son tesoreros poco sofisticados que se marean rápido; en
 - `src/state/estado.ts` (reducer puro), `derivados.ts`, `vistas.ts` (selectores), `escenarios.ts` (escenarios y frames).
 
 ### Calidad
-- 146 tests de Vitest (motor, posición, comisión y el flujo frame por frame con los números del brief), `npm run lint`, `tsc --noEmit` y `next build` limpios.
-- Recorridos con Playwright del flujo principal, movimientos, arquetipos, turismo, sección 7, la ventana de pago (C-47) y el precio en vivo, la comisión, las fechas y el menú (C-48 a C-52, a 1024 × 700 y 1280 × 800) con cero errores de consola; capturas en `docs/design/verificacion/` y de los prototipos en `docs/design/frames/`.
+- 168 tests de Vitest (motor, posición, pagos en otras divisas, comisión, cotizador, desglose y el flujo frame por frame con los números del brief), `npm run lint`, `tsc --noEmit` y `next build` limpios.
+- Recorridos con Playwright del flujo principal, movimientos, arquetipos, turismo, sección 7, la ventana de pago (C-47) y el precio en vivo, la comisión, las fechas y el menú (C-48 a C-52), y el cotizador, los pagos en otras divisas y el desglose con teclado (C-53 a C-55), a 1024 × 700 y 1280 × 800, con cero errores de consola; capturas en `docs/design/verificacion/` y de los prototipos en `docs/design/frames/`.
 - Accesibilidad: diálogo con foco atrapado y Esc, radiogroups con flechas (saltan deshabilitadas), cuenta regresiva con aria-live, estados siempre en badge con texto, foco visible, es-MX con tuteo.
 
 ### Documentación
-- `README.md` (cómo correr, rutas, parámetros, estructura, decisiones), `docs/decisiones.md` (C-01 a C-52), `docs/diferencias-cc-vs-diseno.md` (turismo y sección 7), `docs/handoff/` y `docs/handoff-turismo/` (paquetes de diseño tal como llegaron).
+- `README.md` (cómo correr, rutas, parámetros, estructura, decisiones), `docs/decisiones.md` (C-01 a C-55), `docs/diferencias-cc-vs-diseno.md` (turismo, sección 7, ventana de pago, check-in y C-53 a C-55), `docs/handoff/` y `docs/handoff-turismo/` (paquetes de diseño tal como llegaron).
 
 ## 4. Pendiente y límites conocidos
 
 - "Subir documento" (no hay OCR ni factura real) y "Horarios de operación" (el horario es un dato sin confirmar): toast.
 - El alta de destinatario no valida contra el banco y vive en memoria, como todo el estado.
+- GBP/MXN y CAD/MXN con precios y tendencias de ejemplo, y destinatarios en libras y dólares canadienses inventados; la cuenta de fondeo es un dato del arquetipo (pesos).
 - Errores de red o de precio, reintentos de token, horario real de mercado, pago parcial o múltiple, pagos MXN dentro de la semana en la gráfica, persistencia entre recargas, móvil: fuera del alcance actual.
 - Diferencias con el archivo de diseño del flujo secundario (precio ejecutable por factor, banda del TDC, tarjeta de tipo de cambio compacta, copys de la ventana de pago, orden de OpcionPago): registradas en `docs/diferencias-cc-vs-diseno.md`, el código manda.
 - Vercel: producción sigue atada a la rama `claude/determined-thompson-n0zgns`; al mergear a `main` conviene cambiar la rama de producción. Las URLs `.vercel.app` tienen protección SSO.
