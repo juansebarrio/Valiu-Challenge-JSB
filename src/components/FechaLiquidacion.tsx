@@ -13,6 +13,8 @@ export interface FechaLiquidacionProps {
   opciones: OpcionFecha[];
   valor: Date;
   onChange: (fecha: Date) => void;
+  /** Texto bajo las opciones según lo elegido: el beneficio de elegir otro día (C-51, notaFechaLiquidacion en vistas.ts). */
+  nota: string;
   /** false sin tipo de cambio (transferencias en la misma divisa). */
   visible?: boolean;
   /** Solo para la hoja de estados. */
@@ -23,7 +25,7 @@ export interface FechaLiquidacionProps {
 const mismoDia = (a: Date, b: Date) => a.toDateString() === b.toDateString();
 
 /** Segmented del DS a todo el ancho; elegida con el color del Figma (D-28). role=radiogroup, ← → mueven la selección y saltan las deshabilitadas. */
-export const FechaLiquidacion: FC<FechaLiquidacionProps> = ({ opciones, valor, onChange, visible = true, demoHover, demoFoco }) => {
+export const FechaLiquidacion: FC<FechaLiquidacionProps> = ({ opciones, valor, onChange, nota, visible = true, demoHover, demoFoco }) => {
   const ref = useRef<HTMLDivElement>(null);
   if (!visible) return null;
   const idx = Math.max(0, opciones.findIndex((o) => mismoDia(o.fecha, valor)));
@@ -36,7 +38,6 @@ export const FechaLiquidacion: FC<FechaLiquidacionProps> = ({ opciones, valor, o
     onChange(opciones[j].fecha);
     ref.current?.querySelectorAll<HTMLElement>('[role="radio"]')[j]?.focus();
   };
-  const motivo = opciones.find((o) => o.deshabilitada && o.motivo)?.motivo;
   return (
     <div data-component="FechaLiquidacion" className="flex flex-col gap-2">
       <span id="fecha-liquidacion-label" className="text-caption font-bold text-app-ink-label">¿Cuándo sale el dinero?</span>
@@ -73,7 +74,7 @@ export const FechaLiquidacion: FC<FechaLiquidacionProps> = ({ opciones, valor, o
           );
         })}
       </div>
-      <span className="text-caption text-app-ink-2">{motivo ? `${motivo}. ` : ''}El precio queda cerrado hoy, elijas el día que elijas.</span>
+      <span className="text-pretty text-caption text-app-ink-2">{nota}</span>
     </div>
   );
 };

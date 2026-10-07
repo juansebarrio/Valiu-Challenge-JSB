@@ -22,15 +22,18 @@ export interface AppShellProps {
   modo?: ModoShell;
   raizRef?: Ref<HTMLDivElement>;
   activo?: number;
-  /** Secciones fuera del prototipo: muestran un aviso breve en lugar de navegar. */
+  /** Contáctanos, pie y cerrar sesión en los frames: muestran un aviso breve en lugar de navegar. */
   onNoDisponible?: () => void;
-  /** Las cinco entradas del menú son secciones reales: cambian la vista dentro de la app. */
+  /** Inicio: vuelve a la vista de inicio (también desde la lista completa de movimientos). */
   onNavegar?: (indice: number) => void;
   /** Campana: cantidad de avisos y qué abre. */
   campana?: { cantidad: number; onClick: () => void };
 }
 
-const ITEM = 'flex h-(--app-nav-item-h) cursor-pointer items-center gap-2.5 rounded-sm px-2.5 text-body whitespace-nowrap transition-colors hover:bg-app-accent-bg @max-lg/shell:w-(--app-nav-item-w-min) @max-lg/shell:justify-center @max-lg/shell:px-0';
+const ITEM_BASE = 'flex h-(--app-nav-item-h) items-center gap-2.5 rounded-sm px-2.5 text-body whitespace-nowrap @max-lg/shell:w-(--app-nav-item-w-min) @max-lg/shell:justify-center @max-lg/shell:px-0';
+const ITEM = `${ITEM_BASE} cursor-pointer transition-colors hover:bg-app-accent-bg`;
+/** C-52: en el menú solo Inicio navega; las demás entradas siguen visibles pero deshabilitadas (sin hover, sin mano y fuera del tab). */
+const NAVEGABLES = new Set([0]);
 
 /** Sidebar 240 · header 48 · main 24 32 32 · footer 40 (README · Layout del AppShell). */
 export const AppShell: FC<AppShellProps> = ({ children, capas, modo = 'app', raizRef, activo = 0, onNoDisponible, onNavegar, campana }) => {
@@ -45,12 +48,19 @@ export const AppShell: FC<AppShellProps> = ({ children, capas, modo = 'app', rai
           <Logo variante="glyph" className="hidden @max-lg/shell:block" />
         </div>
         <nav aria-label="Principal" className="flex flex-col gap-1 @max-lg/shell:items-center">
-          {NAV.map((it, i) => (
-            <a key={it.label} href="#" onClick={onNavegar ? (e) => { e.preventDefault(); onNavegar(i); } : i === activo ? (e) => e.preventDefault() : noDisponible} aria-current={i === activo ? 'page' : undefined} title={it.label} className={[ITEM, i === activo ? 'bg-app-accent-bg font-semibold text-app-accent' : 'font-medium text-app-ink'].join(' ')}>
-              <Icono nombre={it.icono} tamano="md" />
-              <span className="@max-lg/shell:sr-only">{it.label}</span>
-            </a>
-          ))}
+          {NAV.map((it, i) =>
+            NAVEGABLES.has(i) ? (
+              <a key={it.label} href="#" onClick={(e) => { e.preventDefault(); onNavegar?.(i); }} aria-current={i === activo ? 'page' : undefined} title={it.label} className={[ITEM, i === activo ? 'bg-app-accent-bg font-semibold text-app-accent' : 'font-medium text-app-ink'].join(' ')}>
+                <Icono nombre={it.icono} tamano="md" />
+                <span className="@max-lg/shell:sr-only">{it.label}</span>
+              </a>
+            ) : (
+              <a key={it.label} role="link" aria-disabled="true" tabIndex={-1} title={it.label} className={[ITEM_BASE, 'cursor-default font-medium text-app-ink-3'].join(' ')}>
+                <Icono nombre={it.icono} tamano="md" />
+                <span className="@max-lg/shell:sr-only">{it.label}</span>
+              </a>
+            ),
+          )}
         </nav>
         <div className="flex-1" />
         {esApp ? (

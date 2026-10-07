@@ -60,20 +60,21 @@ describe('evaluarOrigen (frame 02)', () => {
     expect(r.pagasTexto).toBe('Pagas ≈ 27,136.77 MXN');
     expect(r.consecuencia).toMatchObject({ texto: 'Cubre el faltante en USD', tono: 'ok' });
   });
-  it('USD: te faltarían 1,000 el vie 9', () => {
+  it('USD: te faltarían 1,000 para tus pagos del vie 9 (C-49)', () => {
     const r = evaluarOrigen({ ...base, origen: { divisa: 'USD', saldo: centavos(2000) } });
-    expect(r.pagasTexto).toBe('Pagas 1,500.00 USD, sin tipo de cambio');
-    expect(r.consecuencia).toMatchObject({ texto: 'Te faltarían 1,000.00 USD el vie 9', tono: 'warn' });
+    expect(r.pagasTexto).toBe('Pagas 1,500.00 USD');
+    expect(r.consecuencia).toMatchObject({ texto: 'Te faltarían 1,000.00 USD para tus pagos del vie 9', tono: 'warn' });
   });
   it('EUR también cubre el faltante en USD', () => {
     const r = evaluarOrigen({ ...base, origen: { divisa: 'EUR', saldo: centavos(50_000) } });
     expect(r.pagasTexto).toBe('Pagas ≈ 1,280.96 EUR');
     expect(r.consecuencia).toMatchObject({ texto: 'Cubre el faltante en USD', tono: 'ok' });
   });
-  it('sin faltante que cubrir: te quedan X', () => {
+  it('sin faltante que cubrir: sin chip, no cambia la decisión (C-49)', () => {
     const sinFaltante = { ...posiciones, USD: posicion('USD', centavos(5000), agregar(pendientesUSD)) };
     const r = evaluarOrigen({ ...base, posiciones: sinFaltante, origen: { divisa: 'EUR', saldo: centavos(50_000) } });
-    expect(r.consecuencia).toMatchObject({ texto: 'Te quedan 48,719.04 EUR', tono: 'neutro' });
+    expect(r.pagasTexto).toBe('Pagas ≈ 1,280.96 EUR');
+    expect(r.consecuencia).toBeNull();
   });
   it('hoy no alcanza se puede elegir igual', () => {
     const r = evaluarOrigen({ ...base, origen: { divisa: 'MXN', saldo: centavos(20_000) } });
@@ -81,6 +82,6 @@ describe('evaluarOrigen (frame 02)', () => {
   });
   it('compra a cuenta propia: cubre el faltante', () => {
     const r = evaluarOrigen({ ...base, monto: centavos(1000), destinoPropio: true, pagoCargado: false, origen: { divisa: 'MXN', saldo: centavos(1_180_000) } });
-    expect(r.consecuencia.texto).toBe('Cubre el faltante en USD');
+    expect(r.consecuencia?.texto).toBe('Cubre el faltante en USD');
   });
 });

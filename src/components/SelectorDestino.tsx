@@ -41,7 +41,10 @@ const Items: FC<Pick<SelectorDestinoProps, 'grupos' | 'onElegir' | 'onAgregar' |
   </>
 );
 
-/** Buscador y grupos ("Pagos próximos", "Tus cuentas", "Destinatarios"): el mismo componente en la ventana de pago y en Transferir del clásico. */
+/**
+ * Buscador y grupos: el mismo componente en la ventana de pago ("Destinatarios" y "Tus cuentas": se elige un destinatario, no un pago, C-49)
+ * y en Transferir del clásico ("Tus cuentas" y "Destinatarios en X").
+ */
 export const SelectorDestino: FC<SelectorDestinoProps> = ({ modo, grupos, busqueda, onBusqueda, onElegir, onAgregar, valor = null, abierto = false, onAbrir, etiqueta = 'Destino', placeholder = 'Elige una cuenta', vacio }) => {
   if (modo === 'campo') {
     return (
@@ -55,7 +58,7 @@ export const SelectorDestino: FC<SelectorDestinoProps> = ({ modo, grupos, busque
       <label className="flex min-h-(--app-input-h) items-center gap-2 rounded-sm border border-app-accent bg-app-surface px-3">
         <Icono nombre="search" tamano="sm" className="text-app-ink-2" />
         <span className="sr-only">Buscar destino</span>
-        <input autoFocus value={busqueda} placeholder="Busca un pago, una cuenta o un destinatario" onChange={(e) => onBusqueda(e.target.value)} role="combobox" aria-expanded aria-autocomplete="list" aria-controls="destino-lista" className="min-w-0 flex-1 bg-transparent text-body outline-none placeholder:text-app-ink-3" />
+        <input autoFocus value={busqueda} placeholder="Busca un destinatario o una cuenta" onChange={(e) => onBusqueda(e.target.value)} role="combobox" aria-expanded aria-autocomplete="list" aria-controls="destino-lista" className="min-w-0 flex-1 bg-transparent text-body outline-none placeholder:text-app-ink-3" />
       </label>
       <div id="destino-lista" role="listbox" aria-label="Destinos" className="flex flex-col gap-0.5 rounded-sm border border-app-divider p-2">
         <Items grupos={grupos} onElegir={onElegir} onAgregar={onAgregar} vacio={vacio} />

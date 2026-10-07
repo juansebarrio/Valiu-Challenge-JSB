@@ -58,7 +58,7 @@ export interface ListaMovimientosProps {
   tour?: string;
   /** resumen: el bloque del inicio (la semana y "Ver todos los movimientos") · completa: la sección Movimientos con todos los pagos. */
   modo?: 'resumen' | 'completa';
-  /** "Ver todos los movimientos" (Secondary), único control al pie del bloque: abre la sección Movimientos del menú lateral. */
+  /** "Ver todos los movimientos" (Secondary), único control al pie del bloque: abre la lista completa, una vista de Inicio (C-52). */
   onVerTodos?: () => void;
   /** Línea bajo el encabezado en modo completa: cuántos pagos próximos y cuánto suman por divisa. */
   resumen?: string;

@@ -1,6 +1,6 @@
 // src/lib/fx.ts — deduce tipo de operación, par y lado a partir de origen y destino, y cotiza.
 // Sección 5 y Anexo A de la consigna; dinero en centavos y tipo de cambio en micro-unidades (dinero.ts).
-import { entreTdc, escalarTdc, porTdc, type Centavos, type TdcMicro } from './dinero';
+import { entreTdc, escalarTdc, porBp, porTdc, sinBp, type Centavos, type TdcMicro } from './dinero';
 
 export type Divisa = 'MXN' | 'USD' | 'EUR' | 'GBP' | 'CAD';
 /** Lado del tipo de cambio: si el usuario recibe la divisa base, aplica comprar; si la entrega, vender. */
@@ -78,24 +78,45 @@ export interface ParamsCotizar {
   tdc?: TdcMicro | null;
   /** Tabla de tipos de cambio (el indicativo en vivo). Por defecto, PARES. */
   pares?: TablaPares;
+  /** Comisión en puntos básicos (100 = 1 %), sobre lo que sale: Pagas = lo que recibe el destino al precio × (1 + tasa) (C-50). */
+  comisionBp?: number;
 }
 
 export interface Cotizacion extends Operacion {
   tdc: TdcMicro | null;
+  /** Lo que sale del origen, con la comisión incluida. */
   pagas: Centavos;
   recibe: Centavos;
+  /** Comisión en la divisa de origen (parte de `pagas`). */
+  comision: Centavos;
+  comisionBp: number;
 }
 
-/** Una sola función para cotizar: calcula el otro lado del monto con el tipo de cambio que corresponde. */
+/**
+ * Una sola función para cotizar: calcula el otro lado del monto con el tipo de cambio que corresponde y la comisión (C-50).
+ * Pagas = lo que recibe el destino convertido al precio × (1 + tasa), half-up a centavos; con tasa 0 ningún número cambia.
+ * Si el lado fijo es "pagas", la comisión sale de ese monto y el resto se convierte.
+ */
 export function cotizar(p: ParamsCotizar): Cotizacion | null {
   const op = deducir(p.origen, p.destino);
   if (!op) return null;
-  if (op.tipo === 'transferencia') return { ...op, tdc: null, pagas: p.monto, recibe: p.monto };
-  const t = p.tdc ?? tdcDe(op, p.pares);
-  if (t == null) return null;
+  const bp = p.comisionBp ?? 0;
+  let t: TdcMicro | null = null;
+  if (op.tipo !== 'transferencia') {
+    t = p.tdc ?? tdcDe(op, p.pares);
+    if (t == null) return null;
+  }
   const baseEsDestino = op.base === p.destino;
-  if (p.ladoFijo === 'pagas') return { ...op, tdc: t, pagas: p.monto, recibe: baseEsDestino ? entreTdc(p.monto, t) : porTdc(p.monto, t) };
-  return { ...op, tdc: t, recibe: p.monto, pagas: baseEsDestino ? porTdc(p.monto, t) : entreTdc(p.monto, t) };
+  // Sin tipo de cambio (transferencia) el monto pasa igual; con tipo de cambio, se multiplica o divide según qué lado es la base.
+  const aOrigen = (recibe: Centavos) => (t == null ? recibe : baseEsDestino ? porTdc(recibe, t) : entreTdc(recibe, t));
+  const aDestino = (sale: Centavos) => (t == null ? sale : baseEsDestino ? entreTdc(sale, t) : porTdc(sale, t));
+  if (p.ladoFijo === 'pagas') {
+    const sinComision = sinBp(p.monto, bp);
+    return { ...op, tdc: t, pagas: p.monto, recibe: aDestino(sinComision), comision: p.monto - sinComision, comisionBp: bp };
+  }
+  const base = aOrigen(p.monto);
+  const comision = porBp(base, bp);
+  return { ...op, tdc: t, recibe: p.monto, pagas: base + comision, comision, comisionBp: bp };
 }
 
 /** Factores del precio ejecutable sobre el indicativo, en diezmillonésimas (handoff: 1.0000681 y 0.9999319). */

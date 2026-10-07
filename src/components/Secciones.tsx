@@ -50,7 +50,7 @@ const ESTADO_TDC = { vivo: { texto: 'En vivo', tono: 'success' as const }, conge
 export const SeccionMonitoreo: FC<{ estado: 'vivo' | 'congelado' | 'pausa'; hora: string; pares: VistaParMonitoreo[] }> = ({ estado, hora, pares }) => (
   <section data-component="MonitoreoDivisas" aria-label="Monitoreo de divisas" className="flex flex-col gap-4">
     <div className="flex items-center justify-between">
-      <span className="text-body text-app-ink-2">Precio indicativo de cada par; el ejecutable aplica el spread al pedir precio y queda fijo dos minutos.</span>
+      <span className="text-body text-app-ink-2">Precio indicativo de cada par; el ejecutable aplica el spread al pedir precio y se mueve con el mercado hasta que confirmas.</span>
       <Badge tono={ESTADO_TDC[estado].tono}>{ESTADO_TDC[estado].texto}</Badge>
     </div>
     <div className="grid grid-cols-3 gap-6">

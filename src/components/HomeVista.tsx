@@ -1,5 +1,5 @@
 'use client';
-import { useMemo, useState, type FC, type RefObject } from 'react';
+import { useEffect, useMemo, useState, type FC, type RefObject } from 'react';
 import * as fmt from '@/lib/format';
 import { AVISO_FUERA_DEL_PROTOTIPO, HOY } from '@/data/escenario';
 import { ONBOARDING_PASOS, type Accion, type EstadoApp } from '@/state/estado';
@@ -18,6 +18,7 @@ import { FormularioOperar } from './FormularioOperar';
 import { CapaOperacion, type Contenedor } from './CapaOperacion';
 import { PasoOnboarding, PASOS_ONBOARDING } from './PasoOnboarding';
 import { Boton } from './ui/Boton';
+import { Icono } from './ui/Icono';
 import { Pestanas } from './ui/Pestanas';
 import { Toast } from './ui/Toast';
 import { descargarComprobante, htmlComprobante } from './comprobante';
@@ -39,9 +40,12 @@ export const HomeVista: FC<HomeVistaProps> = ({ estado, dispatch, modo = 'app', 
   const [depositoEn, setDepositoEn] = useState<Contenedor>('panel');
   const noDisponible = () => dispatch({ tipo: 'toast', texto: AVISO_FUERA_DEL_PROTOTIPO });
   const paso = estado.onboarding.activo ? PASOS_ONBOARDING[estado.onboarding.paso] : null;
+  // Solo Inicio navega (C-52): la lista completa de movimientos es una vista de Inicio, que queda activo en el menú.
   const enMovimientos = estado.seccion === 'movimientos';
-  const SECCIONES = ['inicio', 'movimientos', 'control', 'destinatarios', 'monitoreo'] as const;
-  const indiceSeccion = SECCIONES.indexOf(estado.seccion);
+  // "Ver todos los movimientos" queda al pie del inicio: la lista completa (y la vuelta al inicio) arrancan arriba, con su título a la vista.
+  useEffect(() => {
+    if (modo === 'app') window.scrollTo(0, 0);
+  }, [estado.seccion, modo]);
   const avisos = useMemo(() => notificaciones(estado).length, [estado]);
   // Una fila de Movimientos: "Pagar" abre el flujo con el pago cargado; el resto de la fila abre su detalle.
   const fila = (f: VistaFila) => ({ fecha: f.fecha, nombre: f.nombre, detalle: f.detalle, monto: f.monto, divisa: f.divisa, estado: f.badge, onPagar: f.orden ? () => dispatch({ tipo: 'abrirPanel', orden: f.orden! }) : undefined, onAbrir: () => dispatch({ tipo: 'abrirDetalle', id: f.id }) });
@@ -51,9 +55,9 @@ export const HomeVista: FC<HomeVistaProps> = ({ estado, dispatch, modo = 'app', 
       <AppShell
         modo={modo}
         raizRef={raizRef}
-        activo={indiceSeccion}
+        activo={0}
         onNoDisponible={noDisponible}
-        onNavegar={(i) => dispatch({ tipo: 'seccion', seccion: SECCIONES[i] ?? 'inicio' })}
+        onNavegar={() => dispatch({ tipo: 'seccion', seccion: 'inicio' })}
         campana={{ cantidad: avisos, onClick: () => dispatch({ tipo: 'abrirNotificaciones' }) }}
         capas={
           <>
@@ -82,6 +86,7 @@ export const HomeVista: FC<HomeVistaProps> = ({ estado, dispatch, modo = 'app', 
           <SeccionGenerica estado={estado} dispatch={dispatch} home={home} noDisponible={noDisponible} />
         ) : enMovimientos ? (
           <>
+            <Boton variante="link-caption" className="self-start px-0!" onClick={() => dispatch({ tipo: 'seccion', seccion: 'inicio' })}><Icono nombre="angle-left-b" tamano="sm" className="mr-1" />Volver al inicio</Boton>
             <div className="flex items-start justify-between gap-6">
               <div className="flex flex-col gap-0.5">
                 <h1 className="text-h1 font-bold">Movimientos</h1>
@@ -155,7 +160,7 @@ export const HomeVista: FC<HomeVistaProps> = ({ estado, dispatch, modo = 'app', 
               <div className="col-span-2 flex min-w-0 flex-col gap-5">
                 {home.nuevo ? (
                   <section aria-labelledby="nuevo-titulo" className="flex flex-col gap-2">
-                    <h2 id="nuevo-titulo" className="text-h3 font-semibold">Lo nuevo</h2>
+                    <h2 id="nuevo-titulo" className="text-h3 font-semibold">Cobraste hoy</h2>
                     <FranjaNuevo monto={home.nuevo.monto} divisa={home.nuevo.divisa} origen={home.nuevo.de} meta={home.nuevo.meta} onComprobante={() => dispatch({ tipo: 'abrirDetalle', id: home.nuevo!.id })} onUsar={() => dispatch({ tipo: 'abrirCobro', cobroId: home.nuevo!.id })} />
                   </section>
                 ) : null}
@@ -180,11 +185,10 @@ export const HomeVista: FC<HomeVistaProps> = ({ estado, dispatch, modo = 'app', 
               <span className="text-body text-app-ink-2">¿Qué quieres hacer hoy?</span>
               <div className="flex gap-5">
                 <Boton variante="link-caption" onClick={noDisponible}>Horarios de operación</Boton>
-                <Boton variante="link-caption" onClick={() => dispatch({ tipo: 'seccion', seccion: 'control' })}>Operaciones recientes</Boton>
               </div>
             </div>
             <div className="grid grid-cols-3 items-start gap-6">
-              <div className="col-span-2 min-w-0"><FormularioOperar vista={operar} dispatch={dispatch} onNoDisponible={noDisponible} onAgregarDestinatario={() => dispatch({ tipo: 'abrirDestinatarioNuevo' })} onComprobante={(c) => descargarComprobante(`comprobante-${estado.operar.ultima?.id ?? 'operacion'}`, htmlComprobante({ titulo: c.titulo, sub: `${c.destino} · ${c.referencia || '—'}`, empresa: home.empresa, filas: c.detalle, nota: c.texto ?? c.fondeo }))} /></div>
+              <div className="col-span-2 min-w-0"><FormularioOperar vista={operar} dispatch={dispatch} onNoDisponible={noDisponible} onAgregarDestinatario={() => dispatch({ tipo: 'abrirDestinatarioNuevo' })} onComprobante={(c) => descargarComprobante(`comprobante-${estado.operar.ultima?.id ?? 'operacion'}`, htmlComprobante({ titulo: c.titulo, sub: `${c.destino} · ${c.referencia || '—'}`, empresa: home.empresa, filas: c.filasComprobante, nota: c.fondeo }))} /></div>
               <ModuloCuentas cuentas={home.cuentas} onVerTodas={() => dispatch({ tipo: 'abrirCuentas' })} className="self-start" />
             </div>
           </div>

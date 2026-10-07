@@ -31,6 +31,11 @@ export const entreTdc = (c: Centavos, t: TdcMicro): Centavos => Number(dividirHa
 /** Tipo de cambio × factor expresado en diezmillonésimas (1.0000681 → 10_000_681). */
 export const escalarTdc = (t: TdcMicro, factorDiezMillonesimas: number): TdcMicro =>
   Number(dividirHalfUp(BigInt(t) * BigInt(factorDiezMillonesimas), FACTOR_BASE));
+const BP = 10_000n;
+/** Centavos × tasa en puntos básicos (100 = 1 %), half-up: la comisión de un monto (C-50). */
+export const porBp = (c: Centavos, bp: number): Centavos => Number(dividirHalfUp(BigInt(c) * BigInt(bp), BP));
+/** Centavos ÷ (1 + tasa): lo que queda de un monto que ya incluye la comisión, half-up (C-50). */
+export const sinBp = (c: Centavos, bp: number): Centavos => Number(dividirHalfUp(BigInt(c) * BP, BP + BigInt(bp)));
 /** Tipo de cambio × (1 + r), con r una fracción chica (oscilación del indicativo). */
 export const oscilarTdc = (t: TdcMicro, r: number): TdcMicro => Math.round(t * (1 + r));
 

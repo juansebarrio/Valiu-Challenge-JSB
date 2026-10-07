@@ -67,7 +67,7 @@ export interface Realizado {
   estado: 'Confirmada' | 'Enviada';
 }
 
-/** El cobro de hoy ("Lo nuevo"): `id` es el del realizado que lo registra y `cuentaId` la cuenta donde entró. */
+/** El cobro de hoy (bloque "Cobraste hoy" del inicio): `id` es el del realizado que lo registra y `cuentaId` la cuenta donde entró. */
 export interface Cobro {
   id: string;
   cuentaId: CuentaId;
@@ -79,6 +79,12 @@ export interface Cobro {
   referencia: string;
 }
 
+/** Clase de una operación: pago a un tercero; compra, venta o transferencia a una cuenta propia (claseDe en derivados.ts). */
+export type ClaseOperacion = 'pago' | 'compra' | 'venta' | 'transferencia';
+
+/** Comisión por clase de operación en puntos básicos enteros (100 = 1 %). Hoy 0 en todas; la pantalla ya muestra la fila "Comisión" (C-50). */
+export const COMISIONES_BP: Record<ClaseOperacion, number> = { pago: 0, compra: 0, venta: 0, transferencia: 0 };
+
 export interface Datos {
   cuentas: Cuenta[];
   destinatarios: Destinatario[];
@@ -86,6 +92,8 @@ export interface Datos {
   loNuevo: Cobro | null;
   realizados: Realizado[];
   mercado: 'abierto' | 'cerrado';
+  /** Comisión por clase de operación, en puntos básicos (C-50). */
+  comisiones: Record<ClaseOperacion, number>;
 }
 
 /** Una empresa de ejemplo: sus datos base más lo que cambia entre arquetipos (tipo de cambio, par de la decisión, orden de las tarjetas). */
@@ -185,7 +193,7 @@ export const IMPORTADORA: Arquetipo = {
   id: 'importadora',
   empresa,
   usuario: { nombre: 'Jorge R.', rol: 'Tesorería', iniciales: 'JR' },
-  datos: { cuentas: CUENTAS, destinatarios: DESTINATARIOS, pagosFuturos: [...PAGOS_USD, ...PAGOS_MXN], loNuevo: LO_NUEVO, realizados: REALIZADOS, mercado: 'abierto' },
+  datos: { cuentas: CUENTAS, destinatarios: DESTINATARIOS, pagosFuturos: [...PAGOS_USD, ...PAGOS_MXN], loNuevo: LO_NUEVO, realizados: REALIZADOS, mercado: 'abierto', comisiones: COMISIONES_BP },
   pares: TDC_BASE,
   paresTarjeta: ['USD/MXN', 'EUR/MXN'],
   tendencia: TENDENCIA_DIA,

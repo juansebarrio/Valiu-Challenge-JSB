@@ -6,11 +6,12 @@ export interface OpcionRadioProps {
   /** Nombre del handoff para data-component (OpcionOrigen · OpcionPago). */
   componente: 'OpcionOrigen' | 'OpcionPago';
   nombre: string;
-  /** Monto a la derecha del nombre (Pagas ≈ X · monto del pago). */
+  /** Monto a la derecha del nombre (Pagas ≈ X · monto del pago); vacío sin monto (C-49). */
   derecha: string;
   /** Línea de 12 px: saldo de la cuenta · vencimiento, referencia y cuánto del cobro usa. */
   linea: string;
-  consecuencia: { texto: string; tono: TonoBadge; ayuda?: string };
+  /** Un chip como máximo, solo si cambia la decisión (C-49); null = sin chip. */
+  consecuencia: { texto: string; tono: TonoBadge; ayuda?: string } | null;
   seleccionada: boolean;
   /** No se puede elegir (p. ej. cuenta sin saldo en la divisa del pago, D-31): fuera del tab order, cursor not-allowed. */
   deshabilitada?: boolean;
@@ -19,7 +20,7 @@ export interface OpcionRadioProps {
   tabIndex?: number;
 }
 
-/** Opción de radio de la ventana de pago: radio de 20 px; seleccionada = borde indigo + bg #F0F1FD; la consecuencia siempre va en badge (D-20). */
+/** Opción de radio de la ventana de pago: radio de 20 px; seleccionada = borde indigo + bg #F0F1FD; la consecuencia, si la hay, va en badge (D-20, C-49). */
 export const OpcionRadio: FC<OpcionRadioProps> = ({ componente, nombre, derecha, linea, consecuencia, seleccionada, deshabilitada, onElegir, onKeyDown, tabIndex }) => (
   <div
     data-component={componente}
@@ -41,11 +42,11 @@ export const OpcionRadio: FC<OpcionRadioProps> = ({ componente, nombre, derecha,
     <div className="flex min-w-0 flex-1 flex-col gap-1">
       <div className="flex items-baseline justify-between gap-3">
         <span className="shrink-0 whitespace-nowrap text-body font-semibold">{nombre}</span>
-        <span className="text-balance text-right text-body font-semibold tabular-nums">{derecha}</span>
+        {derecha ? <span className="text-balance text-right text-body font-semibold tabular-nums">{derecha}</span> : null}
       </div>
       <span className="text-caption text-app-ink-2 tabular-nums">{linea}</span>
-      <Badge tono={consecuencia.tono} className="self-start">{consecuencia.texto}</Badge>
-      {consecuencia.ayuda ? <span className="text-pretty text-caption text-app-ink-2">{consecuencia.ayuda}</span> : null}
+      {consecuencia ? <Badge tono={consecuencia.tono} className="self-start">{consecuencia.texto}</Badge> : null}
+      {consecuencia?.ayuda ? <span className="text-pretty text-caption text-app-ink-2">{consecuencia.ayuda}</span> : null}
     </div>
   </div>
 );
@@ -56,7 +57,7 @@ export interface OpcionOrigenProps extends Omit<OpcionRadioProps, 'componente' |
   pagas: string;
 }
 
-/** Cuenta de origen: nombre, "Pagas ≈ X", saldo y consecuencia. */
+/** Cuenta de origen: nombre y saldo; con monto, también "Pagas ≈ X" y, si cambia la decisión, la consecuencia (C-49). */
 export const OpcionOrigen: FC<OpcionOrigenProps> = ({ cuenta, saldo, pagas, ...rest }) => (
   <OpcionRadio componente="OpcionOrigen" nombre={cuenta} derecha={pagas} linea={saldo} {...rest} />
 );

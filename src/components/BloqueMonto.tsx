@@ -11,6 +11,12 @@ export interface BloqueMontoProps {
   ladoFijo: 'recibe' | 'pagas';
   /** Hay tipo de cambio: el lado no fijo "se actualiza en vivo". */
   conTdc: boolean;
+  /** Con la ventana para confirmar abierta (C-48) el lado no fijo es exacto en cada instante: sin "≈". */
+  exacto?: boolean;
+  /** Transferencia en la misma divisa: un solo monto, "Envías" (lo que sale), sin "Recibe" (C-50). */
+  unico?: boolean;
+  /** false en la confirmación y el detalle: los montos son finales, sin "Fijo" ni "se actualiza en vivo". */
+  marcas?: boolean;
   /** Sin factura, los dos montos se editan; el que escribes queda fijo. */
   editable?: boolean;
   onCambiar?: (lado: 'recibe' | 'pagas', valor: Centavos) => void;
@@ -55,12 +61,22 @@ const Lado: FC<{ label: string; monto: Centavos; divisa: Divisa; aprox: boolean;
 /**
  * Dos bloques separados por divisor; el lado fijo lleva candado + tag "Fijo", el otro la marca "se actualiza en vivo".
  * Siempre "Pagas" arriba y "{destinatario} recibe" abajo, con y sin factura (C-39). Sin factura (editable) los dos son campos;
- * el que el usuario escribe queda fijo y el otro se recalcula con el indicativo (sección 7 del brief).
+ * el que el usuario escribe queda fijo y el otro se recalcula con el indicativo (sección 7 del brief) o, con la ventana para confirmar
+ * abierta, con el precio ejecutable en vivo y sin "≈" (C-48). En una transferencia en la misma divisa, un solo monto: "Envías" (C-50).
  */
-export const BloqueMonto: FC<BloqueMontoProps> = ({ pagas, recibe, ladoFijo, conTdc, editable, onCambiar }) => {
-  const fijo = <Badge tono="neutral" icono="lock">Fijo</Badge>;
-  const ladoPagas = <Lado label="Pagas" monto={pagas.monto} divisa={pagas.divisa} aprox={conTdc && ladoFijo !== 'pagas'} derecha={ladoFijo === 'pagas' ? fijo : conTdc ? <EnVivo /> : null} editable={!!editable} onCambiar={(c) => onCambiar?.('pagas', c)} />;
-  const ladoRecibe = <Lado label={editable ? `Recibe · ${recibe.destinatario.replace(/ recibe$/, '')}` : recibe.destinatario} monto={recibe.monto} divisa={recibe.divisa} aprox={conTdc && ladoFijo !== 'recibe'} derecha={ladoFijo === 'recibe' ? fijo : conTdc ? <EnVivo /> : null} editable={!!editable} onCambiar={(c) => onCambiar?.('recibe', c)} />;
+export const BloqueMonto: FC<BloqueMontoProps> = ({ pagas, recibe, ladoFijo, conTdc, exacto, unico, marcas = true, editable, onCambiar }) => {
+  if (unico) {
+    return (
+      <div data-component="BloqueMonto" className="flex flex-col rounded-sm border border-app-divider">
+        <Lado label="Envías" monto={pagas.monto} divisa={pagas.divisa} aprox={false} derecha={null} editable={!!editable} onCambiar={(c) => onCambiar?.('pagas', c)} />
+      </div>
+    );
+  }
+  const fijo = marcas ? <Badge tono="neutral" icono="lock">Fijo</Badge> : null;
+  const enVivo = marcas && conTdc ? <EnVivo /> : null;
+  const aprox = conTdc && !exacto;
+  const ladoPagas = <Lado label="Pagas" monto={pagas.monto} divisa={pagas.divisa} aprox={aprox && ladoFijo !== 'pagas'} derecha={ladoFijo === 'pagas' ? fijo : enVivo} editable={!!editable} onCambiar={(c) => onCambiar?.('pagas', c)} />;
+  const ladoRecibe = <Lado label={editable ? `Recibe · ${recibe.destinatario.replace(/ recibe$/, '')}` : recibe.destinatario} monto={recibe.monto} divisa={recibe.divisa} aprox={aprox && ladoFijo !== 'recibe'} derecha={ladoFijo === 'recibe' ? fijo : enVivo} editable={!!editable} onCambiar={(c) => onCambiar?.('recibe', c)} />;
   return (
     <div data-component="BloqueMonto" className="flex flex-col rounded-sm border border-app-divider">
       {ladoPagas}

@@ -49,6 +49,8 @@ export const diaRelativo = (x: Date | string, hoy: Date | string) => {
   if (diff === -1) return 'Ayer';
   return diaLargo(t);
 };
+/** Tasa en puntos básicos como porcentaje: 0 → "0%", 50 → "0.50%" (comisión, C-50). */
+export const tasa = (bp: number) => (bp === 0 ? '0%' : `${Math.floor(bp / 100)}.${pad(bp % 100)}%`);
 /** m:ss para la cuenta regresiva del precio ejecutable */
 export const cuentaRegresiva = (segundos: number) => `${Math.floor(segundos / 60)}:${pad(segundos % 60)}`;
 /** Termina una oración sin duplicar el punto cuando el nombre ya lo trae ("Shenzhen Parts Co."). */

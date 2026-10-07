@@ -162,7 +162,7 @@ export const FormularioOperar: FC<FormularioOperarProps> = ({ vista: v, dispatch
         </div>
 
         {v.vencido ? (
-          <Alerta tono="info" titulo="El precio venció. Pide uno nuevo." role="status">El precio fijo dura 2 minutos. Los montos volvieron al indicativo.</Alerta>
+          <Alerta tono="info" titulo="Se acabó el tiempo para confirmar." role="status">Pide precio de nuevo. Los montos volvieron al indicativo.</Alerta>
         ) : null}
 
         <div data-component="Cotizacion" className="flex flex-col gap-2">
@@ -184,7 +184,14 @@ export const FormularioOperar: FC<FormularioOperarProps> = ({ vista: v, dispatch
             </div>
             {v.cotizacion.tdc ? <CajaTdcValiu pegada tdc={v.cotizacion.tdc.valor} unidad={v.cotizacion.tdc.unidad} tipo={v.cotizacion.tdc.tipo} apagada={v.cotizacion.tdc.apagado} /> : null}
           </div>
-          {v.cotizacion.notaTransfer ? <span className="text-caption text-app-ink-2">Misma divisa en origen y destino: no hay tipo de cambio ni precio que fijar.</span> : null}
+          {/* C-48: con el precio ejecutable, debajo del precio. */}
+          {v.cotizacion.linea ? <span className="text-caption text-app-ink-2">{v.cotizacion.linea}</span> : null}
+          {/* C-50: la comisión en Comprar, Vender y Transferir. */}
+          <dl className="flex items-baseline justify-between gap-4 text-caption tabular-nums">
+            <dt className="text-app-ink-2">{v.cotizacion.comision.k}</dt>
+            <dd className="font-semibold">{v.cotizacion.comision.v}</dd>
+          </dl>
+          {v.cotizacion.notaTransfer ? <span className="text-caption text-app-ink-2">Misma divisa en origen y destino: no hay tipo de cambio.</span> : null}
         </div>
 
         {v.token.visible ? (

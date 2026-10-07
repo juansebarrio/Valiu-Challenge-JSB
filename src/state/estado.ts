@@ -2,18 +2,22 @@
 // Recargar reinicia el escenario; /tablero/alta construye cada frame aplicando acciones sobre el estado inicial.
 import type { Centavos, TdcMicro } from '@/lib/dinero';
 import { leerCentavos } from '@/lib/dinero';
-import { cotizar, deducir, ejecutable, esFinDeSemana, fechasLiquidacion, mismoDia, siguienteHabil, tdcDe, type Divisa, type TablaPares } from '@/lib/fx';
+import { cotizar, deducir, ejecutable, esFinDeSemana, fechasLiquidacion, mismoDia, siguienteHabil, tdcDe, type Cotizacion, type Divisa, type Operacion, type TablaPares } from '@/lib/fx';
 import { neto } from '@/lib/posicion';
 import * as fmt from '@/lib/format';
-import { AGENDAR_DIAS, HOY, DURACION_PRECIO_S, TOKEN_INCORRECTO, datosEscenario, type ArquetipoId, type CuentaId, type Datos, type EscenarioNombre, type PagoFuturo } from '@/data/escenario';
+import { AGENDAR_DIAS, HOY, DURACION_PRECIO_S, TOKEN_INCORRECTO, datosEscenario, type ArquetipoId, type ClaseOperacion, type CuentaId, type Datos, type EscenarioNombre, type PagoFuturo } from '@/data/escenario';
 import { arquetipoDe } from '@/data/arquetipos';
-import { claseDe, cuentaPorId, cuentasActuales, destinoDeDestinatario, motivoPorDefecto, opcionesDelCobro, ordenADestinatario, ordenDePago, pagoPorDefectoDelCobro, posicionesPorDivisa } from './derivados';
+import { claseComision, claseDe, cuentaPorId, cuentasActuales, destinoDeDestinatario, motivoPorDefecto, opcionesDelCobro, ordenADestinatario, ordenDePago, pagoPorDefectoDelCobro, pagosPendientes, posicionesPorDivisa } from './derivados';
 
 export type Pestana = 'posicion' | 'operar';
-/** Sección del menú lateral: Inicio o Movimientos (la lista completa). */
+/** Vista del inicio: Inicio o la lista completa de movimientos; control, destinatarios y monitoreo quedan en el código sin entrada (C-52). */
 export type Seccion = 'inicio' | 'movimientos' | 'control' | 'destinatarios' | 'monitoreo';
 export type PasoPanel = 'pago' | 'destino' | 'origen' | 'revision' | 'precio' | 'confirmacion';
-export type Precio = { estado: 'indicativo' } | { estado: 'fijo'; tdc: TdcMicro; venceEn: number } | { estado: 'vencido'; tdc: TdcMicro };
+/**
+ * Precio de la ventana de pago y del clásico. 'ejecutable' (C-48): "Pedir precio" abre la conexión con el banco por 2 minutos y el precio
+ * sigue al indicativo en vivo (no se fija); `tdc` es el ejecutable del último paso. 'vencido' guarda el último para mostrarlo tachado.
+ */
+export type Precio = { estado: 'indicativo' } | { estado: 'ejecutable'; tdc: TdcMicro; venceEn: number } | { estado: 'vencido'; tdc: TdcMicro };
 
 export interface Destino {
   tipo: 'tercero' | 'propia';
@@ -83,7 +87,7 @@ export interface Panel {
   busquedaDestino: string;
 }
 
-export type Clase = 'pago' | 'compra' | 'venta' | 'transferencia';
+export type Clase = ClaseOperacion;
 
 export interface OperacionHecha {
   id: string;
@@ -97,6 +101,9 @@ export interface OperacionHecha {
   /** Lo que llega al destino, en su divisa. */
   recibe: Centavos;
   tdc: TdcMicro | null;
+  /** Comisión cobrada (parte de `pagas`, en la divisa de origen) y su tasa en puntos básicos al confirmar (C-50). */
+  comision: Centavos;
+  comisionBp: number;
   fechaValor: Date;
   estado: 'En proceso' | 'Pactada';
   motivo: string | null;
@@ -243,6 +250,8 @@ export type Accion =
   | { tipo: 'monto'; lado: 'recibe' | 'pagas'; valor: Centavos }
   | { tipo: 'motivo'; motivo: string }
   | { tipo: 'referencia'; referencia: string }
+  /** "Usar este pago": el destinatario elegido tiene un pago cargado pendiente; carga su monto, concepto y referencia y lo vincula (C-49). */
+  | { tipo: 'usarPagoCargado'; pagoId: string }
   | { tipo: 'pedirPrecio' }
   | { tipo: 'token'; token: string }
   | { tipo: 'confirmar' }
@@ -294,34 +303,88 @@ export function divisasOperar(e: Pick<EstadoApp, 'datos'>, op: Operar): { izq: D
   return { izq: d, der: d, origen: d, destino: d };
 }
 
-/** Lo que hoy sale del origen por la orden de la ventana de pago (indicativo en vivo o precio fijo). */
+/** Tasa de comisión (puntos básicos) de una operación según su clase (C-50): pago, compra, venta o transferencia (misma divisa). */
+export const comisionPara = (e: Pick<EstadoApp, 'datos'>, origen: Divisa, destino: Pick<Destino, 'tipo' | 'divisa'>) => e.datos.comisiones[claseComision(origen, destino)] ?? 0;
+
+/** Ejecutable del lado que corresponde sobre el indicativo de la tabla (null en transferencias o sin par). */
+const ejecutableDe = (op: Operacion, pares: TablaPares) => {
+  const indicativo = tdcDe(op, pares);
+  return indicativo != null && op.lado ? ejecutable(indicativo, op.lado) : null;
+};
+
+/** Lo que sale del origen por la orden de la ventana de pago: indicativo en vivo o el precio ejecutable del momento, con la comisión. */
 export function cotizacionPanel(e: Pick<EstadoApp, 'datos' | 'tdcVivo'>, panel: Panel) {
   const origen = cuentaPorId(e, panel.origenId);
   const orden = panel.orden;
   if (!origen || !orden) return null;
-  const tdc = panel.precio.estado === 'fijo' ? panel.precio.tdc : null;
-  return cotizar({ origen: origen.divisa, destino: orden.destino.divisa, monto: orden.monto, ladoFijo: orden.ladoFijo, fechaValor: panel.fechaValor, tdc, pares: e.tdcVivo });
+  const tdc = panel.precio.estado === 'ejecutable' ? panel.precio.tdc : null;
+  return cotizar({ origen: origen.divisa, destino: orden.destino.divisa, monto: orden.monto, ladoFijo: orden.ladoFijo, fechaValor: panel.fechaValor, tdc, pares: e.tdcVivo, comisionBp: comisionPara(e, origen.divisa, orden.destino) });
 }
 
 const aTexto = (c: Centavos | null) => (c != null && c > 0 ? fmt.numero(c) : '');
 
-/** Recalcula el otro lado del monto del clásico con el tipo de cambio que corresponda (indicativo o fijo). */
+/** Clase de la operación del clásico para la comisión: Transferir es siempre en la misma divisa; Comprar y Vender a un destinatario son un pago. */
+function claseClasico(e: Pick<EstadoApp, 'datos'>, op: Operar): Clase {
+  if (op.tipo === 'transferir') return 'transferencia';
+  if (e.datos.destinatarios.some((x) => x.id === op.destinoId)) return 'pago';
+  return op.tipo === 'comprar' ? 'compra' : 'venta';
+}
+
+/** Tasa de comisión (puntos básicos) de la operación del clásico (C-50). */
+export const comisionClasico = (e: Pick<EstadoApp, 'datos'>, op: Operar) => e.datos.comisiones[claseClasico(e, op)] ?? 0;
+
+/**
+ * Cotización del clásico desde el lado que escribió el usuario, con el indicativo en vivo o el ejecutable y la comisión.
+ * Comprar: izquierda = lo que recibes (base), derecha = lo que pagas · Vender: izquierda = lo que entregas (base), derecha = lo que recibes ·
+ * Transferir: el monto es lo que recibe el destino y la derecha, lo que sale con la comisión.
+ */
+export function cotizacionClasico(e: Pick<EstadoApp, 'datos' | 'tdcVivo'>, op: Operar): Cotizacion | null {
+  const d = divisasOperar(e, op);
+  const comisionBp = comisionClasico(e, op);
+  if (op.tipo === 'transferir') {
+    const c = leerCentavos(op.montoIzq);
+    return c != null ? cotizar({ origen: d.origen, destino: d.destino, monto: c, ladoFijo: 'recibe', comisionBp }) : null;
+  }
+  const deducida = deducir(d.origen, d.destino);
+  const tdc = op.precio.estado === 'ejecutable' ? op.precio.tdc : deducida ? tdcDe(deducida, e.tdcVivo) : null;
+  if (!deducida || tdc == null) return null;
+  const izqEsPagas = op.tipo === 'vender';
+  const desdeDer = op.ladoActivo === 'der';
+  const c = leerCentavos(desdeDer ? op.montoDer : op.montoIzq);
+  if (c == null) return null;
+  const ladoFijo = desdeDer === izqEsPagas ? 'recibe' : 'pagas';
+  return cotizar({ origen: d.origen, destino: d.destino, monto: c, ladoFijo, tdc, comisionBp });
+}
+
+/** Recalcula el otro lado del monto del clásico con el tipo de cambio que corresponda (indicativo o ejecutable) y la comisión. */
 function recalcular(e: Pick<EstadoApp, 'datos' | 'tdcVivo'>, op: Operar): Operar {
-  if (op.tipo === 'transferir') return { ...op, montoDer: op.montoIzq };
+  if (op.tipo !== 'transferir') {
+    const d = divisasOperar(e, op);
+    const deducida = deducir(d.origen, d.destino);
+    if (!deducida || (op.precio.estado !== 'ejecutable' && tdcDe(deducida, e.tdcVivo) == null)) return op;
+  }
+  const cot = cotizacionClasico(e, op);
+  if (op.tipo === 'transferir') return { ...op, montoDer: aTexto(cot ? cot.pagas : null) };
+  const izqEsPagas = op.tipo === 'vender';
+  if (op.ladoActivo === 'der') return { ...op, montoIzq: aTexto(cot ? (izqEsPagas ? cot.pagas : cot.recibe) : null) };
+  return { ...op, montoDer: aTexto(cot ? (izqEsPagas ? cot.recibe : cot.pagas) : null) };
+}
+
+/** C-48: con la ventana abierta, el precio ejecutable sigue al indicativo en vivo; mientras se confirma queda el del momento del clic. */
+function precioEnVivoPanel(e: Pick<EstadoApp, 'datos' | 'tdcVivo'>, panel: Panel): Panel {
+  if (panel.precio.estado !== 'ejecutable' || panel.confirmando) return panel;
+  const origen = cuentaPorId(e, panel.origenId);
+  const op = origen && panel.orden ? deducir(origen.divisa, panel.orden.destino.divisa) : null;
+  const tdc = op ? ejecutableDe(op, e.tdcVivo) : null;
+  return tdc == null ? panel : { ...panel, precio: { ...panel.precio, tdc } };
+}
+
+function precioEnVivoClasico(e: Pick<EstadoApp, 'datos' | 'tdcVivo'>, op: Operar): Operar {
+  if (op.precio.estado !== 'ejecutable' || op.confirmando) return op;
   const d = divisasOperar(e, op);
   const deducida = deducir(d.origen, d.destino);
-  if (!deducida) return op;
-  const tdc = op.precio.estado === 'fijo' ? op.precio.tdc : tdcDe(deducida, e.tdcVivo);
-  if (tdc == null) return op;
-  if (op.ladoActivo === 'der') {
-    const c = leerCentavos(op.montoDer);
-    const cot = c != null ? cotizar({ origen: d.origen, destino: d.destino, monto: c, ladoFijo: 'pagas', tdc }) : null;
-    return { ...op, montoIzq: aTexto(cot ? (op.tipo === 'comprar' ? cot.recibe : cot.pagas) : null) };
-  }
-  const c = leerCentavos(op.montoIzq);
-  // Comprar: izquierda = lo que recibes (base) · Vender: izquierda = lo que entregas (base)
-  const cot = c != null ? cotizar({ origen: d.origen, destino: d.destino, monto: c, ladoFijo: op.tipo === 'comprar' ? 'recibe' : 'pagas', tdc }) : null;
-  return { ...op, montoDer: aTexto(cot ? (op.tipo === 'comprar' ? cot.pagas : cot.recibe) : null) };
+  const tdc = deducida ? ejecutableDe(deducida, e.tdcVivo) : null;
+  return tdc == null ? op : { ...op, precio: { ...op.precio, tdc } };
 }
 
 const cerrarSelectores = (op: Operar): Operar => ({ ...op, parAbierto: false, origenAbierto: false, destinoAbierto: false, motivoAbierto: false });
@@ -331,7 +394,7 @@ const sinPrecio = (p: Panel): Panel => ({ ...p, precio: { estado: 'indicativo' }
 function origenPorDefecto(e: Pick<EstadoApp, 'datos' | 'operaciones' | 'tdcVivo'>, orden: Orden): CuentaId | null {
   const mxn = cuentasActuales(e).find((c) => c.divisa === 'MXN');
   if (!mxn || mxn.id === orden.destino.cuentaId) return null;
-  const cot = cotizar({ origen: 'MXN', destino: orden.destino.divisa, monto: orden.monto, ladoFijo: orden.ladoFijo, pares: e.tdcVivo });
+  const cot = cotizar({ origen: 'MXN', destino: orden.destino.divisa, monto: orden.monto, ladoFijo: orden.ladoFijo, pares: e.tdcVivo, comisionBp: comisionPara(e, 'MXN', orden.destino) });
   if (!cot) return null;
   const pos = posicionesPorDivisa(e).MXN;
   const despues = (pos ? neto(pos) : mxn.saldo) - cot.pagas;
@@ -357,7 +420,7 @@ function ajustarFecha(e: Pick<EstadoApp, 'datos' | 'operaciones' | 'tdcVivo'>, p
   return { ...panel, fechaValor: vence ? vence.fecha : siguienteHabil(HOY) };
 }
 
-function nuevaOperacion(e: EstadoApp, args: { via: 'panel' | 'clasico'; destino: Destino; pagoId?: string; origenId: CuentaId; pagas: Centavos; recibe: Centavos; tdc: TdcMicro | null; fechaValor: Date; motivo: string | null; referencia: string; hora: string }): OperacionHecha {
+function nuevaOperacion(e: EstadoApp, args: { via: 'panel' | 'clasico'; destino: Destino; pagoId?: string; origenId: CuentaId; pagas: Centavos; recibe: Centavos; tdc: TdcMicro | null; comision: Centavos; comisionBp: number; fechaValor: Date; motivo: string | null; referencia: string; hora: string }): OperacionHecha {
   const origen = cuentaPorId(e, args.origenId)!;
   return { id: `op${e.operaciones.length + 1}`, clase: claseDe(origen.divisa, args.destino), estado: mismoDia(args.fechaValor, HOY) ? 'En proceso' : 'Pactada', ...args };
 }
@@ -396,9 +459,9 @@ export const origenClasicoDeshabilitado = (cuenta: { saldo: Centavos }, op: Pick
   return cuenta.saldo <= 0 || (monto > 0 && cuenta.saldo < monto);
 };
 
-/** Lo que sale hoy en el clásico (sin fecha valor) supera el saldo actual de la cuenta de origen. */
+/** Lo que sale hoy en el clásico (sin fecha valor) supera el saldo actual de la cuenta de origen. Sale: la derecha al comprar y transferir (con la comisión), la izquierda al vender. */
 function saleMasDelSaldoClasico(e: Pick<EstadoApp, 'datos' | 'operaciones'>, op: Operar): boolean {
-  const sale = (op.tipo === 'comprar' ? leerCentavos(op.montoDer) : leerCentavos(op.montoIzq)) ?? 0;
+  const sale = (op.tipo === 'vender' ? leerCentavos(op.montoIzq) : leerCentavos(op.montoDer)) ?? 0;
   const saldo = saldoActual(e, op.origenId);
   return saldo == null || sale <= 0 || sale > saldo;
 }
@@ -462,16 +525,16 @@ export function reducer(e: EstadoApp, a: Accion): EstadoApp {
     case 'tdcVivo': {
       if (e.congelado || e.pausado) return e;
       const s = { ...e, tdcVivo: a.pares };
-      return { ...s, operar: recalcular(s, s.operar) };
+      return { ...s, panel: precioEnVivoPanel(s, s.panel), operar: recalcular(s, precioEnVivoClasico(s, s.operar)) };
     }
     case 'tick': {
       if (e.pausado) return e;
       let s = e;
-      if (s.panel.precio.estado === 'fijo') {
+      if (s.panel.precio.estado === 'ejecutable') {
         const venceEn = s.panel.precio.venceEn - 1;
         s = { ...s, panel: venceEn <= 0 ? { ...s.panel, precio: { estado: 'vencido', tdc: s.panel.precio.tdc }, token: '', tokenError: null, confirmando: false } : { ...s.panel, precio: { ...s.panel.precio, venceEn } } };
       }
-      if (s.operar.precio.estado === 'fijo') {
+      if (s.operar.precio.estado === 'ejecutable') {
         const venceEn = s.operar.precio.venceEn - 1;
         const op: Operar = venceEn <= 0 ? { ...s.operar, precio: { estado: 'vencido', tdc: s.operar.precio.tdc }, conToken: false, token: '', tokenError: null, confirmando: false } : { ...s.operar, precio: { ...s.operar.precio, venceEn } };
         s = { ...s, operar: recalcular(s, op) };
@@ -480,8 +543,8 @@ export function reducer(e: EstadoApp, a: Accion): EstadoApp {
     }
     case 'vencerPrecio': {
       let s = e;
-      if (s.panel.precio.estado === 'fijo') s = { ...s, panel: { ...s.panel, precio: { ...s.panel.precio, venceEn: VENCE_EN_DEMO } } };
-      if (s.operar.precio.estado === 'fijo') s = { ...s, operar: { ...s.operar, precio: { ...s.operar.precio, venceEn: VENCE_EN_DEMO } } };
+      if (s.panel.precio.estado === 'ejecutable') s = { ...s, panel: { ...s.panel, precio: { ...s.panel.precio, venceEn: VENCE_EN_DEMO } } };
+      if (s.operar.precio.estado === 'ejecutable') s = { ...s, operar: { ...s.operar, precio: { ...s.operar.precio, venceEn: VENCE_EN_DEMO } } };
       return s;
     }
 
@@ -599,6 +662,13 @@ export function reducer(e: EstadoApp, a: Accion): EstadoApp {
       return e.panel.orden ? { ...e, panel: { ...e.panel, orden: { ...e.panel.orden, motivo: a.motivo } } } : e;
     case 'referencia':
       return e.panel.orden ? { ...e, panel: { ...e.panel, orden: { ...e.panel.orden, referencia: a.referencia } } } : e;
+    case 'usarPagoCargado': {
+      const orden = e.panel.orden;
+      const pago = pagosPendientes(e).find((p) => p.id === a.pagoId && !p.pactada);
+      if (!orden || orden.pagoId || orden.destino.tipo !== 'tercero' || !pago || pago.destinatarioId !== orden.destino.id) return e;
+      // Como si se hubiera pagado desde su fila: monto fijo de lo que recibe, concepto, referencia, vencimiento y el vínculo al pago.
+      return { ...e, panel: ajustarFecha(e, sinPrecio({ ...e.panel, orden: ordenDePago(pago) })) };
+    }
     case 'pedirPrecio': {
       const { orden, origenId } = e.panel;
       const origen = cuentaPorId(e, origenId);
@@ -606,8 +676,8 @@ export function reducer(e: EstadoApp, a: Accion): EstadoApp {
       const op = deducir(origen.divisa, orden.destino.divisa);
       if (!op) return e;
       if (mismoDia(e.panel.fechaValor, HOY) && saleMasDelSaldo(e, e.panel)) return e;
-      const indicativo = tdcDe(op, e.tdcVivo);
-      const precio: Precio = indicativo == null || !op.lado ? { estado: 'indicativo' } : { estado: 'fijo', tdc: ejecutable(indicativo, op.lado), venceEn: DURACION_PRECIO_S };
+      const tdc = ejecutableDe(op, e.tdcVivo);
+      const precio: Precio = tdc == null ? { estado: 'indicativo' } : { estado: 'ejecutable', tdc, venceEn: DURACION_PRECIO_S };
       return { ...e, panel: { ...e.panel, paso: 'precio', precio, token: '', tokenError: null, confirmando: false } };
     }
     case 'token':
@@ -621,9 +691,10 @@ export function reducer(e: EstadoApp, a: Accion): EstadoApp {
       if (token === TOKEN_INCORRECTO) return { ...e, panel: { ...e.panel, confirmando: false, token: '', tokenError: ERROR_TOKEN } };
       const cot = cotizacionPanel(e, e.panel);
       if (!cot) return { ...e, panel: { ...e.panel, confirmando: false } };
-      if (cot.tipo !== 'transferencia' && precio.estado !== 'fijo') return { ...e, panel: { ...e.panel, confirmando: false } };
+      // La operación se cierra con el precio y los montos del momento en que se confirma (C-48).
+      if (cot.tipo !== 'transferencia' && precio.estado !== 'ejecutable') return { ...e, panel: { ...e.panel, confirmando: false } };
       if (mismoDia(fechaValor, HOY) && cot.pagas > (saldoActual(e, origen.id) ?? 0)) return { ...e, panel: { ...e.panel, confirmando: false } };
-      const hecha = nuevaOperacion(e, { via: 'panel', destino: orden.destino, pagoId: orden.pagoId, origenId: origen.id, pagas: cot.pagas, recibe: cot.recibe, tdc: cot.tdc, fechaValor, motivo: orden.motivo, referencia: orden.referencia, hora: a.hora });
+      const hecha = nuevaOperacion(e, { via: 'panel', destino: orden.destino, pagoId: orden.pagoId, origenId: origen.id, pagas: cot.pagas, recibe: cot.recibe, tdc: cot.tdc, comision: cot.comision, comisionBp: cot.comisionBp, fechaValor, motivo: orden.motivo, referencia: orden.referencia, hora: a.hora });
       return { ...e, operaciones: [hecha, ...e.operaciones], panel: { ...e.panel, paso: 'confirmacion', precio: { estado: 'indicativo' }, token: '', tokenError: null, confirmando: false } };
     }
     case 'volverInicio': {
@@ -720,10 +791,10 @@ export function reducer(e: EstadoApp, a: Accion): EstadoApp {
       if (op.tipo === 'transferir' || e.datos.mercado === 'cerrado') return e;
       const d = divisasOperar(e, op);
       const deducida = deducir(d.origen, d.destino);
-      const indicativo = deducida ? tdcDe(deducida, e.tdcVivo) : null;
-      if (!deducida || !deducida.lado || indicativo == null) return e;
+      const tdc = deducida ? ejecutableDe(deducida, e.tdcVivo) : null;
+      if (tdc == null) return e;
       if (saleMasDelSaldoClasico(e, op)) return e;
-      const conPrecio: Operar = { ...cerrarSelectores(op), precio: { estado: 'fijo', tdc: ejecutable(indicativo, deducida.lado), venceEn: DURACION_PRECIO_S }, conToken: true, token: '', tokenError: null, ladoActivo: op.ladoActivo ?? 'izq' };
+      const conPrecio: Operar = { ...cerrarSelectores(op), precio: { estado: 'ejecutable', tdc, venceEn: DURACION_PRECIO_S }, conToken: true, token: '', tokenError: null, ladoActivo: op.ladoActivo ?? 'izq' };
       return { ...e, operar: recalcular(e, conPrecio) };
     }
     case 'opContinuar':
@@ -740,19 +811,17 @@ export function reducer(e: EstadoApp, a: Accion): EstadoApp {
       if (op.token.length !== 6 || !origen || !op.destinoId) return { ...e, operar: { ...op, confirmando: false } };
       if (op.token === TOKEN_INCORRECTO) return { ...e, operar: { ...op, confirmando: false, token: '', tokenError: ERROR_TOKEN } };
       const d = divisasOperar(e, op);
-      const tdc = op.precio.estado === 'fijo' ? op.precio.tdc : null;
-      if (op.tipo !== 'transferir' && tdc == null) return { ...e, operar: { ...op, confirmando: false } };
+      if (op.tipo !== 'transferir' && op.precio.estado !== 'ejecutable') return { ...e, operar: { ...op, confirmando: false } };
       if (saleMasDelSaldoClasico(e, op)) return { ...e, operar: { ...op, confirmando: false } };
+      // Precio, montos y comisión del momento en que se confirma (C-48, C-50).
+      const cot = cotizacionClasico(e, op);
+      if (!cot) return { ...e, operar: { ...op, confirmando: false } };
       const propia = e.datos.cuentas.find((c) => c.id === op.destinoId);
       const tercero = e.datos.destinatarios.find((x) => x.id === op.destinoId);
       const destino: Destino = propia
         ? { tipo: 'propia', id: propia.id, nombre: propia.nombre, divisa: propia.divisa, banco: propia.banco, mascara: propia.mascara, cuentaId: propia.id }
         : { tipo: 'tercero', id: op.destinoId, nombre: tercero?.nombre ?? op.destinoId, divisa: d.destino, banco: tercero?.banco ?? '', mascara: tercero?.mascara ?? '' };
-      const izq = leerCentavos(op.montoIzq) ?? 0;
-      const der = leerCentavos(op.montoDer) ?? 0;
-      const pagas = op.tipo === 'comprar' ? der : izq;
-      const recibe = op.tipo === 'comprar' ? izq : op.tipo === 'vender' ? der : izq;
-      const hecha = nuevaOperacion(e, { via: 'clasico', destino, origenId: origen.id, pagas, recibe, tdc, fechaValor: HOY, motivo: op.motivo, referencia: op.referencia, hora: a.hora });
+      const hecha = nuevaOperacion(e, { via: 'clasico', destino, origenId: origen.id, pagas: cot.pagas, recibe: cot.recibe, tdc: cot.tdc, comision: cot.comision, comisionBp: cot.comisionBp, fechaValor: HOY, motivo: op.motivo, referencia: op.referencia, hora: a.hora });
       return { ...e, operaciones: [hecha, ...e.operaciones], operar: { ...op, confirmando: false, token: '', paso: 'confirmacion', ultima: hecha, precio: { estado: 'indicativo' }, conToken: false } };
     }
     case 'opNueva':

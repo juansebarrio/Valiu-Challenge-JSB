@@ -31,16 +31,15 @@ function opcionesDeUrl(arquetipo: ArquetipoId) {
     /** ?pago=<id> abre la ventana de pago en Origen con ese pago; ?cobro=<id> la abre desde el cobro de hoy. */
     pago: params.get('pago'),
     cobro: params.get('cobro'),
-    /** ?seccion=movimientos|control|destinatarios|monitoreo abre esa sección del menú. */
+    /** ?seccion=movimientos abre la lista completa de movimientos; cualquier otra sección cae en Inicio (C-52). */
     seccion: params.get('seccion'),
   };
 }
 
 /** Acciones iniciales que piden los parámetros de URL, sobre el estado ya reiniciado. */
 function accionesDeUrl(estado: ReturnType<typeof estadoDeEscenario>, o: ReturnType<typeof opcionesDeUrl>): Accion[] {
-  const secciones = ['movimientos', 'control', 'destinatarios', 'monitoreo'] as const;
-  const seccion = secciones.find((x) => x === o.seccion);
-  const acciones: Accion[] = seccion ? [{ tipo: 'seccion', seccion }] : [];
+  // Solo Inicio navega (C-52): ?seccion=movimientos abre la lista completa como vista de Inicio; control, destinatarios y monitoreo no tienen entrada.
+  const acciones: Accion[] = o.seccion === 'movimientos' ? [{ tipo: 'seccion', seccion: 'movimientos' }] : [];
   const pago = o.pago ? pagoPorId(estado, o.pago) : null;
   if (pago) acciones.push({ tipo: 'abrirPanel', orden: ordenDePago(pago) });
   else if (o.cobro && estado.datos.loNuevo?.id === o.cobro) acciones.push({ tipo: 'abrirCobro', cobroId: o.cobro });
@@ -74,14 +73,16 @@ export function HomeApp({ arquetipo }: { arquetipo: ArquetipoId }) {
   }, [onboardingActivo, arquetipo]);
 
   const { congelado, pausado, tdcBase } = estado;
-  const hayFijo = estado.panel.precio.estado === 'fijo' || estado.operar.precio.estado === 'fijo';
+  // Ventana para confirmar (C-48): mientras hay precio ejecutable corre la cuenta regresiva de 2 minutos.
+  const hayEjecutable = estado.panel.precio.estado === 'ejecutable' || estado.operar.precio.estado === 'ejecutable';
   useEffect(() => {
-    if (!hayFijo || pausado) return;
+    if (!hayEjecutable || pausado) return;
     const id = window.setInterval(() => dispatch({ tipo: 'tick' }), 1000);
     return () => window.clearInterval(id);
-  }, [hayFijo, pausado]);
+  }, [hayEjecutable, pausado]);
 
-  // Indicativo en vivo: el último valor entregado es el que usan todos los montos "≈" (vistas.ts cotiza con estado.tdcVivo).
+  // Indicativo en vivo: el último valor entregado es el que usan todos los montos "≈" (vistas.ts cotiza con estado.tdcVivo); con la ventana
+  // para confirmar abierta, también mueve el precio ejecutable y el lado no fijo del monto (C-48).
   const onPaso = useCallback((pares: TablaPares) => dispatch({ tipo: 'tdcVivo', pares }), []);
   useTdcEnVivo({ base: tdcBase, activo: !congelado && !pausado, onPaso });
 
@@ -135,7 +136,7 @@ export function HomeApp({ arquetipo }: { arquetipo: ArquetipoId }) {
       <HomeVista estado={estado} dispatch={dispatch} modo="app" raizRef={raizRef} />
       {estado.demo ? (
         <ControlDemo
-          hayPrecio={hayFijo}
+          hayPrecio={hayEjecutable}
           onVencer={() => dispatch({ tipo: 'vencerPrecio' })}
           onRecorrido={() => dispatch({ tipo: 'onboardingIniciar' })}
           onReiniciar={() => { inicioRef.current = Date.now(); dispatch({ tipo: 'reiniciar', estado: estadoDeEscenario(estado.escenario, { congelado: estado.congelado, demo: true, recorrido: false }, arquetipo) }); }}

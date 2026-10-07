@@ -8,15 +8,15 @@ Reglas aplicadas: PNG con `deviceScaleFactor` 2 (plan B a 1); frames de `/tabler
 
 | # | Archivo | Qué muestra | De dónde sale | Slide | Medidas (px) |
 |---|---|---|---|---|---|
-| 1 | `inicio-importadora.png` | Inicio de la importadora: posición por divisa con el faltante de 1,000.00 USD, Lo nuevo (+180,000.00 MXN), Movimientos y el tipo de cambio (USD/MXN 18.091183 / 18.032135, EUR/MXN 21.250000 / 21.100000). | Frame 01 de `/tablero/alta`, entero | Deck · inicio | 2560 × 2662 |
+| 1 | `inicio-importadora.png` | Inicio de la importadora: posición por divisa con el faltante de 1,000.00 USD, Cobraste hoy (+180,000.00 MXN), Movimientos y el tipo de cambio (USD/MXN 18.091183 / 18.032135, EUR/MXN 21.250000 / 21.100000). | Frame 01 de `/tablero/alta`, entero | Deck · inicio | 2560 × 2662 |
 | 2 | `turismo-cobro.png` | Inicio de la minorista de turismo con la ventana de pago en "¿Qué pagas con este cobro?" sobre el cobro de 95,000.00 MXN de Familia Ortega; el hotel (4,200.00 EUR) preseleccionado. | Frame S02 de `/tablero/alta`, entero | Deck · turismo | 2560 × 2662 |
 | 3 | `d1-posicion.png` | Sección Posición por divisa: título y las tres tarjetas (USD faltan 1,000.00 con la proyección, MXN sobran 1,099,649.50, EUR sin pendientes). | Frame 01 · `[data-tour="posicion"]` con 16 px de aire | Decisión 1 · posición por divisa | 2016 × 824 |
-| 4 | `d2-destino.png` | Ventana de pago en el paso Destino, "¿A quién le pagas?" (una columna, 560 px): encabezado, buscador y los tres pagos en USD (Shenzhen, Logística Pacífico, Asia Packaging). | `/importadora?congelar=1&recorrido=0` a 1440 × 900, "Pagar" del encabezado; del borde superior de la ventana a 8 px bajo la fila de Asia Packaging | Decisión 2 · destino y origen | 1120 × 792 |
-| 5 | `d2-origen.png` | Ventana de pago en el paso Origen, en dos columnas: a la izquierda las tres cuentas con sus consecuencias (MXN ≈ 27,136.77 cubre el faltante, USD 1,500.00 sin tipo de cambio con te faltarían 1,000.00 el vie 9, EUR ≈ 1,280.96); a la derecha el tipo de cambio indicativo 18.091183 MXN por USD, Shenzhen Parts Co. recibe 1,500.00 USD y el vencimiento. | Frame 02 · ModalOperar entera | Decisión 2 · destino y origen | 1840 × 1192 |
-| 6 | `d3-precio-token.png` | Paso Precio en dos columnas: a la derecha el precio ejecutable 18.092415 MXN por USD fijo por 2:00, de qué cuenta y cuándo sale el dinero y la cuenta en 1,152,861.38 MXN; a la izquierda Pagas 27,138.62 MXN exactos y las seis casillas del token. | Frame 04 · ModalOperar entera | Decisión 3 · precio y token | 1840 × 1192 |
+| 4 | `d2-destino.png` | Ventana de pago en el paso Destino, "¿A quién le pagas?" (una columna, 560 px): encabezado, buscador y el grupo Destinatarios con los tres en USD (Shenzhen Parts Co., Logística Pacífico, Asia Packaging). | `/importadora?congelar=1&recorrido=0` a 1440 × 900, "Pagar" del encabezado; del borde superior de la ventana a 8 px bajo la fila de Asia Packaging | Decisión 2 · destino y origen | 1120 × 792 |
+| 5 | `d2-origen.png` | Ventana de pago en el paso Origen, en dos columnas: a la izquierda las tres cuentas con lo que pagas y un chip como mucho (MXN ≈ 27,136.77 y EUR ≈ 1,280.96 con "Cubre el faltante en USD", USD 1,500.00 con "Te faltarían 1,000.00 USD para tus pagos del vie 9"); a la derecha el tipo de cambio indicativo 18.091183 MXN por USD, Comisión 0%, Shenzhen Parts Co. recibe 1,500.00 USD y el vencimiento. | Frame 02 · ModalOperar entera | Decisión 2 · destino y origen | 1840 × 1192 |
+| 6 | `d3-precio-token.png` | Paso Precio en dos columnas: a la derecha el precio ejecutable 18.092415 MXN por USD con "Confirma en 2:00" y "Se mueve con el mercado hasta que confirmas.", Comisión 0%, de qué cuenta y cuándo sale el dinero y la cuenta en 1,152,861.38 MXN; a la izquierda Pagas 27,138.62 MXN (se actualiza en vivo), Shenzhen Parts Co. recibe 1,500.00 USD (Fijo) y las seis casillas del token. | Frame 04 · ModalOperar entera | Decisión 3 · precio y token | 1840 × 1192 |
 | 7 | `d4-recorrido.png` | Onboarding, paso 4 de 4 ("¿Prefieres operar como siempre?") con el recorte sobre la pestaña Operar clásico y la tarjeta debajo. | Frame 20 · columna principal (del sidebar al borde derecho), del borde superior a 24 px bajo la tarjeta | Decisión 4 · clásico y recorrido | 2080 × 952 |
 | 8 | `d4-operar-clasico.png` | Pestaña Operar clásico con el aviso de la vista anterior, "Probar el nuevo flujo" y la fila Comprar / Vender / Transferir. | Frame 08 · columna principal, del borde superior a 8 px bajo las pestañas | Decisión 4 · clásico y recorrido | 2080 × 784 |
-| 9 | `d5-fecha-valor.png` | Revisión con "jue 8 · vence" elegido en "¿Cuándo sale el dinero?": a la izquierda los montos y la fecha; a la derecha el indicativo, "Sale el dinero jue 8" y "El jue 8 tu cuenta queda en ≈ 1,152,863.23 MXN". | Frame 03B · ModalOperar entera | Decisión 5 · fecha valor | 1840 × 1192 |
+| 9 | `d5-fecha-valor.png` | Revisión con "jue 8 · vence" elegido en "¿Cuándo sale el dinero?": a la izquierda los montos, la fecha y "Cierras el precio hoy y el dinero sale el jue 8. No necesitas tener el saldo hasta ese día."; a la derecha el indicativo, Comisión 0%, "Sale el dinero jue 8" y "El jue 8 tu cuenta queda en ≈ 1,152,863.23 MXN". | Frame 03B · ModalOperar entera | Decisión 5 · fecha valor | 1840 × 1192 |
 | 10 | `d5-pactada-inicio.png` | Inicio con el pago pactado: aviso "Pactaste el pago…", MXN con "Pactadas por liquidar (1) −27,138.62" y USD con sobran 500.00. | Frame 07B · columna principal, del borde superior a 16 px bajo Posición por divisa | Decisión 5 · fecha valor | 2080 × 1248 |
 
 ## Plan B (`plan-b/`, respaldo si falla la demo en vivo)
@@ -36,15 +36,15 @@ Todos los frames de `/tablero/alta` a escala 1 y `deviceScaleFactor` 1, uno por 
 | `plan-b/04B.png` | 04B | 1280 × 1331 |
 | `plan-b/06B.png` | 06B | 1280 × 1281 |
 | `plan-b/07B.png` | 07B | 1280 × 1347 |
-| `plan-b/08.png` | 08 | 1280 × 947 |
-| `plan-b/09.png` | 09 | 1280 × 947 |
-| `plan-b/10.png` | 10 | 1280 × 947 |
-| `plan-b/11.png` | 11 | 1280 × 1000 |
-| `plan-b/12.png` | 12 | 1280 × 1035 |
-| `plan-b/13.png` | 13 | 1280 × 969 |
-| `plan-b/14.png` | 14 | 1280 × 964 |
-| `plan-b/15.png` | 15 | 1280 × 1017 |
-| `plan-b/16.png` | 16 | 1280 × 1035 |
+| `plan-b/08.png` | 08 | 1280 × 971 |
+| `plan-b/09.png` | 09 | 1280 × 971 |
+| `plan-b/10.png` | 10 | 1280 × 971 |
+| `plan-b/11.png` | 11 | 1280 × 1048 |
+| `plan-b/12.png` | 12 | 1280 × 1059 |
+| `plan-b/13.png` | 13 | 1280 × 993 |
+| `plan-b/14.png` | 14 | 1280 × 988 |
+| `plan-b/15.png` | 15 | 1280 × 1041 |
+| `plan-b/16.png` | 16 | 1280 × 1059 |
 | `plan-b/D1.png` | D1 | 1280 × 1331 |
 | `plan-b/D2.png` | D2 | 1280 × 1331 |
 | `plan-b/D3.png` | D3 | 1280 × 1347 |
@@ -62,9 +62,6 @@ Todos los frames de `/tablero/alta` a escala 1 y `deviceScaleFactor` 1, uno por 
 | `plan-b/S08.png` | S08 | 1280 × 1347 |
 | `plan-b/S07H.png` | S07H | 1280 × 1281 |
 | `plan-b/S08H.png` | S08H | 1280 × 1347 |
-| `plan-b/N1.png` | N1 | 1280 × 927 |
-| `plan-b/N2.png` | N2 | 1280 × 861 |
-| `plan-b/N3.png` | N3 | 1280 × 491 |
 | `plan-b/N4.png` | N4 | 1280 × 1331 |
 | `plan-b/N5.png` | N5 | 1280 × 1331 |
 | `plan-b/N6.png` | N6 | 1280 × 1331 |

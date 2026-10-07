@@ -1,6 +1,6 @@
 # Informe de estado · Prototipo Valiu (challenge 1, dos arquetipos)
 
-Fecha: 6 de octubre de 2026. Producción: https://valiu-challenge.vercel.app (URLs `.vercel.app` con protección SSO de Vercel). Repositorio: `juansebarrio/Valiu-Challenge-JSB`, PR #1 (`claude/determined-thompson-n0zgns` → `main`) con todo el trabajo; PR #2 (`feat/flujo-turismo`) ya incluido en esa rama.
+Fecha: 7 de octubre de 2026. Producción: https://valiu-challenge.vercel.app (URLs `.vercel.app` con protección SSO de Vercel). Repositorio: `juansebarrio/Valiu-Challenge-JSB`, PR #1 (`claude/determined-thompson-n0zgns` → `main`) con todo el trabajo; PR #2 (`feat/flujo-turismo`) ya incluido en esa rama.
 
 ## 1. Qué es el producto hoy
 
@@ -18,10 +18,10 @@ Todo corre en el navegador, con estado en memoria (recargar reinicia el escenari
 | `/` | Pantalla inicial: elegir con qué empresa se entra (dos tarjetas con contexto, Tab/Enter). |
 | `/importadora` | Home del flujo principal. |
 | `/turismo` | Home del segundo arquetipo (minorista de turismo). |
-| `/tablero/alta` | Todos los frames (01–07, 03B–07B, Estados, 08–16, D1–D5, A1–A4, S01–S08 con S07H/S08H, N1–N6, 17–20) renderizados desde el estado del reducer a 1280 px. `/tablero` redirige acá. |
+| `/tablero/alta` | Todos los frames (01–07, 03B–07B, Estados, 08–16, D1–D3, A1–A4, S01–S08 con S07H/S08H, N4–N6, 17–20) renderizados desde el estado del reducer a 1280 px. `/tablero` redirige acá. |
 | `/sistema` | Guía viva: tokens del design system y cada componente en sus estados. |
 
-Parámetros: `?escenario=faltante|resuelta|pactada|sin-saldo|mercado-cerrado`, `?congelar=1` (tipo de cambio fijo), `?demo=1` (vencer precio, ver recorrido, reiniciar), `?recorrido=0`, `?pago=<id>`, `?cobro=<id>`, `?seccion=movimientos|control|destinatarios|monitoreo`. Tecla P: pausa el indicativo y la cuenta regresiva, solo con `?demo=1` (nunca desde un campo).
+Parámetros: `?escenario=faltante|resuelta|pactada|sin-saldo|mercado-cerrado`, `?congelar=1` (tipo de cambio fijo), `?demo=1` (vencer precio, ver recorrido, reiniciar), `?recorrido=0`, `?pago=<id>`, `?cobro=<id>`, `?seccion=movimientos` (cualquier otra sección cae en Inicio, C-52). Tecla P: pausa el indicativo y la cuenta regresiva, solo con `?demo=1` (nunca desde un campo).
 
 ## 2. Qué se desarrolló, en orden
 
@@ -60,10 +60,10 @@ Parámetros: `?escenario=faltante|resuelta|pactada|sin-saldo|mercado-cerrado`, `
 
 ### Etapa 7 · Pendientes del prototipo
 - Alta de destinatario ("Agregar destinatario" en el paso Destino, en Destinatarios y en el clásico): nombre, divisa, banco y cuenta o CLABE; desde el paso Destino, "Guardar y pagar" sigue con el pago.
-- Secciones del menú como vistas reales: Control de operaciones (pactadas, en proceso y realizadas, con detalle), Destinatarios (cuenta, pendientes, "Pagar" sin monto) y Monitoreo de divisas (pares con sus dos lados, el ejecutable y la tendencia). "Operaciones recientes" del clásico lleva a Control.
+- Secciones del menú como vistas reales: Control de operaciones (pactadas, en proceso y realizadas, con detalle), Destinatarios (cuenta, pendientes, "Pagar" sin monto) y Monitoreo de divisas (pares con sus dos lados, el ejecutable y la tendencia). "Operaciones recientes" del clásico lleva a Control. (Desde C-52 quedan en el código sin entrada.)
 - Campana con notificaciones derivadas del estado; "Ver todas mis cuentas" abre el panel lateral de cuentas con CLABE, "Pasar dinero" y "Ver datos para depositar".
 - Transferencia con saldo insuficiente: la cuenta queda deshabilitada ("No alcanza el saldo") y la revisión bloquea si el monto escrito supera el saldo.
-- `?seccion=control|destinatarios|monitoreo`; frames N1–N6 en `/tablero/alta`.
+- `?seccion=control|destinatarios|monitoreo`; frames N1–N6 en `/tablero/alta` (desde C-52 esas secciones caen en Inicio y quedan N4–N6).
 
 ### Etapa 8 · Ajustes de cierre (C-35 a C-44)
 1. Sin "Cancelar pacto": el detalle de una pactada remite a WhatsApp desde Contáctanos; se eliminaron el flujo, sus acciones, tests y frames D4–D5 (C-27 revertida).
@@ -78,14 +78,27 @@ Parámetros: `?escenario=faltante|resuelta|pactada|sin-saldo|mercado-cerrado`, `
 10. Textos: turismo es el segundo arquetipo del challenge 1; el challenge 2 no está en el prototipo.
 11. `docs/decisiones.md`: C-13 reemplaza a D-13 y C-44 documenta la regla de fechas que reemplaza a D-10.
 
+### Etapa 9 · Tabla de pares, recorrido y ventana de pago (C-45 a C-47)
+1. Una sola tabla de pares que cierra en las seis vueltas MXN/USD/EUR (C-45).
+2. El recorrido aparece junto a su objetivo también en `/tablero/alta` (C-46).
+3. Operar en una ventana centrada de dos columnas y consultar en el panel lateral (C-47).
+
+### Etapa 10 · Después del check-in con Mateo (C-48 a C-52)
+Criterio: sus usuarios son tesoreros poco sofisticados que se marean rápido; en cada paso, solo lo que cambia la decisión.
+1. Precio en vivo: "Pedir precio" abre 2 minutos para confirmar y el ejecutable se mueve con el mercado; queda fijo el lado del monto que eligió el usuario y la operación se cierra con el precio del momento de confirmar (C-48).
+2. Menos contenido: Origen sin monto solo con nombre y saldo, un chip como mucho, Destino sin "Pagos próximos" (el pago cargado del destinatario se ofrece en la revisión con "Usar este pago"), "Cobraste hoy" en el inicio (C-49).
+3. Qué sale y qué llega: comisión por clase ("Comisión 0%" en todas partes), transferencia con un solo monto y confirmación con los montos finales y las mismas filas que el comprobante y el detalle (C-50).
+4. Fecha de liquidación: el texto dice el beneficio de elegir otro día; aviso de fondeo sin "para que el pago salga" (C-51).
+5. Menú: solo Inicio navega; la lista completa de movimientos es una vista de Inicio (C-52).
+
 ## 3. Estado actual por área
 
 ### Flujos que funcionan de punta a punta
-- Pago de un pago cargado con tipo de cambio (compra), hoy o con fecha valor (pactada), con precio fijo de 2:00, vencimiento y token (000000 simula error).
-- Pago desde la cuenta de la misma divisa (transferencia sin TDC).
+- Pago de un pago cargado con tipo de cambio (compra), hoy o con fecha valor (pactada), con el precio ejecutable en vivo y 2 minutos para confirmar, vencimiento y token (000000 simula error).
+- Pago desde la cuenta de la misma divisa (transferencia sin TDC, un solo monto: "Envías").
 - Compra o venta a cuenta propia desde "Comprar X", desde el "Pagar" del encabezado o desde "Pagar a otro destinatario", con montos "Recibe" / "Pagas" editables.
 - Entrada desde el cobro ("Usar para pagar"): paso "¿Qué pagas con este cobro?" en los dos arquetipos.
-- Detalle de movimientos, cargar pagos, comprobantes descargables, sección Movimientos, Control de operaciones, Destinatarios (con alta), Monitoreo de divisas, notificaciones y panel de cuentas.
+- Detalle de movimientos, cargar pagos, comprobantes descargables, lista completa de movimientos ("Ver todos los movimientos"), alta de destinatario, notificaciones y panel de cuentas; el menú solo navega a Inicio (C-52).
 - Operar clásico (Comprar, Vender, Transferir) con el mismo motor, aviso de par sin prototipo, mercado cerrado por escenario.
 - Onboarding, modo demo (con la tecla P), escenarios por URL, TDC en vivo.
 
@@ -95,12 +108,12 @@ Parámetros: `?escenario=faltante|resuelta|pactada|sin-saldo|mercado-cerrado`, `
 - `src/state/estado.ts` (reducer puro), `derivados.ts`, `vistas.ts` (selectores), `escenarios.ts` (escenarios y frames).
 
 ### Calidad
-- 112 tests de Vitest (motor, posición y el flujo frame por frame con los números del brief), `npm run lint`, `tsc --noEmit` y `next build` limpios.
-- Recorridos con Playwright del flujo principal, movimientos, arquetipos, turismo y sección 7 con cero errores de consola; capturas en `docs/design/verificacion/` y de los prototipos en `docs/design/frames/`.
+- 146 tests de Vitest (motor, posición, comisión y el flujo frame por frame con los números del brief), `npm run lint`, `tsc --noEmit` y `next build` limpios.
+- Recorridos con Playwright del flujo principal, movimientos, arquetipos, turismo, sección 7, la ventana de pago (C-47) y el precio en vivo, la comisión, las fechas y el menú (C-48 a C-52, a 1024 × 700 y 1280 × 800) con cero errores de consola; capturas en `docs/design/verificacion/` y de los prototipos en `docs/design/frames/`.
 - Accesibilidad: diálogo con foco atrapado y Esc, radiogroups con flechas (saltan deshabilitadas), cuenta regresiva con aria-live, estados siempre en badge con texto, foco visible, es-MX con tuteo.
 
 ### Documentación
-- `README.md` (cómo correr, rutas, parámetros, estructura, decisiones), `docs/decisiones.md` (C-01 a C-34), `docs/diferencias-cc-vs-diseno.md` (turismo y sección 7), `docs/handoff/` y `docs/handoff-turismo/` (paquetes de diseño tal como llegaron).
+- `README.md` (cómo correr, rutas, parámetros, estructura, decisiones), `docs/decisiones.md` (C-01 a C-52), `docs/diferencias-cc-vs-diseno.md` (turismo y sección 7), `docs/handoff/` y `docs/handoff-turismo/` (paquetes de diseño tal como llegaron).
 
 ## 4. Pendiente y límites conocidos
 

@@ -13,13 +13,12 @@ import { GrupoOrigen, GrupoPago } from './OpcionOrigen';
 import { BloqueMonto } from './BloqueMonto';
 import { FechaLiquidacion } from './FechaLiquidacion';
 import { CampoToken } from './CampoToken';
-import { Confirmacion } from './Confirmacion';
+import { AvisoConfirmacion, Confirmacion, EncabezadoConfirmacion, MontosFinales } from './Confirmacion';
 import { DetalleMovimiento } from './DetalleMovimiento';
 import { AgendarPago } from './AgendarPago';
 import { SelectorDestino } from './SelectorDestino';
 import { Boton } from './ui/Boton';
 import { Alerta } from './ui/Alerta';
-import { Icono } from './ui/Icono';
 import { CampoTexto, MensajeError } from './ui/Campo';
 import { ListaDetalle } from './ui/ListaDetalle';
 import { descargarComprobante, htmlComprobante } from './comprobante';
@@ -37,8 +36,11 @@ const CONTENEDOR: Record<Exclude<VistaPanel['tipo'], 'depositar'>, Contenedor> =
 /** "Datos para depositar" se muestra en el contenedor desde el que se abrió (desde el inicio, en el panel lateral). */
 export const contenedorDe = (tipo: VistaPanel['tipo'], deposito: Contenedor): Contenedor => (tipo === 'depositar' ? deposito : CONTENEDOR[tipo]);
 
-/** Origen, Revisión y Precio del pago van en dos columnas; el resto, en una (560 px). */
-const enDosColumnas = (v: VistaPanel) => v.tipo === 'pago' && (v.paso === 'origen' || v.paso === 'revision' || v.paso === 'precio') && !!v.resumen;
+/**
+ * Origen, Revisión y Precio del pago van en dos columnas; también la Confirmación, que desde C-50 lleva el BloqueMonto y las filas
+ * y en una columna no entra a 1024 × 700 sin scroll. El resto, en una (560 px).
+ */
+const enDosColumnas = (v: VistaPanel) => v.tipo === 'pago' && (((v.paso === 'origen' || v.paso === 'revision' || v.paso === 'precio') && !!v.resumen) || (v.paso === 'confirmacion' && !!v.confirmacion));
 
 /** Izquierda: lo que el usuario decide. Derecha (368 px, fondo canvas): lo que eso significa. Mismo alto mínimo en los tres pasos. */
 const DosColumnas: FC<{ izquierda: ReactNode; derecha: ReactNode }> = ({ izquierda, derecha }) => (
@@ -69,8 +71,8 @@ export const CapaOperacion: FC<CapaOperacionProps> = ({ vista: v, estado, dispat
   const comprobante = () => {
     const c = v.confirmacion;
     const d = v.detalle;
-    if (c) descargarComprobante(`comprobante-${estado.operaciones[0]?.id ?? 'operacion'}`, htmlComprobante({ titulo: c.titulo, sub: v.sub, empresa, filas: c.detalle, nota: c.texto ?? c.fondeo }));
-    else if (d) descargarComprobante(`comprobante-${estado.panel.movimientoId ?? 'movimiento'}`, htmlComprobante({ titulo: d.titulo, sub: `${v.titulo} · ${v.sub}`, empresa, filas: d.filas, nota: d.texto }));
+    if (c) descargarComprobante(`comprobante-${estado.operaciones[0]?.id ?? 'operacion'}`, htmlComprobante({ titulo: c.titulo, sub: v.sub, empresa, filas: c.filasComprobante, nota: c.fondeo }));
+    else if (d) descargarComprobante(`comprobante-${estado.panel.movimientoId ?? 'movimiento'}`, htmlComprobante({ titulo: d.titulo, sub: `${v.titulo} · ${v.sub}`, empresa, filas: d.filasComprobante ?? d.filas, nota: d.texto ?? d.fondeo }));
     else noDisponible();
   };
   const cerrar = () => dispatch(v.paso === 'confirmacion' ? { tipo: 'volverInicio' } : { tipo: 'cerrarPanel' });
@@ -124,11 +126,17 @@ export const CapaOperacion: FC<CapaOperacionProps> = ({ vista: v, estado, dispat
         <>
           {v.mercadoCerrado ? <Alerta tono="warning" titulo="Mercado cerrado.">No se puede pedir precio hasta que abra. Puedes dejar el pago listo.</Alerta> : null}
           <div className="flex flex-col gap-2">
-            <BloqueMonto pagas={{ monto: r.pagas, divisa: r.pagasDivisa }} recibe={{ monto: r.recibe, divisa: r.recibeDivisa, destinatario: r.destinatario }} ladoFijo={r.ladoFijo} conTdc={!v.sinTdc} editable={r.editable} onCambiar={(lado, valor) => dispatch({ tipo: 'monto', lado, valor })} />
-            {r.ayuda ? <span className="flex items-center gap-2 text-caption text-app-ink-2"><Icono nombre="info-circle" tamano="xs" /><span>{r.ayuda}</span></span> : null}
+            {/* Para no pagar dos veces lo mismo (C-49): una línea sobre el monto con el pago cargado del destinatario. */}
+            {r.pagoCargado ? (
+              <p data-component="AvisoPagoCargado" className="text-caption text-app-ink-2 tabular-nums">
+                {r.pagoCargado.texto}{' '}
+                <Boton variante="link-caption" className="px-0!" onClick={() => dispatch({ tipo: 'usarPagoCargado', pagoId: r.pagoCargado!.id })}>Usar este pago</Boton>
+              </p>
+            ) : null}
+            <BloqueMonto pagas={{ monto: r.pagas, divisa: r.pagasDivisa }} recibe={{ monto: r.recibe, divisa: r.recibeDivisa, destinatario: r.destinatario }} ladoFijo={r.ladoFijo} conTdc={!v.sinTdc} unico={r.unico} editable={r.editable} onCambiar={(lado, valor) => dispatch({ tipo: 'monto', lado, valor })} />
             {r.error ? <MensajeError>{r.error}</MensajeError> : null}
           </div>
-          <FechaLiquidacion visible={r.fechas.length > 0} opciones={r.fechas} valor={estado.panel.fechaValor} onChange={(f) => dispatch({ tipo: 'fechaValor', fecha: f })} />
+          <FechaLiquidacion visible={r.fechas.length > 0} opciones={r.fechas} valor={estado.panel.fechaValor} nota={r.notaFecha} onChange={(f) => dispatch({ tipo: 'fechaValor', fecha: f })} />
           <div className="grid grid-cols-2 gap-3">
             <CampoTexto etiqueta="Concepto" opcional valor={r.concepto} onCambiar={(t) => dispatch({ tipo: 'motivo', motivo: t })} placeholder="Ej. Pago a proveedores" />
             <CampoTexto etiqueta="Referencia" opcional valor={r.referencia} onCambiar={(t) => dispatch({ tipo: 'referencia', referencia: t })} placeholder="Ej. Factura 0457" />
@@ -139,16 +147,28 @@ export const CapaOperacion: FC<CapaOperacionProps> = ({ vista: v, estado, dispat
       const p = v.precio;
       izquierda = (
         <>
-          {p.estado === 'vencido' ? <Alerta tono="info" role="status" titulo="El precio venció. Pide uno nuevo.">El precio fijo dura 2 minutos. Los montos volvieron al indicativo.</Alerta> : null}
-          {/* Solo lectura y en el mismo lugar que en la revisión: montos exactos con el precio fijo, indicativos (≈) si venció. */}
-          <BloqueMonto pagas={{ monto: p.pagas, divisa: p.pagasDivisa }} recibe={{ monto: p.recibe, divisa: p.recibeDivisa, destinatario: p.destinatario }} ladoFijo={p.ladoFijo} conTdc={p.pagasAprox} />
+          {p.estado === 'vencido' ? <Alerta tono="info" role="status" titulo="Se acabó el tiempo para confirmar.">Pide precio de nuevo. Los montos volvieron al indicativo.</Alerta> : null}
+          {/* Solo lectura y en el mismo lugar que en la revisión: con la ventana para confirmar abierta el lado no fijo se actualiza en vivo
+              y es exacto en cada instante (C-48); al acabarse el tiempo vuelve al indicativo (≈). */}
+          <BloqueMonto pagas={{ monto: p.pagas, divisa: p.pagasDivisa }} recibe={{ monto: p.recibe, divisa: p.recibeDivisa, destinatario: p.destinatario }} ladoFijo={p.ladoFijo} conTdc={p.estado !== 'sinTdc'} exacto={p.estado === 'ejecutable'} unico={p.unico} />
           {p.estado !== 'vencido' ? (
             <CampoToken valor={p.token} habilitado={!p.confirmando} onChange={(t) => dispatch({ tipo: 'token', token: t })} autoFoco={modo === 'app'} error={p.tokenError} />
           ) : null}
         </>
       );
     }
-    dosColumnas = <DosColumnas izquierda={izquierda} derecha={<ResumenPago vista={v.resumen!} />} />;
+    if (v.paso === 'confirmacion' && v.confirmacion) {
+      // Confirmación (C-50): arriba a la izquierda el estado y los montos finales; a la derecha las filas de la operación.
+      const c = v.confirmacion;
+      dosColumnas = (
+        <DosColumnas
+          izquierda={<><EncabezadoConfirmacion vista={c} compacta /><MontosFinales montos={c.montos} /><AvisoConfirmacion vista={c} /></>}
+          derecha={<ResumenPago vista={{ tdc: null, sinPrecio: null, filas: c.detalle, aviso: null, nota: null }} />}
+        />
+      );
+    } else {
+      dosColumnas = <DosColumnas izquierda={izquierda} derecha={<ResumenPago vista={v.resumen!} />} />;
+    }
   }
 
   // ------------------------------------------------------------ Pasos de una columna y panel lateral
@@ -165,7 +185,7 @@ export const CapaOperacion: FC<CapaOperacionProps> = ({ vista: v, estado, dispat
       {v.paso === 'destino' && v.destino ? (
         <>
           <h3 className="text-h3 font-semibold">{v.destino.titulo}</h3>
-          <SelectorDestino modo="lista" grupos={v.destino.grupos} busqueda={v.destino.busqueda} onBusqueda={(t) => dispatch({ tipo: 'busquedaDestino', texto: t })} onElegir={(d) => dispatch(v.tipo === 'agendar' ? { tipo: 'agendaDestino', destino: d.destino } : { tipo: 'elegirDestino', destino: d.destino, pago: d.pago })} onAgregar={() => (v.tipo === 'agendar' ? noDisponible() : dispatch({ tipo: 'abrirDestinatarioNuevo' }))} />
+          <SelectorDestino modo="lista" grupos={v.destino.grupos} busqueda={v.destino.busqueda} onBusqueda={(t) => dispatch({ tipo: 'busquedaDestino', texto: t })} onElegir={(d) => dispatch(v.tipo === 'agendar' ? { tipo: 'agendaDestino', destino: d.destino } : { tipo: 'elegirDestino', destino: d.destino })} onAgregar={() => (v.tipo === 'agendar' ? noDisponible() : dispatch({ tipo: 'abrirDestinatarioNuevo' }))} />
         </>
       ) : null}
 
@@ -186,7 +206,7 @@ export const CapaOperacion: FC<CapaOperacionProps> = ({ vista: v, estado, dispat
       {v.tipo === 'agendar' && v.paso === 'revision' && v.agenda ? <AgendarPago vista={v.agenda} dispatch={dispatch} /> : null}
       {v.tipo === 'agendar' && v.paso === 'confirmacion' && v.detalle ? <DetalleMovimiento vista={v.detalle} compacta /> : null}
 
-      {v.paso === 'confirmacion' && v.confirmacion ? <Confirmacion vista={v.confirmacion} compacta /> : null}
+      {v.paso === 'confirmacion' && v.confirmacion ? <Confirmacion vista={v.confirmacion} /> : null}
     </>
   );
 

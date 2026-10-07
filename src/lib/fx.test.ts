@@ -56,14 +56,36 @@ describe('cotizar', () => {
   it('1,500 USD desde EUR cuestan 1,280.96 EUR (lado vender de EUR/USD, 1.171000)', () => {
     expect(cotizar({ origen: 'EUR', destino: 'USD', monto: centavos(1500), ladoFijo: 'recibe' })!.pagas).toBe(centavos(1_280.96));
   });
-  it('con el ejecutable fijo: 27,138.62 MXN', () => {
+  it('con el ejecutable del momento: 27,138.62 MXN', () => {
     expect(cotizar({ origen: 'MXN', destino: 'USD', monto: centavos(1500), ladoFijo: 'recibe', tdc: 18_092_415 })!.pagas).toBe(centavos(27_138.62));
   });
   it('lado pagas fijo: 18,091.18 MXN compran 1,000.00 USD', () => {
     expect(cotizar({ origen: 'MXN', destino: 'USD', monto: centavos(18_091.18), ladoFijo: 'pagas' })!.recibe).toBe(centavos(1000));
   });
   it('transferencia: pagas = recibe', () => {
-    expect(cotizar({ origen: 'USD', destino: 'USD', monto: centavos(1000), ladoFijo: 'recibe' })).toMatchObject({ pagas: centavos(1000), recibe: centavos(1000), tdc: null });
+    expect(cotizar({ origen: 'USD', destino: 'USD', monto: centavos(1000), ladoFijo: 'recibe' })).toMatchObject({ pagas: centavos(1000), recibe: centavos(1000), tdc: null, comision: 0, comisionBp: 0 });
+  });
+});
+
+describe('comisión (C-50)', () => {
+  it('con 0 % ningún número cambia', () => {
+    expect(cotizar({ origen: 'MXN', destino: 'USD', monto: centavos(1500), ladoFijo: 'recibe', tdc: 18_092_415, comisionBp: 0 })).toMatchObject({ pagas: centavos(27_138.62), recibe: centavos(1500), comision: 0 });
+  });
+  it('transferencia con una tasa distinta de 0: Pagas = Recibe + Recibe × tasa', () => {
+    const c = cotizar({ origen: 'MXN', destino: 'MXN', monto: centavos(1000), ladoFijo: 'recibe', comisionBp: 50 })!;
+    expect(c).toMatchObject({ recibe: centavos(1000), comision: centavos(5), pagas: centavos(1005), comisionBp: 50 });
+    // Redondeo half-up a centavos: 333.33 × 0.25 % = 0.833325 → 0.83
+    expect(cotizar({ origen: 'USD', destino: 'USD', monto: centavos(333.33), ladoFijo: 'recibe', comisionBp: 25 })!.pagas).toBe(centavos(333.33) + centavos(0.83));
+  });
+  it('con tipo de cambio: lo que recibe al precio × (1 + tasa); 0.50 % sobre 27,138.62 son 135.69 MXN', () => {
+    expect(cotizar({ origen: 'MXN', destino: 'USD', monto: centavos(1500), ladoFijo: 'recibe', tdc: 18_092_415, comisionBp: 50 })).toMatchObject({ comision: centavos(135.69), pagas: centavos(27_274.31) });
+  });
+  it('lado pagas fijo: la comisión sale del monto y el resto se convierte', () => {
+    const c = cotizar({ origen: 'MXN', destino: 'MXN', monto: centavos(1005), ladoFijo: 'pagas', comisionBp: 50 })!;
+    expect(c).toMatchObject({ pagas: centavos(1005), comision: centavos(5), recibe: centavos(1000) });
+  });
+  it('la tasa se muestra en porcentaje', () => {
+    expect([fmt.tasa(0), fmt.tasa(50), fmt.tasa(125)]).toEqual(['0%', '0.50%', '1.25%']);
   });
 });
 

@@ -2,7 +2,7 @@
 // Misma forma que la importadora (src/data/escenario.ts). Marcado "inventado": no viene del brief; se eligió para completar la pantalla.
 import { centavos } from '@/lib/dinero';
 import * as fmt from '@/lib/format';
-import { HOY, TDC_BASE, type Arquetipo, type Cobro, type Cuenta, type Destinatario, type PagoFuturo, type Realizado } from './escenario';
+import { COMISIONES_BP, HOY, TDC_BASE, type Arquetipo, type Cobro, type Cuenta, type Destinatario, type PagoFuturo, type Realizado } from './escenario';
 
 const CUENTAS: Cuenta[] = [
   { id: 'mxn', nombre: 'Cuenta Principal MXN', divisa: 'MXN', mascara: '4410', saldo: centavos(420_000), banco: 'Banco BASE', clabe: '012180000044100017' /* inventado */ },
@@ -45,7 +45,7 @@ export const TURISMO: Arquetipo = {
   id: 'turismo',
   empresa: 'Viajes Altavista S.A. de C.V.', // inventado
   usuario: { nombre: 'Mariana L.', rol: 'Administración', iniciales: 'ML' }, // inventado
-  datos: { cuentas: CUENTAS, destinatarios: DESTINATARIOS, pagosFuturos: PAGOS, loNuevo: LO_NUEVO, realizados: REALIZADOS, mercado: 'abierto' },
+  datos: { cuentas: CUENTAS, destinatarios: DESTINATARIOS, pagosFuturos: PAGOS, loNuevo: LO_NUEVO, realizados: REALIZADOS, mercado: 'abierto', comisiones: COMISIONES_BP },
   pares: TDC_BASE,
   paresTarjeta: ['EUR/MXN', 'USD/MXN'],
   tendencia: [21.231, 21.238, 21.235, 21.246, 21.242, 21.255, 21.249, 21.25], // inventado

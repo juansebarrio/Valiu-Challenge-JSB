@@ -150,6 +150,13 @@ export function claseDe(origen: Divisa, destino: Destino): 'pago' | 'compra' | '
   return op?.tipo === 'compra' ? 'compra' : op?.tipo === 'venta' ? 'venta' : 'transferencia';
 }
 
+/**
+ * Clase para la comisión (C-50): en la misma divisa es una transferencia, a una cuenta propia o a un tercero (sin tipo de cambio);
+ * con tipo de cambio, pago a un tercero o compra o venta entre cuentas propias.
+ */
+export const claseComision = (origen: Divisa, destino: Pick<Destino, 'tipo' | 'divisa'>): 'pago' | 'compra' | 'venta' | 'transferencia' =>
+  origen === destino.divisa ? 'transferencia' : destino.tipo === 'tercero' ? 'pago' : deducir(origen, destino.divisa)?.tipo === 'venta' ? 'venta' : 'compra';
+
 /** Motivo precargado según el caso: factura → Pago a proveedores; cuenta propia → Compra o Venta de divisas. */
 /** "Concepto" de la ventana de pago es opcional (brief): viene precargado solo cuando el pago cargado lo trae; sin factura queda vacío. */
 export function motivoPorDefecto(_origen: Divisa | null, orden: Orden): string | null {
@@ -165,11 +172,11 @@ export function opcionesDelCobro(e: Pick<EstadoApp, 'datos' | 'operaciones' | 't
   const pos = posicionesPorDivisa(e);
   return pagosPendientes(e)
     .filter((p) => !p.pactada)
-    .map((pago) => ({ pago, ...evaluarPagoConCobro({ cobro, pago, posiciones: pos, cuentaEnDivisa: e.datos.cuentas.find((c) => c.divisa === pago.divisa) ?? null, pares: e.tdcVivo }) }));
+    .map((pago) => ({ pago, ...evaluarPagoConCobro({ cobro, pago, posiciones: pos, pares: e.tdcVivo, comisionBp: e.datos.comisiones[claseComision(cobro.divisa, { tipo: 'tercero', divisa: pago.divisa })] }) }));
 }
 
 /** El pago que viene seleccionado al entrar desde el cobro: el primero (por fecha) que cubre un faltante; si no hay, ninguno. */
-export const pagoPorDefectoDelCobro = (e: Pick<EstadoApp, 'datos' | 'operaciones' | 'tdcVivo'>, cobro: Cobro) => opcionesDelCobro(e, cobro).find((o) => o.consecuencia.tono === 'ok')?.pago.id ?? null;
+export const pagoPorDefectoDelCobro = (e: Pick<EstadoApp, 'datos' | 'operaciones' | 'tdcVivo'>, cobro: Cobro) => opcionesDelCobro(e, cobro).find((o) => o.consecuencia?.tono === 'ok')?.pago.id ?? null;
 
 export interface Notificacion {
   id: string;
@@ -194,7 +201,11 @@ export function notificaciones(e: Pick<EstadoApp, 'datos' | 'operaciones' | 'tdc
   }
   for (const o of e.operaciones) {
     if (o.estado === 'En proceso') out.push({ id: `op-${o.id}`, texto: `En proceso: ${o.clase === 'pago' ? `pago a ${o.destino.nombre}` : `${o.clase} a tu ${o.destino.nombre}`} por ${fmtMonto(o.recibe, o.destino.divisa)}.`, movimientoId: o.id, tono: 'info' });
-    if (o.estado === 'Pactada') out.push({ id: `op-${o.id}`, texto: `Pactado: ${fmtMonto(o.pagas, e.datos.cuentas.find((c) => c.id === o.origenId)!.divisa)} salen el ${diaCorto(o.fechaValor)} para ${o.destino.tipo === 'propia' ? `tu ${o.destino.nombre}` : o.destino.nombre}.`, movimientoId: o.pagoId ?? o.id, tono: 'info' });
+    // Aviso de fondeo de la pactada, el mismo de la confirmación y el detalle (C-51).
+    if (o.estado === 'Pactada') {
+      const origen = e.datos.cuentas.find((c) => c.id === o.origenId)!;
+      out.push({ id: `op-${o.id}`, texto: `Ten ${fmtMonto(o.pagas, origen.divisa)} en tu ${origen.nombre} el ${diaCorto(o.fechaValor)}.`, movimientoId: o.pagoId ?? o.id, tono: 'info' });
+    }
   }
   const fin = finDeSemana(HOY);
   for (const p of pend.filter((x) => x.fecha.getTime() <= fin.getTime())) out.push({ id: `vence-${p.id}`, texto: `Vence el ${diaCorto(p.fecha)}: ${p.destinatario}, ${fmtMonto(p.monto, p.divisa)}.`, movimientoId: p.id, tono: 'info' });
