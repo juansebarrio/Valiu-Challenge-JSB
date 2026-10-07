@@ -27,16 +27,16 @@ Parámetros: `?escenario=faltante|resuelta|pactada|sin-saldo|mercado-cerrado`, `
 
 ### Etapa 1 · Flujo principal desde el handoff de diseño
 - Proyecto Next.js 16 (App Router, Turbopack), React 19, TypeScript, Tailwind 4 mapeado a los tokens del DS (`src/styles/tokens.css` = copia literal del DS oficial + alias `--app-*`), Montserrat con `next/font`, Unicons. Sin librerías de componentes de terceros.
-- Home: posición por divisa con proyección de la semana (línea de cero, punto de faltante), lo nuevo, movimientos, tipo de cambio, cuentas. Panel lateral de pago con pasos origen → revisión → precio y token → confirmación. Fecha valor. Onboarding de 4 pasos. Pestaña Operar clásico.
+- Home: posición por divisa con proyección de la semana (línea de cero, punto de faltante), lo nuevo, movimientos, tipo de cambio, cuentas. Flujo de pago con pasos origen → revisión → precio y token → confirmación (en un panel lateral hasta C-47; hoy en una ventana de pago centrada de dos columnas). Fecha valor. Onboarding de 4 pasos. Pestaña Operar clásico.
 - Deploy en Vercel y PR inicial.
 
 ### Etapa 2 · "Flujo principal en alta"
 - Motor de dinero en centavos y tipo de cambio en millonésimas (BigInt, redondeo half-up), `cotizar()` único, precio ejecutable con spread y vencimiento (2:00), posición = saldo + pactadas por recibir − pagos pendientes − pactadas por liquidar.
-- Datos fijos del brief (3 pagos USD, 7 pagos MXN que suman 80,350.50, cobro de +180,000), escenarios por URL, paso Destino, cinco entradas al panel, chips de consecuencia calculados, Hoy deshabilitado cuando no alcanza, cuenta regresiva con aria-live, token de un solo input, estado vencido, pactadas y fondeo, modo demo, aviso de pantalla mínima, toasts para lo que no está en el prototipo.
+- Datos fijos del brief (3 pagos USD, 7 pagos MXN que suman 80,350.50, cobro de +180,000), escenarios por URL, paso Destino, cinco entradas a la ventana de pago, chips de consecuencia calculados, Hoy deshabilitado cuando no alcanza, cuenta regresiva con aria-live, token de un solo input, estado vencido, pactadas y fondeo, modo demo, aviso de pantalla mínima, toasts para lo que no está en el prototipo.
 - Tablero `/tablero/alta` generado desde el estado, hoja de estados, `/sistema`, verificación con Playwright y capturas, `docs/decisiones.md` (C-01 a C-24).
 
 ### Etapa 3 · Movimientos
-- Detalle de cada fila en el panel (pendiente, pactado, en proceso, cobro, pago realizado).
+- Detalle de cada fila en el panel lateral (pendiente, pactado, en proceso, cobro, pago realizado).
 - "+" junto a Movimientos: cargar un pago (destinatario → monto, vencimiento en día hábil, concepto, referencia → "Pago cargado" con "Pagar ahora"); el pago queda en Próximos y cuenta en la posición. Antes se llamaba "Agendar un pago".
 - Cancelar un pago pactado desde su detalle: construido y luego revertido (C-27); el detalle de una pactada dice que el precio ya está cerrado y remite a WhatsApp desde Contáctanos.
 
@@ -51,17 +51,17 @@ Parámetros: `?escenario=faltante|resuelta|pactada|sin-saldo|mercado-cerrado`, `
 - Sin scroll horizontal del documento en ningún ancho: `overflow-x: hidden`, pie que envuelve, tarjetas de la pantalla inicial fluidas, shell oculto bajo el ancho mínimo (hoy 1024 px).
 
 ### Etapa 6 · Sección 7 del brief
-1. Transferencia por el mismo panel: origen en la divisa del pago → sin tipo de cambio, sin "Pedir precio", sin fecha valor, token al confirmar (Shenzhen desde Cuenta USD; Mayorista Caribe desde Cuenta USD).
-2. Paso Destino "¿A quién le pagas?" para el "Pagar" del encabezado y para "Pagar a otro destinatario" (desde el cobro, con "Volver"); una cuenta propia en otra divisa es compra o venta por el mismo panel, y desde Origen se continúa sin monto.
+1. Transferencia por la misma ventana de pago: origen en la divisa del pago → sin tipo de cambio, sin "Pedir precio", sin fecha valor, token al confirmar (Shenzhen desde Cuenta USD; Mayorista Caribe desde Cuenta USD).
+2. Paso Destino "¿A quién le pagas?" para el "Pagar" del encabezado y para "Pagar a otro destinatario" (desde el cobro, con "Volver"); una cuenta propia en otra divisa es compra o venta por la misma ventana de pago, y desde Origen se continúa sin monto.
 3. Lado fijo del monto sin factura: "Pagas" y "Recibe" editables, el que se escribe queda fijo y el otro se recalcula en vivo.
 4. EUR/USD a 1.175000 / 1.171000 en los dos arquetipos: Shenzhen desde EUR ≈ 1,280.96 EUR; Hotel desde USD ≈ 4,935.00 USD (faltarían 1,435.00 USD el jue 8). Tests, escenarios y muestras de `/sistema` recalculados desde `fx.ts`.
 5. Tecla P: nunca se dispara con el foco en un campo (y desde la etapa 8, solo con `?demo=1`).
-6. "Concepto" opcional en lugar de "Motivo de pago" (panel y Cargar un pago; el clásico conserva "Motivo de pago"); "Comprobante" de Lo nuevo abre el detalle del cobro y las descargas de comprobante generan un .html real. Los estados de token incorrecto, origen sin saldo y pactada sin saldo quedaron como estaban.
+6. "Concepto" opcional en lugar de "Motivo de pago" (ventana de pago y Cargar un pago; el clásico conserva "Motivo de pago"); "Comprobante" de Lo nuevo abre el detalle del cobro y las descargas de comprobante generan un .html real. Los estados de token incorrecto, origen sin saldo y pactada sin saldo quedaron como estaban.
 
 ### Etapa 7 · Pendientes del prototipo
 - Alta de destinatario ("Agregar destinatario" en el paso Destino, en Destinatarios y en el clásico): nombre, divisa, banco y cuenta o CLABE; desde el paso Destino, "Guardar y pagar" sigue con el pago.
 - Secciones del menú como vistas reales: Control de operaciones (pactadas, en proceso y realizadas, con detalle), Destinatarios (cuenta, pendientes, "Pagar" sin monto) y Monitoreo de divisas (pares con sus dos lados, el ejecutable y la tendencia). "Operaciones recientes" del clásico lleva a Control.
-- Campana con notificaciones derivadas del estado; "Ver todas mis cuentas" abre el panel de cuentas con CLABE, "Pasar dinero" y "Ver datos para depositar".
+- Campana con notificaciones derivadas del estado; "Ver todas mis cuentas" abre el panel lateral de cuentas con CLABE, "Pasar dinero" y "Ver datos para depositar".
 - Transferencia con saldo insuficiente: la cuenta queda deshabilitada ("No alcanza el saldo") y la revisión bloquea si el monto escrito supera el saldo.
 - `?seccion=control|destinatarios|monitoreo`; frames N1–N6 en `/tablero/alta`.
 
@@ -107,5 +107,5 @@ Parámetros: `?escenario=faltante|resuelta|pactada|sin-saldo|mercado-cerrado`, `
 - "Subir documento" (no hay OCR ni factura real) y "Horarios de operación" (el horario es un dato sin confirmar): toast.
 - El alta de destinatario no valida contra el banco y vive en memoria, como todo el estado.
 - Errores de red o de precio, reintentos de token, horario real de mercado, pago parcial o múltiple, pagos MXN dentro de la semana en la gráfica, persistencia entre recargas, móvil: fuera del alcance actual.
-- Diferencias con el archivo de diseño del flujo secundario (precio ejecutable por factor, banda del TDC, tarjeta de tipo de cambio compacta, copys del panel, orden de OpcionPago): registradas en `docs/diferencias-cc-vs-diseno.md`, el código manda.
+- Diferencias con el archivo de diseño del flujo secundario (precio ejecutable por factor, banda del TDC, tarjeta de tipo de cambio compacta, copys de la ventana de pago, orden de OpcionPago): registradas en `docs/diferencias-cc-vs-diseno.md`, el código manda.
 - Vercel: producción sigue atada a la rama `claude/determined-thompson-n0zgns`; al mergear a `main` conviene cambiar la rama de producción. Las URLs `.vercel.app` tienen protección SSO.

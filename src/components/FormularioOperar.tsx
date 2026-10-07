@@ -59,7 +59,7 @@ const CampoMontoDoble: FC<{ v: VistaOperar; dispatch: (a: Accion) => void }> = (
   );
 };
 
-/** El formulario Operar clásico con el mismo motor que el panel: cotización, precio ejecutable, cuenta regresiva, token y vencimiento. */
+/** El formulario Operar clásico con el mismo motor que la ventana de pago: cotización, precio ejecutable, cuenta regresiva, token y vencimiento. */
 export const FormularioOperar: FC<FormularioOperarProps> = ({ vista: v, dispatch, onNoDisponible, onComprobante, onAgregarDestinatario }) => {
   const onCta = () => {
     if (!v.cta.habilitado) return;

@@ -34,7 +34,7 @@ const REALIZADOS: Realizado[] = [
   { id: 't-r3', fecha: new Date(2026, 9, 2), nombre: 'Familia Ríos', monto: centavos(62_000), divisa: 'MXN', tipo: 'cobro', hora: '11:05', banco: 'Banorte', mascara: '8190', referencia: 'Paquete Cancún', estado: 'Confirmada' }, // inventado
 ];
 
-/** El cobro que dispara el flujo: "Usar para pagar" abre el panel en el paso "¿Qué pagas con este cobro?". */
+/** El cobro que dispara el flujo: "Usar para pagar" abre la ventana de pago en el paso "¿Qué pagas con este cobro?". */
 const LO_NUEVO: Cobro = { id: REALIZADOS[0].id, cuentaId: 'mxn', monto: REALIZADOS[0].monto, divisa: 'MXN', de: REALIZADOS[0].nombre, hora: REALIZADOS[0].hora, banco: REALIZADOS[0].banco, referencia: REALIZADOS[0].referencia };
 
 // Tipo de cambio: la misma tabla que la importadora (PARES en fx.ts, C-45): EUR/MXN 21.250000 / 21.100000 del pedido de turismo (la venta es inventada),

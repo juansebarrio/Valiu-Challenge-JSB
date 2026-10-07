@@ -1,5 +1,6 @@
 'use client';
-import { useEffect, useRef, type FC, type ReactNode } from 'react';
+import { useRef, type FC, type ReactNode } from 'react';
+import { useDialogo } from '@/hooks/useDialogo';
 import { Boton } from './ui/Boton';
 import { Icono } from './ui/Icono';
 
@@ -14,34 +15,15 @@ export interface PanelOperarProps {
   modo?: 'app' | 'frame';
 }
 
-const FOCUSABLES = 'a[href], button:not([disabled]), input:not([disabled]), [role="radio"], [tabindex]:not([tabindex="-1"])';
-
-/** Panel 480 px, radio 16 a la izquierda, --shadow-lg, overlay rgba(21,21,34,.4). role=dialog, foco atrapado, Esc cierra y el foco vuelve al botón que lo abrió. */
+/**
+ * Panel lateral de consulta (detalle de un movimiento, notificaciones, todas las cuentas; C-47): 480 px, radio 16 a la izquierda,
+ * --shadow-lg, overlay rgba(21,21,34,.4). role=dialog, foco atrapado, Esc cierra y el foco vuelve al botón que lo abrió (useDialogo).
+ * Operar va en la ventana de pago (ModalOperar).
+ */
 export const PanelOperar: FC<PanelOperarProps> = ({ titulo, sub, primario, secundario, onCerrar, children, modo = 'app' }) => {
-  const ref = useRef<HTMLDivElement>(null);
+  const ref = useRef<HTMLElement>(null);
   const esApp = modo === 'app';
-  const cerrarRef = useRef(onCerrar);
-  useEffect(() => { cerrarRef.current = onCerrar; }, [onCerrar]);
-
-  useEffect(() => {
-    if (!esApp) return;
-    const previo = document.activeElement as HTMLElement | null;
-    const nodo = ref.current;
-    const primero = nodo?.querySelector<HTMLElement>('input:not([disabled]), [role="radio"][tabindex="0"]') ?? nodo;
-    primero?.focus();
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') { e.stopPropagation(); cerrarRef.current(); return; }
-      if (e.key !== 'Tab' || !nodo) return;
-      const focusables = Array.from(nodo.querySelectorAll<HTMLElement>(FOCUSABLES)).filter((el) => el.offsetParent !== null);
-      if (!focusables.length) return;
-      const primero = focusables[0];
-      const ultimo = focusables[focusables.length - 1];
-      if (e.shiftKey && (document.activeElement === primero || document.activeElement === nodo)) { e.preventDefault(); ultimo.focus(); }
-      else if (!e.shiftKey && document.activeElement === ultimo) { e.preventDefault(); primero.focus(); }
-    };
-    window.addEventListener('keydown', onKey);
-    return () => { window.removeEventListener('keydown', onKey); previo?.focus?.(); };
-  }, [esApp]);
+  useDialogo(ref, onCerrar, esApp);
 
   const pos = esApp ? 'fixed' : 'absolute';
   return (

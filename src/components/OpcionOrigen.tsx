@@ -19,7 +19,7 @@ export interface OpcionRadioProps {
   tabIndex?: number;
 }
 
-/** Opción de radio del panel: radio de 20 px; seleccionada = borde indigo + bg #F0F1FD; la consecuencia siempre va en badge (D-20). */
+/** Opción de radio de la ventana de pago: radio de 20 px; seleccionada = borde indigo + bg #F0F1FD; la consecuencia siempre va en badge (D-20). */
 export const OpcionRadio: FC<OpcionRadioProps> = ({ componente, nombre, derecha, linea, consecuencia, seleccionada, deshabilitada, onElegir, onKeyDown, tabIndex }) => (
   <div
     data-component={componente}

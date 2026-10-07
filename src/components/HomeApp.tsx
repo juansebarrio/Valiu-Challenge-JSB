@@ -28,7 +28,7 @@ function opcionesDeUrl(arquetipo: ArquetipoId) {
     congelado: params.get('congelar') === '1',
     demo: params.get('demo') === '1',
     recorrido: params.get('recorrido') !== '0' && !RECORRIDOS_VISTOS.has(arquetipo),
-    /** ?pago=<id> abre el panel en Origen con ese pago; ?cobro=<id> lo abre desde el cobro de hoy. */
+    /** ?pago=<id> abre la ventana de pago en Origen con ese pago; ?cobro=<id> la abre desde el cobro de hoy. */
     pago: params.get('pago'),
     cobro: params.get('cobro'),
     /** ?seccion=movimientos|control|destinatarios|monitoreo abre esa sección del menú. */

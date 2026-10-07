@@ -294,7 +294,7 @@ export function divisasOperar(e: Pick<EstadoApp, 'datos'>, op: Operar): { izq: D
   return { izq: d, der: d, origen: d, destino: d };
 }
 
-/** Lo que hoy sale del origen por la orden del panel (indicativo en vivo o precio fijo). */
+/** Lo que hoy sale del origen por la orden de la ventana de pago (indicativo en vivo o precio fijo). */
 export function cotizacionPanel(e: Pick<EstadoApp, 'datos' | 'tdcVivo'>, panel: Panel) {
   const origen = cuentaPorId(e, panel.origenId);
   const orden = panel.orden;
@@ -555,7 +555,7 @@ export function reducer(e: EstadoApp, a: Accion): EstadoApp {
       const cobro = e.datos.loNuevo;
       const opcion = cobro && e.panel.paso === 'pago' ? opcionesDelCobro(e, cobro).find((o) => o.pago.id === e.panel.pagoElegidoId) : null;
       if (!cobro || !opcion) return e;
-      // Sigue el panel de siempre con el pago elegido; el origen preseleccionado es la cuenta donde entró el cobro (D-31).
+      // Sigue la ventana de pago de siempre con el pago elegido; el origen preseleccionado es la cuenta donde entró el cobro (D-31).
       const abierto = reducer(e, { tipo: 'abrirPanel', orden: ordenDePago(opcion.pago), origenId: cobro.cuentaId });
       return { ...abierto, panel: { ...abierto.panel, cobroId: cobro.id, pagoElegidoId: opcion.pago.id } };
     }

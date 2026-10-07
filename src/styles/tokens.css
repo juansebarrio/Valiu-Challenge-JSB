@@ -255,13 +255,13 @@ html, body { font-family: var(--font-sans); color: var(--fg-1); }
   --app-shadow-mid:      0 3px 6px rgba(0, 0, 0, 0.08);   /* tarjetas, chip de divisa */
   --app-shadow-high:     0 3px 6px rgba(0, 0, 0, 0.15);   /* botón flotante */
   --app-shadow-md:       var(--shadow-md);                /* popovers */
-  --app-shadow-lg:       var(--shadow-lg);                /* panel lateral, tarjeta del onboarding */
+  --app-shadow-lg:       var(--shadow-lg);                /* ventana de pago, panel lateral, tarjeta del onboarding */
 
   /* --- Radios (solo 4 / 8 / 16 / 40 del DS + 12 del recorte del tour) --- */
   --app-radius-xs:   var(--radius-xs);   /* 4  botones, chip de divisa */
   --app-radius-sm:   var(--radius-sm);   /* 8  inputs, tarjetas, alerts, ítem de nav */
   --app-radius-md:   var(--radius-md);   /* 12 recorte del onboarding */
-  --app-radius-lg:   var(--radius-lg);   /* 16 tags, panel */
+  --app-radius-lg:   var(--radius-lg);   /* 16 tags, panel lateral, ventana de pago */
   --app-radius-2xl:  var(--radius-2xl);  /* 40 botón flotante */
   --app-radius-full: var(--radius-full);
 
@@ -281,7 +281,17 @@ html, body { font-family: var(--font-sans); color: var(--fg-1); }
   --app-logo-h:          22px;
   --app-header-h:        48px;
   --app-footer-h:        40px;
-  --app-panel-w:         480px;
+  --app-panel-w:         480px;  /* panel lateral de consulta (detalle, notificaciones, cuentas) */
+  /* Ventana de pago (ModalOperar, C-47) */
+  --app-modal-w:         920px;  /* pasos de dos columnas: Origen, Revisión, Precio */
+  --app-modal-w-sm:      560px;  /* pasos de una columna: Destino, cobro, Confirmación, Cargar un pago, Agregar destinatario */
+  --app-modal-aside-w:   368px;  /* columna derecha: lo que significa la decisión */
+  --app-modal-max-w:     calc(100vw - 48px);
+  --app-modal-max-h:     calc(100dvh - 48px);
+  --app-modal-body-min-h: 384px; /* mismo alto de cuerpo en Origen, Revisión y Precio: el modal no cambia de alto entre pasos */
+  --app-modal-top-frame: 112px;  /* top fijo en los frames de /tablero/alta (no depende del alto del frame) */
+  --app-modal-btn-w:     140px;  /* ancho mínimo del botón secundario del pie */
+  --app-modal-btn-w-primario: 220px;
   --app-input-h:         48px;
   --app-row-h:           44px;
   --app-button-h-mid:    32px;

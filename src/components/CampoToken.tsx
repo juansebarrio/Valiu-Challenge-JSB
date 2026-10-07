@@ -6,7 +6,7 @@ export interface CampoTokenProps {
   valor: string;
   habilitado: boolean;
   onChange: (valor: string) => void;
-  /** panel: casillas 48×48 · formulario: 44×48. */
+  /** panel: casillas 48×48 (ventana de pago) · formulario: 44×48 (Operar clásico). */
   ancho?: 'panel' | 'formulario';
   autoFoco?: boolean;
   etiqueta?: string;

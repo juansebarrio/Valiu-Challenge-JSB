@@ -12,7 +12,7 @@ export interface SelectorDestinoProps {
   onBusqueda: (texto: string) => void;
   onElegir: (item: GrupoDestino['items'][number]) => void;
   onAgregar?: () => void;
-  /** campo: dropdown dentro de un formulario · lista: siempre abierto (paso Destino del panel). */
+  /** campo: dropdown dentro de un formulario · lista: siempre abierto (paso Destino de la ventana de pago). */
   modo: 'campo' | 'lista';
   valor?: string | null;
   abierto?: boolean;
@@ -41,7 +41,7 @@ const Items: FC<Pick<SelectorDestinoProps, 'grupos' | 'onElegir' | 'onAgregar' |
   </>
 );
 
-/** Buscador y grupos ("Pagos próximos", "Tus cuentas", "Destinatarios"): el mismo componente en el panel y en Transferir del clásico. */
+/** Buscador y grupos ("Pagos próximos", "Tus cuentas", "Destinatarios"): el mismo componente en la ventana de pago y en Transferir del clásico. */
 export const SelectorDestino: FC<SelectorDestinoProps> = ({ modo, grupos, busqueda, onBusqueda, onElegir, onAgregar, valor = null, abierto = false, onAbrir, etiqueta = 'Destino', placeholder = 'Elige una cuenta', vacio }) => {
   if (modo === 'campo') {
     return (

@@ -860,3 +860,63 @@ describe('ningún recorrido deja saldo negativo (C-37)', () => {
     expect(vistaOperar(aplicar([{ tipo: 'opTipo', valor: 'transferir' }], t)).origen.opciones.find((o) => o.id === 'eur')).toMatchObject({ deshabilitado: true, motivo: 'Sin saldo' });
   });
 });
+
+describe('ventana de pago · columna derecha de Origen, Revisión y Precio (C-47)', () => {
+  const VIE9 = new Date(2026, 9, 9);
+  const indicativo = (valor: number, unidad: string) => ({ valor, unidad, estado: 'indicativo', segundos: 0, porVencer: false, pausado: false });
+  const origen = aplicar([{ tipo: 'abrirPanel', orden: shenzhen }], base);
+  it('Origen: tipo de cambio indicativo del par de la cuenta elegida, lo que recibe Shenzhen y el vencimiento', () => {
+    expect(vistaPanel(origen)!.resumen).toEqual({
+      tdc: indicativo(18_091_183, 'MXN por USD'), sinPrecio: null,
+      filas: [{ k: 'Shenzhen Parts Co. recibe', v: '1,500.00 USD' }, { k: 'Vence', v: 'jueves 8 de octubre' }], aviso: null, nota: null,
+    });
+    expect(vistaPanel(aplicar([{ tipo: 'elegirOrigen', origenId: 'eur' }], origen))!.resumen?.tdc).toEqual(indicativo(1_171_000, 'USD por EUR'));
+    expect(vistaPanel(aplicar([{ tipo: 'elegirOrigen', origenId: 'usd' }], origen))!.resumen).toMatchObject({ tdc: null, sinPrecio: 'Sin tipo de cambio' });
+    const sinCuenta = aplicar([{ tipo: 'abrirPanel', orden: shenzhen }], estadoDeEscenario('sin-saldo'));
+    expect(sinCuenta.panel.origenId).toBeNull();
+    expect(vistaPanel(sinCuenta)!.resumen).toMatchObject({ tdc: null, sinPrecio: 'Depende de la cuenta que elijas.' });
+  });
+  const revision = aplicar([{ tipo: 'irPaso', paso: 'revision' }], origen);
+  it('Revisión con Hoy: de dónde y cuándo sale el dinero, cómo queda la cuenta y la nota del token', () => {
+    expect(vistaPanel(revision)!.resumen).toEqual({
+      tdc: indicativo(18_091_183, 'MXN por USD'), sinPrecio: null,
+      filas: [{ k: 'Sale de', v: 'Cuenta Principal MXN' }, { k: 'Sale el dinero', v: 'Hoy' }, { k: 'Tu cuenta queda en', v: '≈ 1,152,863.23 MXN' }],
+      aviso: null, nota: 'Ten tu token a mano: el precio dura 2 minutos.',
+    });
+  });
+  it('Revisión con fecha valor: la fila lleva el día y, después del vencimiento, el aviso', () => {
+    expect(vistaPanel(aplicar([{ tipo: 'fechaValor', fecha: JUE8 }], revision))!.resumen).toMatchObject({
+      filas: [{ k: 'Sale de', v: 'Cuenta Principal MXN' }, { k: 'Sale el dinero', v: 'jue 8' }, { k: 'El jue 8 tu cuenta queda en', v: '≈ 1,152,863.23 MXN' }], aviso: null,
+    });
+    expect(vistaPanel(aplicar([{ tipo: 'fechaValor', fecha: VIE9 }], revision))!.resumen).toMatchObject({
+      filas: [{ k: 'Sale de', v: 'Cuenta Principal MXN' }, { k: 'Sale el dinero', v: 'vie 9' }, { k: 'El vie 9 tu cuenta queda en', v: '≈ 1,152,863.23 MXN' }],
+      aviso: 'El dinero sale después del vencimiento (jue 8).',
+    });
+  });
+  const precio = aplicar([{ tipo: 'pedirPrecio' }], revision);
+  it('Precio: el tipo de cambio fijo con su cuenta regresiva y la cuenta con el monto exacto; vencido, vuelve al indicativo', () => {
+    const p = vistaPanel(precio)!;
+    expect(p.resumen).toEqual({
+      tdc: { valor: 18_092_415, unidad: 'MXN por USD', estado: 'fijo', segundos: 120, porVencer: false, pausado: false }, sinPrecio: null,
+      filas: [{ k: 'Sale de', v: 'Cuenta Principal MXN' }, { k: 'Sale el dinero', v: 'Hoy' }, { k: 'Tu cuenta queda en', v: '1,152,861.38 MXN' }],
+      aviso: null, nota: null,
+    });
+    expect(p.precio).toMatchObject({ pagas: centavos(27_138.62), recibe: centavos(1500), ladoFijo: 'recibe', pagasAprox: false });
+    const vencido = vistaPanel(aplicar(tick(120), precio))!;
+    expect(vencido.resumen).toMatchObject({ tdc: { valor: 18_092_415, estado: 'vencido' }, filas: [{ k: 'Sale de', v: 'Cuenta Principal MXN' }, { k: 'Sale el dinero', v: 'Hoy' }, { k: 'Tu cuenta queda en', v: '≈ 1,152,863.23 MXN' }] });
+    expect(vencido.precio).toMatchObject({ pagas: centavos(27_136.77), pagasAprox: true });
+  });
+  it('transferencia en la misma divisa: "Sin tipo de cambio" en lugar del precio y montos exactos', () => {
+    const t = aplicar([{ tipo: 'elegirOrigen', origenId: 'usd' }, { tipo: 'irPaso', paso: 'revision' }], origen);
+    expect(vistaPanel(t)!.resumen).toEqual({
+      tdc: null, sinPrecio: 'Sin tipo de cambio',
+      filas: [{ k: 'Sale de', v: 'Cuenta USD' }, { k: 'Sale el dinero', v: 'Hoy' }, { k: 'Tu cuenta queda en', v: '500.00 USD' }],
+      aviso: null, nota: null,
+    });
+    expect(vistaPanel(aplicar([{ tipo: 'pedirPrecio' }], t))!.resumen).toMatchObject({ tdc: null, sinPrecio: 'Sin tipo de cambio', filas: [{ k: 'Sale de', v: 'Cuenta USD' }, { k: 'Sale el dinero', v: 'Hoy' }, { k: 'Tu cuenta queda en', v: '500.00 USD' }] });
+  });
+  it('los pasos de una columna no llevan columna derecha', () => {
+    expect(vistaPanel(aplicar([{ tipo: 'abrirPanel', orden: null }], base))!.resumen).toBeNull();
+    expect(vistaPanel(aplicar([...TOKEN], precio))!.resumen).toBeNull();
+  });
+});

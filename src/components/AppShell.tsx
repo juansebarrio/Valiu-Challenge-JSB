@@ -16,7 +16,7 @@ const NAV: { label: string; icono: NombreIcono }[] = [
 
 export interface AppShellProps {
   children: ReactNode;
-  /** Panel lateral, onboarding: se posicionan sobre el shell. */
+  /** Ventana de pago, panel lateral y onboarding: se posicionan sobre el shell. */
   capas?: ReactNode;
   /** app: ocupa la ventana y el sidebar se colapsa a 64 px bajo 1100 px · frame: 1280 px fijos (tablero). */
   modo?: ModoShell;

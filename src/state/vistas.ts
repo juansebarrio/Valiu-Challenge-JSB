@@ -219,7 +219,7 @@ export interface VistaDestinatario {
   pendientes: string | null;
 }
 
-/** Destinatarios: la lista con su cuenta y lo que tienen pendiente; "Pagar" abre el panel sin monto. */
+/** Destinatarios: la lista con su cuenta y lo que tienen pendiente; "Pagar" abre la ventana de pago sin monto. */
 export function vistaDestinatarios(e: EstadoApp): { resumen: string; items: VistaDestinatario[] } {
   const pend = pagosPendientes(e).filter((p) => !p.pactada);
   const items = e.datos.destinatarios.map((d) => {
@@ -277,7 +277,7 @@ export function vistaArquetipos(): VistaArquetipo[] {
 /** El estado base de un arquetipo (para calcular contexto fuera de la app, p. ej. en tests). */
 export const estadoBaseDe = (id: ArquetipoId) => estadoInicial('faltante', {}, id);
 
-// ------------------------------------------------------------------ Panel
+// ------------------------------------------------ Ventana de pago y panel lateral (C-47)
 export interface VistaOpcionOrigen {
   id: CuentaId;
   nombre: string;
@@ -325,16 +325,21 @@ export interface VistaPanel {
     editable: boolean;
     pagas: Centavos; pagasDivisa: Divisa; recibe: Centavos; recibeDivisa: Divisa; ladoFijo: 'recibe' | 'pagas'; destinatario: string;
     fechas: VistaFecha[]; fechaEsHoy: boolean; fechaDia: string; hoyNoAlcanza: boolean;
+    /** texto y efecto ya no van en pantalla (C-47: repetían montos y tipo de cambio a la vista; el efecto es la fila "Tu cuenta queda en" de resumen); flujo.test.ts los sigue leyendo. */
     texto: string; ayuda: string | null; efecto: string; posVencimiento: string | null;
     /** Transferencia con saldo insuficiente: no se puede continuar. */
     error: string | null;
-    tdc: TdcMicro | null; tdcUnidad: string; concepto: string; referencia: string;
+    tdc: TdcMicro | null; concepto: string; referencia: string;
   } | null;
   precio: {
-    estado: 'fijo' | 'vencido' | 'sinTdc'; tdc: TdcMicro | null; unidad: string; segundos: number; porVencer: boolean; pausado: boolean;
-    pagas: Centavos; pagasAprox: boolean; pagasDivisa: Divisa; recibe: Centavos; recibeDivisa: Divisa; destinatario: string; desde: string; sale: string | null;
+    estado: 'fijo' | 'vencido' | 'sinTdc'; tdc: TdcMicro | null; segundos: number; porVencer: boolean;
+    pagas: Centavos; pagasAprox: boolean; pagasDivisa: Divisa; recibe: Centavos; recibeDivisa: Divisa; destinatario: string; sale: string | null;
+    /** Lado que quedó fijo en la revisión: el BloqueMonto de solo lectura lo marca con el tag "Fijo". */
+    ladoFijo: 'recibe' | 'pagas';
     token: string; tokenError: string | null; confirmando: boolean;
   } | null;
+  /** Columna derecha de Origen, Revisión y Precio en la ventana de pago (C-47): lo que significa lo que se decide a la izquierda. */
+  resumen: VistaResumen | null;
   confirmacion: VistaConfirmacion | null;
   depositar: { cuenta: string; clabe: string; banco: string } | null;
   /** Detalle de una fila de Movimientos; también la confirmación de "Cargar un pago". */
@@ -344,6 +349,18 @@ export interface VistaPanel {
   notificaciones: { id: string; texto: string; movimientoId: string | null; tono: TonoBadge }[] | null;
   cuentas: { id: CuentaId; nombre: string; divisa: Divisa; banco: string; mascara: string; saldo: string; clabe: string | null }[] | null;
   destinatario: { nombre: string; divisa: Divisa; divisas: Divisa[]; banco: string; cuenta: string; errores: Partial<Record<'nombre' | 'banco' | 'cuenta', string>>; valido: boolean; volverA: 'destino' | null } | null;
+}
+
+export interface VistaResumen {
+  /** Tipo de cambio del par, siempre arriba: indicativo en Origen y Revisión; fijo (con la cuenta regresiva) o vencido en Precio. */
+  tdc: { valor: TdcMicro; unidad: string; estado: 'indicativo' | 'fijo' | 'vencido'; segundos: number; porVencer: boolean; pausado: boolean } | null;
+  /** En lugar del precio: "Sin tipo de cambio" (transferencia en la misma divisa) o, en Origen sin cuenta elegida, "Depende de la cuenta que elijas." */
+  sinPrecio: string | null;
+  filas: { k: string; v: string }[];
+  /** "El dinero sale después del vencimiento (jue 8)." cuando aplica (Revisión). */
+  aviso: string | null;
+  /** Al pie: "Ten tu token a mano: el precio dura 2 minutos." (Revisión con tipo de cambio). */
+  nota: string | null;
 }
 
 export interface VistaDetalle {
@@ -414,7 +431,7 @@ export function gruposDestino(e: EstadoApp, busqueda: string, opciones: { conPag
 export function vistaPanel(e: EstadoApp): VistaPanel | null {
   const { panel } = e;
   if (!panel.abierto) return null;
-  const vacio: VistaPanel = { tipo: panel.tipo, titulo: 'Pagar', sub: '', paso: panel.paso, sinTdc: false, mercadoCerrado: e.datos.mercado === 'cerrado', primario: { label: 'Continuar', habilitado: false, accion: 'ninguna' }, secundario: { label: 'Cancelar', accion: 'cancelar' }, destino: null, pago: null, origenes: [], revision: null, precio: null, confirmacion: null, depositar: null, detalle: null, agenda: null, notificaciones: null, cuentas: null, destinatario: null };
+  const vacio: VistaPanel = { tipo: panel.tipo, titulo: 'Pagar', sub: '', paso: panel.paso, sinTdc: false, mercadoCerrado: e.datos.mercado === 'cerrado', primario: { label: 'Continuar', habilitado: false, accion: 'ninguna' }, secundario: { label: 'Cancelar', accion: 'cancelar' }, destino: null, pago: null, origenes: [], revision: null, precio: null, confirmacion: null, resumen: null, depositar: null, detalle: null, agenda: null, notificaciones: null, cuentas: null, destinatario: null };
 
   if (panel.tipo === 'detalle') return vistaDetallePanel(e, vacio);
   if (panel.tipo === 'agendar') return vistaAgendarPanel(e, vacio);
@@ -493,6 +510,29 @@ export function vistaPanel(e: EstadoApp): VistaPanel | null {
   const fechaEsHoy = mismoDia(panel.fechaValor, HOY);
   const fechaDia = fechas.find((f) => f.seleccionada)?.etiqueta ?? fmt.diaCorto(panel.fechaValor);
   const posVencimiento = orden.vence && panel.fechaValor.getTime() > new Date(orden.vence.getFullYear(), orden.vence.getMonth(), orden.vence.getDate(), 23, 59).getTime() ? `El dinero sale después del vencimiento (${fmt.diaCorto(orden.vence)}).` : null;
+  const unidad = unidadTdc(op?.par ?? null);
+  // Filas de la columna derecha en Revisión y Precio: de dónde y cuándo sale el dinero y cómo queda la cuenta ese día.
+  const filasSalida = (o: { nombre: string; divisa: Divisa }, queda: string) => [
+    { k: 'Sale de', v: o.nombre },
+    { k: 'Sale el dinero', v: fechaDia },
+    { k: fechaEsHoy ? 'Tu cuenta queda en' : `El ${fechaDia} tu cuenta queda en`, v: queda },
+  ];
+
+  let resumen: VistaPanel['resumen'] = null;
+  if (panel.paso === 'origen') {
+    // Tipo de cambio indicativo del par de la cuenta seleccionada; cambia al elegir otra.
+    const tdcOrigen = cotInd?.tdc ?? null;
+    resumen = {
+      tdc: tdcOrigen != null ? { valor: tdcOrigen, unidad, estado: 'indicativo', segundos: 0, porVencer: false, pausado: false } : null,
+      sinPrecio: !origen ? 'Depende de la cuenta que elijas.' : tdcOrigen == null ? 'Sin tipo de cambio' : null,
+      filas: [
+        { k: recibeNombre, v: montoRecibe > 0 ? fmt.monto(montoRecibe, orden.destino.divisa) : 'El monto se elige después' },
+        ...(orden.vence ? [{ k: 'Vence', v: fmt.fechaLarga(orden.vence) }] : []),
+      ],
+      aviso: null,
+      nota: null,
+    };
+  }
 
   let revision: VistaPanel['revision'] = null;
   if (panel.paso === 'revision' && origen && cotInd) {
@@ -517,7 +557,14 @@ export function vistaPanel(e: EstadoApp): VistaPanel | null {
       pagas: cotInd.pagas, pagasDivisa: origen.divisa, recibe: cotInd.recibe, recibeDivisa: orden.destino.divisa, ladoFijo: orden.ladoFijo, destinatario: recibeNombre,
       fechas: sinTdc ? [] : fechas, fechaEsHoy, fechaDia, hoyNoAlcanza, texto, ayuda, efecto, posVencimiento: sinTdc ? null : posVencimiento,
       error: saldoInsuficiente ? `No alcanza el saldo de tu ${origen.nombre} (${fmt.monto(origen.saldo, origen.divisa)}).` : null,
-      tdc: sinTdc ? null : tdcInd, tdcUnidad: unidadTdc(op?.par ?? null), concepto: orden.motivo ?? '', referencia: orden.referencia,
+      tdc: sinTdc ? null : tdcInd, concepto: orden.motivo ?? '', referencia: orden.referencia,
+    };
+    resumen = {
+      tdc: !sinTdc && tdcInd != null ? { valor: tdcInd, unidad, estado: 'indicativo', segundos: 0, porVencer: false, pausado: false } : null,
+      sinPrecio: sinTdc ? 'Sin tipo de cambio' : null,
+      filas: filasSalida(origen, `${sinTdc ? '' : '≈ '}${queda}`),
+      aviso: sinTdc ? null : posVencimiento,
+      nota: sinTdc ? null : 'Ten tu token a mano: el precio dura 2 minutos.',
     };
   }
 
@@ -528,10 +575,21 @@ export function vistaPanel(e: EstadoApp): VistaPanel | null {
     const estadoPrecio = sinTdc ? 'sinTdc' : fijo ? 'fijo' : 'vencido';
     const cotFija = fijo && cot ? cot : null;
     precio = {
-      estado: estadoPrecio, tdc: fijo ? fijo.tdc : vencido ? vencido.tdc : cotInd.tdc, unidad: unidadTdc(op?.par ?? null), segundos: fijo ? fijo.venceEn : 0, porVencer: !!fijo && fijo.venceEn <= 30, pausado: e.pausado,
-      pagas: cotFija ? cotFija.pagas : cotInd.pagas, pagasAprox: !fijo && !sinTdc, pagasDivisa: origen.divisa, recibe: cotFija ? cotFija.recibe : cotInd.recibe, recibeDivisa: orden.destino.divisa, destinatario: recibeNombre, desde: origen.nombre,
+      estado: estadoPrecio, tdc: fijo ? fijo.tdc : vencido ? vencido.tdc : cotInd.tdc, segundos: fijo ? fijo.venceEn : 0, porVencer: !!fijo && fijo.venceEn <= 30,
+      pagas: cotFija ? cotFija.pagas : cotInd.pagas, pagasAprox: !fijo && !sinTdc, pagasDivisa: origen.divisa, recibe: cotFija ? cotFija.recibe : cotInd.recibe, recibeDivisa: orden.destino.divisa, destinatario: recibeNombre,
       sale: fechaEsHoy || sinTdc ? null : `El dinero sale el ${fechaDia}`,
+      ladoFijo: orden.ladoFijo,
       token: panel.token, tokenError: panel.tokenError, confirmando: panel.confirmando,
+    };
+    // Con el precio fijo, los montos son exactos; vencido, vuelven al indicativo (≈).
+    const salePrecio = cotFija ? cotFija.pagas : cotInd.pagas;
+    resumen = {
+      tdc: fijo ? { valor: fijo.tdc, unidad, estado: 'fijo', segundos: fijo.venceEn, porVencer: fijo.venceEn <= 30, pausado: e.pausado }
+        : vencido ? { valor: vencido.tdc, unidad, estado: 'vencido', segundos: 0, porVencer: false, pausado: false } : null,
+      sinPrecio: sinTdc ? 'Sin tipo de cambio' : null,
+      filas: filasSalida(origen, `${vencido ? '≈ ' : ''}${fmt.monto(origen.saldo - salePrecio, origen.divisa)}`),
+      aviso: null,
+      nota: null,
     };
   }
 
@@ -554,7 +612,7 @@ export function vistaPanel(e: EstadoApp): VistaPanel | null {
         : panel.paso === 'precio' ? { label: 'Volver', accion: 'volver' }
           : { label: confirmacion?.comprobante ?? 'Descargar comprobante', accion: 'comprobante' };
 
-  return { ...vacio, titulo, sub: panel.paso === 'confirmacion' && orden.destino.tipo === 'tercero' ? [fmt.monto(montoRecibe, orden.destino.divisa), orden.referencia || null].filter(Boolean).join(' · ') : sub, paso: panel.paso, sinTdc, mercadoCerrado, primario, secundario, origenes, revision, precio, confirmacion };
+  return { ...vacio, titulo, sub: panel.paso === 'confirmacion' && orden.destino.tipo === 'tercero' ? [fmt.monto(montoRecibe, orden.destino.divisa), orden.referencia || null].filter(Boolean).join(' · ') : sub, paso: panel.paso, sinTdc, mercadoCerrado, primario, secundario, origenes, revision, precio, confirmacion, resumen };
 }
 
 export function vistaConfirmacion(e: EstadoApp, o: OperacionHecha): VistaConfirmacion {
@@ -618,7 +676,7 @@ function vistaPagoPanel(e: EstadoApp, vacio: VistaPanel): VistaPanel {
 const cuentaDe = (e: EstadoApp, divisa: Divisa) => e.datos.cuentas.find((c) => c.divisa === divisa) ?? null;
 const conCuenta = (nombre: string, banco: string, mascara: string) => `${nombre} · ${banco} **** ${mascara}`;
 
-/** Filas del detalle de una operación hecha desde el panel o el clásico (en proceso o pactada). */
+/** Filas del detalle de una operación hecha desde la ventana de pago o el clásico (en proceso o pactada). */
 function filasOperacion(e: EstadoApp, o: OperacionHecha): { k: string; v: string }[] {
   const origen = cuentaPorId(e, o.origenId)!;
   const destino = o.destino.tipo === 'propia' ? `Tu ${o.destino.nombre} · **** ${o.destino.mascara}` : conCuenta(o.destino.nombre, o.destino.banco, o.destino.mascara);
@@ -697,7 +755,7 @@ function detalleRealizado(e: EstadoApp, r: Realizado): VistaDetalle {
   };
 }
 
-/** Panel "detalle": una fila de Movimientos abierta. */
+/** Tipo "detalle" (panel lateral): una fila de Movimientos abierta. */
 function vistaDetallePanel(e: EstadoApp, vacio: VistaPanel): VistaPanel {
   const { panel } = e;
   const mov = panel.movimientoId ? movimientoDe(e, panel.movimientoId) : null;
@@ -746,7 +804,7 @@ export function fechaDeIso(texto: string): Date | null {
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
-/** Panel "agendar" (Cargar un pago): destino → datos → confirmación (el pago nuevo entra a Próximos y se paga con el flujo de siempre). */
+/** Tipo "agendar" (Cargar un pago, en la ventana de pago): destino → datos → confirmación (el pago nuevo entra a Próximos y se paga con el flujo de siempre). */
 function vistaAgendarPanel(e: EstadoApp, vacio: VistaPanel): VistaPanel {
   const { panel } = e;
   const { agenda } = panel;
@@ -845,7 +903,7 @@ export function vistaOperar(e: EstadoApp): VistaOperar {
   const sale = op.tipo === 'comprar' ? cDer : cIzq;
   if (origen && sale > 0 && sale > origen.saldo) error = `Supera tu saldo disponible: ${fmt.monto(origen.saldo, origen.divisa)}.`;
 
-  // Transferir: misma regla que el paso Origen del panel (C-34/C-37): sin saldo o con saldo menor al monto, la cuenta no se elige.
+  // Transferir: misma regla que el paso Origen de la ventana de pago (C-34/C-37): sin saldo o con saldo menor al monto, la cuenta no se elige.
   const origenOpciones = ctas.filter((c) => (op.tipo === 'transferir' ? true : c.divisa === d.origen)).map((c) => {
     const deshabilitado = origenClasicoDeshabilitado(c, op);
     return { id: c.id, nombre: c.nombre, sub: `${c.banco} · **** ${c.mascara}`, seleccionado: c.id === op.origenId, deshabilitado, motivo: deshabilitado ? (c.saldo <= 0 ? 'Sin saldo' : 'No alcanza el saldo') : null };

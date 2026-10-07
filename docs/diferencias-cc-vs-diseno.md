@@ -8,14 +8,14 @@ Frames: S01–S08 del archivo de diseño (capturas en `docs/design/frames/S0*.pn
 
 | Componente | Propiedad | Valor en código | Valor en diseño | Frame |
 |---|---|---|---|---|
-| PanelOperar | Título y textos con el destinatario | "Pagar a Hotel Gran Vía Madrid", "se envía el pago a Hotel…", "Pactaste el pago a Hotel…" (`tituloDe`: "Pagar a {destinatario}") | "Pagar al Hotel Gran Vía Madrid", "al Hotel" | S03–S08 |
-| PrecioEjecutable | Precio ejecutable y montos derivados | 21.251447 = indicativo 21.250000 × 1.0000681 (`ejecutable()`, mismo factor del flujo principal) → Pagas 89,256.08 MXN, pesos después 330,743.92 | 21.251450 (inventado) → 89,256.09 y 330,743.91 | S05, S07, S08 |
-| PrecioEjecutable | Unidad del precio | "MXN" | "MXN por EUR" | S05, S06 |
-| PrecioEjecutable | Cuenta regresiva inicial | 2:00 (C-08) | 1:59 | S05 |
-| PrecioEjecutable | Botón secundario en precio y vencido | "Volver" (regresa a la revisión y descarta el precio, C-03) | "Cancelar" | S05, S06 |
-| PrecioEjecutable / Alerta | Precio vencido | Alert info, badge neutral "Vencido" sobre el precio que venció, precio tachado, sin casillas de token (C-04) | Alert error (#770505 / #F0CECE), badge error, precio en Grey1, casillas deshabilitadas | S06 |
+| ModalOperar (ventana de pago) | Título y textos con el destinatario | "Pagar a Hotel Gran Vía Madrid", "se envía el pago a Hotel…", "Pactaste el pago a Hotel…" (`tituloDe`: "Pagar a {destinatario}") | "Pagar al Hotel Gran Vía Madrid", "al Hotel" | S03–S08 |
+| ResumenPago | Precio ejecutable y montos derivados | 21.251447 = indicativo 21.250000 × 1.0000681 (`ejecutable()`, mismo factor del flujo principal) → Pagas 89,256.08 MXN, pesos después 330,743.92 | 21.251450 (inventado) → 89,256.09 y 330,743.91 | S05, S07, S08 |
+| ResumenPago | Unidad del precio | "MXN por EUR" (C-42; ya coincide con el diseño) | "MXN por EUR" | S05, S06 |
+| ResumenPago | Cuenta regresiva inicial | 2:00 (C-08) | 1:59 | S05 |
+| ModalOperar · pie | Botón secundario en precio y vencido | "Volver" (regresa a la revisión y descarta el precio, C-03) | "Cancelar" | S05, S06 |
+| ResumenPago / Alerta | Precio vencido | Alert info, badge neutral "Vencido" sobre el precio que venció, precio tachado, sin casillas de token (C-04) | Alert error (#770505 / #F0CECE), badge error, precio en Grey1, casillas deshabilitadas | S06 |
 | CampoToken | Anatomía | Un solo input con seis casillas visuales, admite pegar (C-09) | Seis casillas con caret | S05 |
-| CajaTdcValiu | Rótulo y borde en el panel | "TDC Valiu" · "Precio indicativo", sin borde (C-07) | "TDC Valiu · EUR/MXN", borde 2 px #0086FF | S04 |
+| ResumenPago | Tipo de cambio en la revisión | "Tipo de cambio" con badge "Precio indicativo", arriba de la columna derecha sobre fondo canvas, sin borde (C-47, reemplaza a C-07) | "TDC Valiu · EUR/MXN", borde 2 px #0086FF | S04 |
 | Revisión | Campo de concepto | "Motivo de pago", lista cerrada precargada (C-05) | "Concepto" | S04 |
 | Confirmación (Hoy) | Título y fila TDC | "Pago en proceso" (C-02) · fila "TDC" | "Pago enviado" · fila "TDC EUR/MXN" | S07H |
 | Confirmación (pactada) | Botón secundario | "Descargar confirmación" (C-10) | "Descargar comprobante" | S07 |
@@ -30,9 +30,9 @@ Frames: S01–S08 del archivo de diseño (capturas en `docs/design/frames/S0*.pn
 | TarjetaPosicion · EUR | Eje de la proyección | "vie 9 · faltante" en `--danger` (C-19) | "vie 9" en #B40909 600, sin "faltante" | S01 |
 | TarjetaPosicion · USD | Eje de la proyección | "jue 8" en 400 | "jue 8" en 600 (día del pago) | S01 |
 | TarjetaPosicion · MXN y EUR sin pendientes | Fila "Pagos futuros" | Oculta cuando no hay pagos (cada fila aparece solo con movimientos) | "Pagos futuros 0.00" | S01, S08 |
-| TarjetaPosicion · EUR | "Comprar 4,200 EUR" | Funciona: abre el panel "Pasar a tu Cuenta EUR" con pesos (compra a cuenta propia del flujo principal) | Pendiente, sin acción | S01 |
-| FilaMovimiento · Mayorista Caribe | "Pagar" | Funciona: panel en Origen con la Cuenta USD elegible, sin tipo de cambio | Pendiente, sin acción | S01 |
-| FilaMovimiento | Fila y título de Movimientos | Cada fila abre su detalle en el panel; "+" junto al título agenda un pago (features del código) | Sin detalle ni "+" | S01, S08 |
+| TarjetaPosicion · EUR | "Comprar 4,200 EUR" | Funciona: abre la ventana de pago "Pasar a tu Cuenta EUR" con pesos (compra a cuenta propia del flujo principal) | Pendiente, sin acción | S01 |
+| FilaMovimiento · Mayorista Caribe | "Pagar" | Funciona: ventana de pago en Origen con la Cuenta USD elegible, sin tipo de cambio | Pendiente, sin acción | S01 |
+| FilaMovimiento | Fila y título de Movimientos | Cada fila abre su detalle en el panel lateral; "+" junto al título carga un pago en la ventana de pago (features del código) | Sin detalle ni "+" | S01, S08 |
 | Home · encabezado | Empresa y hora de entrada | "Viajes Altavista S.A. de C.V. · martes 6 de octubre"; reloj del escenario 10:42 (`HOY` compartido) | "Viajes Altavista · martes 6 de octubre"; entra a las 09:40 | S01 |
 | FranjaNuevo · importadora | "Usar para pagar" | ~~Paso Destino con la cuenta en pesos preseleccionada~~ Desde C-38, paso "¿Qué pagas con este cobro?" en los dos arquetipos, como en el diseño | Paso "¿Qué pagas con este cobro?" en los dos | S02 (importadora) |
 | Pantalla inicial | Logo | 22 px (`--app-logo-h`, el mismo del sidebar) | 28 px | Inicio |
@@ -63,12 +63,25 @@ Cambios pedidos sobre el brief original, en orden, con lo que había antes en el
 
 | Componente | Propiedad | Valor en código (ahora) | Valor anterior / en diseño | Frame |
 |---|---|---|---|---|
-| PanelOperar | Transferencia por el mismo panel | Origen en la divisa del pago (Shenzhen desde Cuenta USD; Mayorista Caribe desde Cuenta USD en turismo): revisión sin tipo de cambio ni fecha valor, "Continuar" en lugar de "Pedir precio", resumen + token al confirmar, "Pago en proceso" sin TDC | Ya funcionaba así en el código; el diseño del flujo principal solo mostraba la compra | 02–06, S03 |
+| Ventana de pago | Transferencia por la misma ventana | Origen en la divisa del pago (Shenzhen desde Cuenta USD; Mayorista Caribe desde Cuenta USD en turismo): revisión sin tipo de cambio ni fecha valor, "Continuar" en lugar de "Pedir precio", resumen + token al confirmar, "Pago en proceso" sin TDC | Ya funcionaba así en el código; el diseño del flujo principal solo mostraba la compra | 02–06, S03 |
 | Paso Destino | "Pagar" del encabezado y "Pagar a otro destinatario" | "¿A quién le pagas?" con buscador y tres grupos (Pagos próximos, Tus cuentas, Destinatarios) con el selector del clásico; desde el cobro, la cuenta del cobro queda como origen y "Volver" regresa al paso Pago | "Pagar a otro destinatario" estaba deshabilitado con tooltip | S02 |
-| Paso Destino → Origen | Cuenta propia en otra divisa | Es una compra o una venta por el mismo panel; desde Origen se puede continuar sin monto ("El monto se elige después") y en la revisión se escribe | Antes "Continuar" quedaba deshabilitado sin monto, así que solo "Comprar X" (con monto) llegaba a la revisión | — |
+| Paso Destino → Origen | Cuenta propia en otra divisa | Es una compra o una venta por la misma ventana de pago; desde Origen se puede continuar sin monto ("El monto se elige después") y en la revisión se escribe | Antes "Continuar" quedaba deshabilitado sin monto, así que solo "Comprar X" (con monto) llegaba a la revisión | — |
 | BloqueMonto | Lado fijo sin factura | Dos campos, "Pagas" arriba y "Recibe · {destino}" abajo (C-39, como en el diseño); el que el usuario escribe queda fijo (tag Fijo) y el otro se recalcula en vivo con el indicativo. Con factura sigue "Pagas" en vivo y "{destinatario} recibe" fijo | Los dos campos ya eran editables; el orden era Pagas / recibe en ambos casos | 03 (Comprar 1,000 USD) |
 | fx.ts | EUR/USD | 1.175000 / 1.171000 en los dos arquetipos: Shenzhen desde Cuenta EUR ≈ 1,280.96 EUR; Hotel desde Cuenta USD ≈ 4,935.00 USD y "Te faltarían 1,435.00 USD el jue 8"; muestras de /sistema calculadas con `cotizar()` | 1.0845 / 1.080000 (flujo principal: 1,388.89 EUR) y 1.085 (turismo: 4,557.00 USD, 1,057.00) | 02, S03 |
 | Tecla P (D-32) | Dónde se dispara | Nunca con el foco en un campo (input, textarea, select, contenteditable) | Pausaba también desde el token y los campos numéricos | — |
 | Revisión y Cargar un pago | "Concepto" | Campo de texto opcional "Concepto", precargado solo con el pago cargado (vacío sin factura); las filas del detalle y la confirmación dicen "Concepto"; el clásico conserva "Motivo de pago" | "Motivo de pago", lista cerrada precargada según el caso (C-05, del handoff de alta) | 03, 06, A2 |
-| FranjaNuevo | "Comprobante" | Abre el detalle del cobro de hoy; "Descargar comprobante" y "Descargar confirmación" (panel, detalle y clásico) descargan un .html con las mismas filas que muestra la pantalla | Toast "Esta sección no está en el prototipo." | 01, 06, D2 |
+| FranjaNuevo | "Comprobante" | Abre el detalle del cobro de hoy; "Descargar comprobante" y "Descargar confirmación" (ventana de pago, detalle y clásico) descargan un .html con las mismas filas que muestra la pantalla | Toast "Esta sección no está en el prototipo." | 01, 06, D2 |
 | Estados de token incorrecto, origen sin saldo y pactada sin saldo | Alcance | Se dejan como están (000000, "Hoy no alcanza" / escenario sin-saldo, "Sin saldo" en turismo), sin seguir desarrollándolos | — | — |
+
+## Ventana de pago (C-47)
+
+Operar pasa del panel lateral a una ventana centrada; consultar sigue en el panel lateral. Motivo y alcance en `docs/decisiones.md` (C-47). Los frames del archivo de diseño (`docs/design/frames/`) siguen mostrando el panel lateral.
+
+| Componente | Propiedad | Valor en código (ahora) | Valor anterior / en diseño | Frame |
+|---|---|---|---|---|
+| ModalOperar | Contenedor del pago, Cargar un pago y Agregar destinatario | Ventana centrada, radio 16 en las cuatro esquinas, `--shadow-lg`, mismo overlay: 920 px en Origen, Revisión y Precio, 560 px en el resto; encabezado y pie fijos y, si algo no entra, scroll solo en el cuerpo | Panel lateral de 480 px a la derecha, con los pasos apilados y scroll en todo el panel | 02–06, 03B–06B, S02–S07, A1–A3 |
+| ModalOperar · pie | Botones | Alineados a la derecha: secundario (140 px mínimo) y primario (220 px mínimo) | Dos botones al 50 % | 02–06, S03–S06 |
+| ResumenPago | Columna derecha de Origen, Revisión y Precio | Tipo de cambio siempre arriba ("Precio indicativo", "Precio fijo por m:ss", "Vencido" o "Sin tipo de cambio"); en Origen "{destinatario} recibe" y "Vence"; en Revisión y Precio "Sale de", "Sale el dinero" y "Tu cuenta queda en" ("El vie 9 tu cuenta queda en" con fecha valor), el aviso de pago después del vencimiento y "Ten tu token a mano: el precio dura 2 minutos." | Caja TDC y precio ejecutable entre los montos y el token; línea "Tu cuenta en pesos queda en ≈ X" debajo de la fecha | 02–05, 03B, 04B, S03–S06 |
+| Revisión | Frase de resumen | Sin frase | "Vas a pagar 4,200.00 EUR con pesos. Compras los euros a … MXN." (y "Vas a pagar 1,500.00 USD con pesos…" en el flujo principal) | 03, S04 |
+| Confirmación (ventana de pago) | Encabezado | Ícono al lado del título y del badge | Ícono arriba, título y badge centrados debajo | 06, 06B, S07, S07H |
+| PanelOperar | Qué muestra | Solo consultar: detalle de un movimiento, notificaciones, todas las cuentas y los datos para depositar pedidos desde el inicio o desde las cuentas; "Pagar" en el detalle cierra el panel y abre la ventana | Todo el flujo de pago | D1–D3, N4, N5 |

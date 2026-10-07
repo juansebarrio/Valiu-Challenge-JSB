@@ -1,5 +1,5 @@
 // Capturas para la presentación del challenge: frames de /tablero/alta a escala 1 (zoom 1) y deviceScaleFactor 2, recortadas al frame,
-// al componente (data-component / data-tour) o a la columna principal; plan-b/ con todos los frames a deviceScaleFactor 1.
+// a la ventana de pago (ModalOperar, C-47), al componente (data-tour) o a la columna principal; plan-b/ con todos los frames a deviceScaleFactor 1.
 // Uso: node presentacion.mjs <dir-salida> [base-url]   (contra `npm run build && npm start`, nunca `next dev`)
 import { chromium } from '/opt/node22/lib/node_modules/playwright/index.mjs';
 import fs from 'node:fs';
@@ -95,19 +95,12 @@ async function frameEntero(page, id, archivo) {
     const s = await caja(sec.locator('[data-tour="posicion"]'), 'sección posición del frame 01');
     await recortar(page, 'd1-posicion.png', { x: s.x - 16, y: s.y - 16, width: s.width + 32, height: s.height + 32 }, 'frame 01 · [data-tour="posicion"] + 16 px');
   }
-  // d2-origen: PanelOperar del frame 02 hasta 32 px debajo de la Cuenta EUR
-  {
-    const { sec } = await frame(page, '02');
-    const p = await caja(sec.locator('[data-component="PanelOperar"]'), 'PanelOperar del frame 02');
-    const eur = await caja(sec.getByRole('radio', { name: /Cuenta EUR/ }), 'Cuenta EUR del frame 02');
-    await recortar(page, 'd2-origen.png', { x: p.x, y: p.y, width: p.width, height: eur.y + eur.height + 32 - p.y }, 'frame 02 · PanelOperar hasta Cuenta EUR + 32 px');
-  }
-  // d3: PanelOperar del frame 04 hasta 32 px debajo de las casillas del token
-  {
-    const { sec } = await frame(page, '04');
-    const p = await caja(sec.locator('[data-component="PanelOperar"]'), 'PanelOperar del frame 04');
-    const t = await caja(sec.locator('[data-component="CampoToken"]'), 'CampoToken del frame 04');
-    await recortar(page, 'd3-precio-token.png', { x: p.x, y: p.y, width: p.width, height: t.y + t.height + 32 - p.y }, 'frame 04 · PanelOperar hasta el token + 32 px');
+  // d2-origen, d3-precio-token y d5-fecha-valor: la ventana de pago entera (dos columnas, 920 px css) de los frames 02, 04 y 03B
+  for (const [id, archivo] of [['02', 'd2-origen.png'], ['04', 'd3-precio-token.png'], ['03B', 'd5-fecha-valor.png']]) {
+    const { sec, f } = await frame(page, id);
+    const v = await caja(sec.locator('[data-component="ModalOperar"]'), `ventana de pago del frame ${id}`);
+    if (v.x < f.x || v.y < f.y || v.x + v.width > f.x + f.width || v.y + v.height > f.y + f.height) throw new Error(`frame ${id}: la ventana de pago no entra en el frame`);
+    await recortar(page, archivo, v, `frame ${id} · ModalOperar entera`);
   }
   // d4-recorrido: frame 20, columna principal hasta 24 px debajo de la tarjeta del recorrido; exige el recorte sobre la pestaña
   {
@@ -129,13 +122,6 @@ async function frameEntero(page, id, archivo) {
     const { sec, f, columna } = await frame(page, '08');
     const tab = await caja(sec.getByRole('tab', { name: 'Transferir' }), 'pestaña Transferir del frame 08');
     await recortar(page, 'd4-operar-clasico.png', { x: columna.x, y: f.y, width: columna.width, height: tab.y + tab.height + 8 - f.y }, 'frame 08 · columna principal hasta las pestañas + 8 px');
-  }
-  // d5-fecha-valor: bloque FechaLiquidacion del frame 03B
-  {
-    const { sec } = await frame(page, '03B');
-    await sinFoco(page);
-    await sec.locator('[data-component="FechaLiquidacion"]').first().screenshot({ path: path.join(out, 'd5-fecha-valor.png'), ...SHOT });
-    log.push('ok d5-fecha-valor.png ← frame 03B · [data-component="FechaLiquidacion"]');
   }
   // d5-pactada-inicio: frame 07B, columna principal hasta 16 px debajo de Posición por divisa
   {
@@ -164,13 +150,13 @@ async function frameEntero(page, id, archivo) {
   await page.waitForTimeout(400);
   if (!(await sinFoco(page))) {
     await page.addStyleTag({ content: '*:focus,*:focus-visible{outline:none!important}' });
-    log.push('d2-destino: el panel retiene el foco; se ocultó el anillo por CSS');
+    log.push('d2-destino: la ventana retiene el foco; se ocultó el anillo por CSS');
   }
   const toasts = await page.locator('[role="status"]:visible, [data-component="Toast"]:visible').filter({ hasText: /\S/ }).count();
   if (toasts) throw new Error('d2-destino: hay un toast visible');
-  const p = await caja(page.locator('[data-component="PanelOperar"]'), 'PanelOperar en Destino');
+  const p = await caja(page.locator('[data-component="ModalOperar"]'), 'ventana de pago en Destino');
   const asia = await caja(page.getByRole('option', { name: /Asia Packaging/ }), 'fila de Asia Packaging');
-  await recortar(page, 'd2-destino.png', { x: p.x, y: p.y, width: p.width, height: asia.y + asia.height + 8 - p.y }, '/importadora?congelar=1&recorrido=0 · Pagar del encabezado · PanelOperar hasta Asia Packaging + 8 px');
+  await recortar(page, 'd2-destino.png', { x: p.x, y: p.y, width: p.width, height: asia.y + asia.height + 8 - p.y }, '/importadora?congelar=1&recorrido=0 · Pagar del encabezado · ModalOperar hasta Asia Packaging + 8 px');
   await ctx.close();
 }
 
@@ -193,8 +179,9 @@ async function frameEntero(page, id, archivo) {
 
 await browser.close();
 
-// Esquina superior izquierda del panel (rounded-l-lg = 16 px css → 32 px a dsf 2) transparente: fuera del panel solo hay fondo oscurecido.
-const esquinas = spawnSync('python3', [path.join(aqui, 'esquinas.py'), out, '32', 'd2-destino.png', 'd2-origen.png', 'd3-precio-token.png'], { encoding: 'utf8' });
+// Esquinas redondeadas de la ventana de pago (rounded-lg = 16 px css → 32 px a dsf 2) transparentes: fuera de la ventana solo hay fondo oscurecido.
+// Las cuatro en las que la toman entera; las dos de arriba en d2-destino, que la corta debajo de Asia Packaging.
+const esquinas = spawnSync('python3', [path.join(aqui, 'esquinas.py'), out, '32', 'd2-destino.png=arriba', 'd2-origen.png', 'd3-precio-token.png', 'd5-fecha-valor.png'], { encoding: 'utf8' });
 log.push((esquinas.stdout || '').trim() || `esquinas.py salió con ${esquinas.status}: ${esquinas.stderr}`);
 if (esquinas.status !== 0) process.exitCode = 1;
 console.log(log.join('\n'));

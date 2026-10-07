@@ -1,12 +1,11 @@
 'use client';
 import { useMemo, useState, type FC, type RefObject } from 'react';
 import * as fmt from '@/lib/format';
-import { AVISO_FUERA_DEL_PROTOTIPO, HOY, type CuentaId } from '@/data/escenario';
+import { AVISO_FUERA_DEL_PROTOTIPO, HOY } from '@/data/escenario';
 import { ONBOARDING_PASOS, type Accion, type EstadoApp } from '@/state/estado';
-import { vistaControl, vistaDestinatarios, vistaHome, vistaMonitoreo, vistaOperar, vistaPanel, type VistaFila, type VistaPanel } from '@/state/vistas';
+import { vistaControl, vistaDestinatarios, vistaHome, vistaMonitoreo, vistaOperar, vistaPanel, type VistaFila } from '@/state/vistas';
 import { notificaciones } from '@/state/derivados';
 import { SeccionControl, SeccionDestinatarios, SeccionMonitoreo } from './Secciones';
-import { FormularioDestinatario, ListaCuentas, ListaNotificaciones } from './PanelExtras';
 import { AppShell, type ModoShell } from './AppShell';
 import { AvisoResultado } from './AvisoResultado';
 import { TarjetaPosicion } from './TarjetaPosicion';
@@ -16,27 +15,12 @@ import { TarjetaTipoDeCambio } from './TarjetaTipoDeCambio';
 import { ModuloCuentas } from './ModuloCuentas';
 import { AvisoVistaAnterior } from './AvisoVistaAnterior';
 import { FormularioOperar } from './FormularioOperar';
-import { PanelOperar } from './PanelOperar';
-import { GrupoOrigen, GrupoPago } from './OpcionOrigen';
-import { BloqueMonto } from './BloqueMonto';
-import { FechaLiquidacion } from './FechaLiquidacion';
-import { CajaTdcValiu } from './CajaTdcValiu';
-import { PrecioEjecutable } from './PrecioEjecutable';
-import { CampoToken } from './CampoToken';
-import { Confirmacion } from './Confirmacion';
-import { DetalleMovimiento } from './DetalleMovimiento';
-import { AgendarPago } from './AgendarPago';
-import { SelectorDestino } from './SelectorDestino';
+import { CapaOperacion, type Contenedor } from './CapaOperacion';
 import { PasoOnboarding, PASOS_ONBOARDING } from './PasoOnboarding';
 import { Boton } from './ui/Boton';
 import { Pestanas } from './ui/Pestanas';
-import { Alerta } from './ui/Alerta';
-import { Icono } from './ui/Icono';
 import { Toast } from './ui/Toast';
-import { CampoTexto, MensajeError } from './ui/Campo';
 import { descargarComprobante, htmlComprobante } from './comprobante';
-import { arquetipoDe } from '@/data/arquetipos';
-import { ListaDetalle } from './ui/ListaDetalle';
 
 export interface HomeVistaProps {
   estado: EstadoApp;
@@ -51,6 +35,8 @@ export const HomeVista: FC<HomeVistaProps> = ({ estado, dispatch, modo = 'app', 
   const panel = useMemo(() => vistaPanel(estado), [estado]);
   const operar = useMemo(() => vistaOperar(estado), [estado]);
   const [verTotal, setVerTotal] = useState(false);
+  // Contenedor desde el que se pidieron los datos para depositar (C-47): desde el inicio, el panel lateral.
+  const [depositoEn, setDepositoEn] = useState<Contenedor>('panel');
   const noDisponible = () => dispatch({ tipo: 'toast', texto: AVISO_FUERA_DEL_PROTOTIPO });
   const paso = estado.onboarding.activo ? PASOS_ONBOARDING[estado.onboarding.paso] : null;
   const enMovimientos = estado.seccion === 'movimientos';
@@ -71,7 +57,7 @@ export const HomeVista: FC<HomeVistaProps> = ({ estado, dispatch, modo = 'app', 
         campana={{ cantidad: avisos, onClick: () => dispatch({ tipo: 'abrirNotificaciones' }) }}
         capas={
           <>
-            {panel ? <PanelContenido vista={panel} estado={estado} dispatch={dispatch} modo={modo} /> : null}
+            {panel ? <CapaOperacion vista={panel} estado={estado} dispatch={dispatch} modo={modo} depositoEn={depositoEn} onDepositar={setDepositoEn} /> : null}
             {paso ? (
               <PasoOnboarding
                 paso={estado.onboarding.paso}
@@ -159,7 +145,7 @@ export const HomeVista: FC<HomeVistaProps> = ({ estado, dispatch, modo = 'app', 
                     proyeccion={p.proyeccion}
                     linea={p.linea}
                     accion={p.accion ? { label: p.accion.label, onClick: () => dispatch({ tipo: 'abrirPanel', orden: p.accion!.orden }) } : null}
-                    enlace={p.enlace ? { label: p.enlace.label, onClick: () => dispatch({ tipo: 'abrirDepositar' }) } : null}
+                    enlace={p.enlace ? { label: p.enlace.label, onClick: () => { setDepositoEn('panel'); dispatch({ tipo: 'abrirDepositar' }); } } : null}
                   />
                 ))}
               </div>
@@ -208,126 +194,6 @@ export const HomeVista: FC<HomeVistaProps> = ({ estado, dispatch, modo = 'app', 
       </AppShell>
       {modo === 'app' ? <Toast texto={estado.toast?.texto ?? null} /> : null}
     </>
-  );
-};
-
-const PanelContenido: FC<{ vista: VistaPanel; estado: EstadoApp; dispatch: (a: Accion) => void; modo: ModoShell }> = ({ vista: v, estado, dispatch, modo }) => {
-  const noDisponible = () => dispatch({ tipo: 'toast', texto: AVISO_FUERA_DEL_PROTOTIPO });
-  const empresa = arquetipoDe(estado.arquetipo).empresa;
-  // "Descargar comprobante / confirmación": el archivo lleva las mismas filas que muestra el panel.
-  const comprobante = () => {
-    const c = v.confirmacion;
-    const d = v.detalle;
-    if (c) descargarComprobante(`comprobante-${estado.operaciones[0]?.id ?? 'operacion'}`, htmlComprobante({ titulo: c.titulo, sub: v.sub, empresa, filas: c.detalle, nota: c.texto ?? c.fondeo }));
-    else if (d) descargarComprobante(`comprobante-${estado.panel.movimientoId ?? 'movimiento'}`, htmlComprobante({ titulo: d.titulo, sub: `${v.titulo} · ${v.sub}`, empresa, filas: d.filas, nota: d.texto }));
-    else noDisponible();
-  };
-  const cerrar = () => dispatch(v.paso === 'confirmacion' ? { tipo: 'volverInicio' } : { tipo: 'cerrarPanel' });
-  const pagar = () => { if (v.detalle?.orden) dispatch({ tipo: 'abrirPanel', orden: v.detalle.orden }); };
-  const primario = () => {
-    if (!v.primario.habilitado) return;
-    switch (v.primario.accion) {
-      case 'continuar': dispatch({ tipo: 'irPaso', paso: 'revision' }); break;
-      case 'continuarPago': dispatch({ tipo: 'continuarPago' }); break;
-      case 'pedirPrecio': dispatch({ tipo: 'pedirPrecio' }); break;
-      case 'confirmar': dispatch({ tipo: 'confirmar' }); break;
-      case 'volverInicio': dispatch({ tipo: 'volverInicio' }); break;
-      case 'cerrar': dispatch({ tipo: 'cerrarPanel' }); break;
-      case 'pagar': pagar(); break;
-      case 'agendar': dispatch({ tipo: 'agendar' }); break;
-      case 'guardarDestinatario': dispatch({ tipo: 'guardarDestinatario' }); break;
-    }
-  };
-  const secundario = v.secundario
-    ? {
-      label: v.secundario.label,
-      onClick: () => {
-        switch (v.secundario?.accion) {
-          case 'volver': dispatch({ tipo: 'irPaso', paso: 'revision' }); break;
-          case 'volverOrigen': dispatch({ tipo: 'irPaso', paso: 'origen' }); break;
-          case 'volverDestino': dispatch({ tipo: 'irPaso', paso: 'destino' }); break;
-          case 'cancelar': dispatch({ tipo: 'cerrarPanel' }); break;
-          case 'volverPago': dispatch({ tipo: 'irPaso', paso: 'pago' }); break;
-          case 'comprobante': comprobante(); break;
-          case 'pagar': pagar(); break;
-        }
-      },
-    }
-    : null;
-
-  return (
-    <PanelOperar titulo={v.titulo} sub={v.sub} primario={{ label: v.primario.label, habilitado: v.primario.habilitado, onClick: primario }} secundario={secundario} onCerrar={cerrar} modo={modo}>
-      {v.depositar ? (
-        <>
-          <p className="text-body text-app-ink-2">Transfiere desde cualquier banco a esta cuenta. El dinero se acredita el mismo día hábil.</p>
-          <ListaDetalle filas={[{ k: 'Cuenta', v: v.depositar.cuenta }, { k: 'Banco', v: v.depositar.banco }, { k: 'CLABE', v: v.depositar.clabe.replace(/(\d{4})(?=\d)/g, '$1 ') }]} />
-          <Boton variante="secondary" tamano="large" className="self-start" onClick={() => { navigator.clipboard?.writeText(v.depositar!.clabe).then(() => dispatch({ tipo: 'toast', texto: 'CLABE copiada.' })).catch(() => dispatch({ tipo: 'toast', texto: 'No se pudo copiar la CLABE.' })); }}>Copiar CLABE</Boton>
-        </>
-      ) : null}
-
-      {v.paso === 'destino' && v.destino ? (
-        <>
-          <h3 className="text-h3 font-semibold">{v.destino.titulo}</h3>
-          <SelectorDestino modo="lista" grupos={v.destino.grupos} busqueda={v.destino.busqueda} onBusqueda={(t) => dispatch({ tipo: 'busquedaDestino', texto: t })} onElegir={(d) => dispatch(v.tipo === 'agendar' ? { tipo: 'agendaDestino', destino: d.destino } : { tipo: 'elegirDestino', destino: d.destino, pago: d.pago })} onAgregar={() => (v.tipo === 'agendar' ? noDisponible() : dispatch({ tipo: 'abrirDestinatarioNuevo' }))} />
-        </>
-      ) : null}
-
-      {v.tipo === 'pago' && v.paso === 'pago' && v.pago ? (
-        <>
-          <h3 className="text-h3 font-semibold">{v.pago.titulo}</h3>
-          <GrupoPago opciones={v.pago.opciones.map((o) => ({ id: o.id, destinatario: o.destinatario, monto: o.monto, linea: o.linea, consecuencia: o.consecuencia }))} valor={estado.panel.pagoElegidoId} onCambiar={(id) => dispatch({ tipo: 'elegirPago', pagoId: id })} />
-          {v.pago.resto ? <span className="text-body text-app-ink-2 tabular-nums">{v.pago.resto}</span> : null}
-          <Boton variante="link" className="self-start" onClick={() => dispatch({ tipo: 'otroDestinatario' })}>{v.pago.otro.label}</Boton>
-        </>
-      ) : null}
-
-      {v.tipo === 'notificaciones' && v.notificaciones ? <ListaNotificaciones items={v.notificaciones} dispatch={dispatch} /> : null}
-      {v.tipo === 'cuentas' && v.cuentas ? <ListaCuentas items={v.cuentas} dispatch={dispatch} /> : null}
-      {v.tipo === 'destinatario' && v.destinatario ? <FormularioDestinatario vista={v.destinatario} dispatch={dispatch} /> : null}
-
-      {v.tipo === 'detalle' && v.detalle ? <DetalleMovimiento vista={v.detalle} /> : null}
-      {v.tipo === 'agendar' && v.paso === 'revision' && v.agenda ? <AgendarPago vista={v.agenda} dispatch={dispatch} /> : null}
-      {v.tipo === 'agendar' && v.paso === 'confirmacion' && v.detalle ? <DetalleMovimiento vista={v.detalle} /> : null}
-
-      {v.tipo === 'pago' && v.paso === 'origen' ? (
-        <>
-          <h3 className="text-h3 font-semibold">¿Desde qué cuenta pagas?</h3>
-          <GrupoOrigen opciones={v.origenes.map((o) => ({ id: o.id, cuenta: o.nombre, saldo: o.saldo, pagas: o.pagas, consecuencia: o.consecuencia, deshabilitada: o.deshabilitada }))} valor={estado.panel.origenId} onCambiar={(id) => dispatch({ tipo: 'elegirOrigen', origenId: id as CuentaId })} />
-        </>
-      ) : null}
-
-      {v.paso === 'revision' && v.revision ? (
-        <>
-          {v.mercadoCerrado ? <Alerta tono="warning" titulo="Mercado cerrado.">No se puede pedir precio hasta que abra. Puedes dejar el pago listo.</Alerta> : null}
-          <BloqueMonto pagas={{ monto: v.revision.pagas, divisa: v.revision.pagasDivisa }} recibe={{ monto: v.revision.recibe, divisa: v.revision.recibeDivisa, destinatario: v.revision.destinatario }} ladoFijo={v.revision.ladoFijo} conTdc={!v.sinTdc} editable={v.revision.editable} onCambiar={(lado, valor) => dispatch({ tipo: 'monto', lado, valor })} />
-          <FechaLiquidacion visible={v.revision.fechas.length > 0} opciones={v.revision.fechas} valor={estado.panel.fechaValor} onChange={(f) => dispatch({ tipo: 'fechaValor', fecha: f })} />
-          <div className="flex flex-col gap-1.5">
-            <p className="text-pretty text-body font-medium tabular-nums">{v.revision.texto}</p>
-            {v.revision.ayuda ? <span className="flex items-center gap-2 text-caption text-app-ink-2"><Icono nombre="info-circle" tamano="xs" /><span>{v.revision.ayuda}</span></span> : null}
-            {v.revision.error ? <MensajeError>{v.revision.error}</MensajeError> : null}
-          </div>
-          {v.revision.tdc != null ? <CajaTdcValiu sinBorde tdc={v.revision.tdc} unidad={v.revision.tdcUnidad} tipo="Precio indicativo" className="self-start" /> : null}
-          <div className="grid grid-cols-2 gap-3">
-            <CampoTexto etiqueta="Concepto" opcional valor={v.revision.concepto} onCambiar={(t) => dispatch({ tipo: 'motivo', motivo: t })} placeholder="Ej. Pago a proveedores" />
-            <CampoTexto etiqueta="Referencia" opcional valor={v.revision.referencia} onCambiar={(t) => dispatch({ tipo: 'referencia', referencia: t })} placeholder="Ej. Factura 0457" />
-          </div>
-          <span className="text-body text-app-ink-2 tabular-nums">{v.revision.efecto}{v.revision.posVencimiento ? ` ${v.revision.posVencimiento}` : ''}</span>
-          {!v.sinTdc ? <span className="flex items-center gap-2 text-caption text-app-ink-2"><Icono nombre="info-circle" tamano="xs" />Ten tu token a mano: el precio dura 2 minutos.</span> : null}
-        </>
-      ) : null}
-
-      {v.paso === 'precio' && v.precio ? (
-        <>
-          {v.precio.estado === 'vencido' ? <Alerta tono="info" role="status" titulo="El precio venció. Pide uno nuevo.">El precio fijo dura 2 minutos. Los montos volvieron al indicativo.</Alerta> : null}
-          <PrecioEjecutable {...v.precio} />
-          {v.precio.estado !== 'vencido' ? (
-            <CampoToken valor={v.precio.token} habilitado={!v.precio.confirmando} onChange={(t) => dispatch({ tipo: 'token', token: t })} autoFoco={modo === 'app'} error={v.precio.tokenError} />
-          ) : null}
-        </>
-      ) : null}
-
-      {v.paso === 'confirmacion' && v.confirmacion ? <Confirmacion vista={v.confirmacion} /> : null}
-    </PanelOperar>
   );
 };
 

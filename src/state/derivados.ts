@@ -140,7 +140,7 @@ export function ordenACuenta(c: Cuenta, monto: Centavos): Orden {
   return { destino: destinoDeCuenta(c), monto, ladoFijo: 'recibe', conFactura: false, motivo: null, referencia: '' };
 }
 
-/** Orden sin destino todavía (el panel arranca en Destino). */
+/** Orden sin destino todavía (la ventana de pago arranca en Destino). */
 export const ordenVacia = (): Orden | null => null;
 
 /** Clase de la operación para textos: pago a un tercero; compra, venta o transferencia a una cuenta propia. */
@@ -151,7 +151,7 @@ export function claseDe(origen: Divisa, destino: Destino): 'pago' | 'compra' | '
 }
 
 /** Motivo precargado según el caso: factura → Pago a proveedores; cuenta propia → Compra o Venta de divisas. */
-/** "Concepto" del panel es opcional (brief): viene precargado solo cuando el pago cargado lo trae; sin factura queda vacío. */
+/** "Concepto" de la ventana de pago es opcional (brief): viene precargado solo cuando el pago cargado lo trae; sin factura queda vacío. */
 export function motivoPorDefecto(_origen: Divisa | null, orden: Orden): string | null {
   return orden.motivo || null;
 }

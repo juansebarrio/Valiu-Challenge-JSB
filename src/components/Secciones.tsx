@@ -25,7 +25,7 @@ export const SeccionControl: FC<{ vista: VistaControl; dispatch: (a: Accion) => 
   );
 };
 
-/** Destinatarios: cuenta, divisa y pendientes; "Pagar" abre el panel sin monto (se escribe en la revisión). */
+/** Destinatarios: cuenta, divisa y pendientes; "Pagar" abre la ventana de pago sin monto (se escribe en la revisión). */
 export const SeccionDestinatarios: FC<{ items: VistaDestinatario[]; dispatch: (a: Accion) => void }> = ({ items, dispatch }) => (
   <section data-component="Destinatarios" aria-label="Destinatarios" className="flex flex-col">
     {items.map((d) => (

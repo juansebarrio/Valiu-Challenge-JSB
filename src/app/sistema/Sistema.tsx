@@ -18,7 +18,7 @@ import { Logo } from '@/components/ui/Logo';
 import { TarjetaPosicion } from '@/components/TarjetaPosicion';
 import { GrupoPago, OpcionOrigen } from '@/components/OpcionOrigen';
 import { BloqueMonto } from '@/components/BloqueMonto';
-import { PrecioEjecutable } from '@/components/PrecioEjecutable';
+import { ResumenPago } from '@/components/ResumenPago';
 import { CampoToken } from '@/components/CampoToken';
 import { CajaTdcValiu } from '@/components/CajaTdcValiu';
 import { FranjaNuevo } from '@/components/FranjaNuevo';
@@ -65,7 +65,7 @@ const COLORES: [string, string, string][] = [
 const TIPOS: [string, string, string][] = [
   ['text-display font-bold', 'Display 32/36 · 700', 'cifra protagonista'],
   ['text-h1 font-bold', 'H1 24/28 · 700', 'título de página'],
-  ['text-h2 font-semibold', 'H2 20/24 · 600', 'título de panel'],
+  ['text-h2 font-semibold', 'H2 20/24 · 600', 'título de la ventana de pago y del panel'],
   ['text-h3 font-semibold', 'H3 16/24 · 600', 'títulos de tarjeta'],
   ['text-amount font-semibold tabular-nums', 'Monto 24/32 · 600', 'resultado, precio'],
   ['text-tdc font-bold tabular-nums', 'TDC 18/24 · 700', 'caja TDC Valiu'],
@@ -212,7 +212,7 @@ export const Sistema: FC = () => {
         </Seccion>
 
         <Seccion id="pago" titulo="OpcionPago" nota="Paso “¿Qué pagas con este cobro?” (D-30): misma anatomía que OpcionOrigen; nombre y monto del pago, línea con vencimiento, referencia y cuánto del cobro usa, consecuencia en badge. Una sola selección; el faltante viene seleccionado.">
-          <div className="max-w-(--app-panel-w)">
+          <div className="max-w-(--app-modal-w-sm)">
             <GrupoPago
               valor={pago}
               onCambiar={setPago}
@@ -224,14 +224,18 @@ export const Sistema: FC = () => {
           </div>
         </Seccion>
 
-        <Seccion id="panel" titulo="Bloques del panel" nota="BloqueMonto (fijo o editable), PrecioEjecutable (fijo / últimos 30 s / vencido) y CajaTdcValiu (con borde en el clásico, sin borde en el panel).">
+        <Seccion id="ventana" titulo="Bloques de la ventana de pago" nota="Origen, Revisión y Precio van en dos columnas (C-47): a la izquierda BloqueMonto (con factura, editable sin factura o de solo lectura con los montos exactos del precio fijo); a la derecha ResumenPago, con el tipo de cambio siempre arriba (indicativo, fijo, en los últimos 30 s, vencido o sin tipo de cambio) y las filas de lo que significa la decisión. CajaTdcValiu queda para Operar clásico.">
           <div className="grid grid-cols-2 gap-6 xl:grid-cols-3">
             <Caso titulo="BloqueMonto · con factura"><BloqueMonto pagas={{ monto: centavos(27_136.77), divisa: 'MXN' }} recibe={{ monto: centavos(1500), divisa: 'USD', destinatario: 'Shenzhen Parts Co. recibe' }} ladoFijo="recibe" conTdc /></Caso>
             <Caso titulo="BloqueMonto · sin factura (editable)"><BloqueMonto pagas={{ monto: centavos(18_091.18), divisa: 'MXN' }} recibe={{ monto: centavos(1000), divisa: 'USD', destinatario: 'Tu Cuenta USD recibe' }} ladoFijo="recibe" conTdc editable onCambiar={() => {}} /></Caso>
-            <Caso titulo="PrecioEjecutable · fijo"><PrecioEjecutable estado="fijo" tdc={18_092_415} unidad="MXN por USD" segundos={120} pagas={centavos(27_138.62)} pagasDivisa="MXN" recibe={centavos(1500)} recibeDivisa="USD" destinatario="Shenzhen Parts Co. recibe" desde="Cuenta Principal MXN" sale="El dinero sale el jue 8" /></Caso>
-            <Caso titulo="PrecioEjecutable · últimos 30 s"><PrecioEjecutable estado="fijo" tdc={18_092_415} unidad="MXN por USD" segundos={28} porVencer pagas={centavos(27_138.62)} pagasDivisa="MXN" recibe={centavos(1500)} recibeDivisa="USD" destinatario="Shenzhen Parts Co. recibe" desde="Cuenta Principal MXN" /></Caso>
-            <Caso titulo="PrecioEjecutable · vencido (badge sobre el precio que venció)"><PrecioEjecutable estado="vencido" tdc={18_092_415} unidad="MXN por USD" segundos={0} pagas={centavos(27_136.77)} pagasAprox pagasDivisa="MXN" recibe={centavos(1500)} recibeDivisa="USD" destinatario="Shenzhen Parts Co. recibe" desde="Cuenta Principal MXN" /></Caso>
-            <Caso titulo="CajaTdcValiu"><div className="flex flex-wrap gap-3"><CajaTdcValiu tdc={18_091_183} unidad="MXN por USD" tipo="Indicativo" /><CajaTdcValiu tdc={18_092_415} unidad="MXN por USD" tipo="Ejecutable" /><CajaTdcValiu tdc={18_091_183} unidad="MXN por USD" tipo="Último cierre" apagada /><CajaTdcValiu tdc={18_091_183} unidad="MXN por USD" tipo="Precio indicativo" sinBorde /></div></Caso>
+            <Caso titulo="BloqueMonto · precio fijo (solo lectura)"><BloqueMonto pagas={{ monto: centavos(27_138.62), divisa: 'MXN' }} recibe={{ monto: centavos(1500), divisa: 'USD', destinatario: 'Shenzhen Parts Co. recibe' }} ladoFijo="recibe" conTdc={false} /></Caso>
+            <Caso titulo="ResumenPago · Origen"><ResumenPago vista={{ tdc: { valor: 18_091_183, unidad: 'MXN por USD', estado: 'indicativo', segundos: 0, porVencer: false, pausado: false }, sinPrecio: null, filas: [{ k: 'Shenzhen Parts Co. recibe', v: '1,500.00 USD' }, { k: 'Vence', v: 'jueves 8 de octubre' }], aviso: null, nota: null }} /></Caso>
+            <Caso titulo="ResumenPago · Revisión con fecha valor"><ResumenPago vista={{ tdc: { valor: 18_091_183, unidad: 'MXN por USD', estado: 'indicativo', segundos: 0, porVencer: false, pausado: false }, sinPrecio: null, filas: [{ k: 'Sale de', v: 'Cuenta Principal MXN' }, { k: 'Sale el dinero', v: 'vie 9' }, { k: 'El vie 9 tu cuenta queda en', v: '≈ 1,152,863.23 MXN' }], aviso: 'El dinero sale después del vencimiento (jue 8).', nota: 'Ten tu token a mano: el precio dura 2 minutos.' }} /></Caso>
+            <Caso titulo="ResumenPago · precio fijo"><ResumenPago vista={{ tdc: { valor: 18_092_415, unidad: 'MXN por USD', estado: 'fijo', segundos: 120, porVencer: false, pausado: false }, sinPrecio: null, filas: [{ k: 'Sale de', v: 'Cuenta Principal MXN' }, { k: 'Sale el dinero', v: 'Hoy' }, { k: 'Tu cuenta queda en', v: '1,152,861.38 MXN' }], aviso: null, nota: null }} /></Caso>
+            <Caso titulo="ResumenPago · últimos 30 s"><ResumenPago vista={{ tdc: { valor: 18_092_415, unidad: 'MXN por USD', estado: 'fijo', segundos: 28, porVencer: true, pausado: false }, sinPrecio: null, filas: [{ k: 'Sale de', v: 'Cuenta Principal MXN' }, { k: 'Sale el dinero', v: 'Hoy' }, { k: 'Tu cuenta queda en', v: '1,152,861.38 MXN' }], aviso: null, nota: null }} /></Caso>
+            <Caso titulo="ResumenPago · vencido (badge sobre el precio que venció)"><ResumenPago vista={{ tdc: { valor: 18_092_415, unidad: 'MXN por USD', estado: 'vencido', segundos: 0, porVencer: false, pausado: false }, sinPrecio: null, filas: [{ k: 'Sale de', v: 'Cuenta Principal MXN' }, { k: 'Sale el dinero', v: 'Hoy' }, { k: 'Tu cuenta queda en', v: '≈ 1,152,863.23 MXN' }], aviso: null, nota: null }} /></Caso>
+            <Caso titulo="ResumenPago · transferencia en la misma divisa"><ResumenPago vista={{ tdc: null, sinPrecio: 'Sin tipo de cambio', filas: [{ k: 'Sale de', v: 'Cuenta USD' }, { k: 'Sale el dinero', v: 'Hoy' }, { k: 'Tu cuenta queda en', v: '500.00 USD' }], aviso: null, nota: null }} /></Caso>
+            <Caso titulo="CajaTdcValiu · Operar clásico"><div className="flex flex-wrap gap-3"><CajaTdcValiu tdc={18_091_183} unidad="MXN por USD" tipo="Indicativo" /><CajaTdcValiu tdc={18_092_415} unidad="MXN por USD" tipo="Ejecutable" /><CajaTdcValiu tdc={18_091_183} unidad="MXN por USD" tipo="Último cierre" apagada /></div></Caso>
           </div>
         </Seccion>
 

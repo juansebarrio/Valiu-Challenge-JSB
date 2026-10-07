@@ -28,7 +28,7 @@ export const ListaNotificaciones: FC<{ items: NonNullable<VistaPanel['notificaci
   </ul>
 );
 
-/** Todas las cuentas: saldo, banco y máscara; "Pasar dinero" abre el panel a esa cuenta y "Ver datos para depositar" la CLABE. */
+/** Todas las cuentas: saldo, banco y máscara; "Pasar dinero" abre la ventana de pago a esa cuenta y "Ver datos para depositar" la CLABE. */
 export const ListaCuentas: FC<{ items: NonNullable<VistaPanel['cuentas']>; dispatch: (a: Accion) => void }> = ({ items, dispatch }) => (
   <ul data-component="TodasLasCuentas" className="flex flex-col gap-2.5">
     {items.map((c) => (
