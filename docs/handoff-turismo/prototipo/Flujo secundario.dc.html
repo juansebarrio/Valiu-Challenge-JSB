@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="design-system/colors_and_type.css">
+<link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.0/css/line.css">
+<style>
+body{margin:0;background:#E9EBF0;color:#151522;font-family:Montserrat,"Helvetica Neue",Arial,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#151522}a:hover{color:#3D46CC}
+</style>
+</helmet>
+<div style="display:flex;flex-direction:column;min-height:100vh">
+  <div style="display:flex;align-items:center;gap:24px;padding:14px 24px;background:#fff;border-bottom:1px solid #DCDCDE">
+    <div style="display:flex;flex-direction:column;gap:2px"><span style="font:700 14px/20px Montserrat,sans-serif">Valiu · Flujo secundario</span><span style="font:400 12px/16px Montserrat,sans-serif;color:#5B5B64">Turismo: del cobro en pesos al pago en euros (S01–S08) · frames de 1280 px · <a href="Flujo principal.dc.html" style="color:#3D46CC">Flujo principal</a></span></div>
+    <div style="margin-left:auto;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+      <div style="display:flex;border:1px solid #DCDCDE;border-radius:4px;overflow:hidden">
+        <button onClick="{{ setTablero }}" style="height:32px;padding:0 14px;border:0;border-right:1px solid #DCDCDE;background:{{ tabBg }};color:{{ tabColor }};font:600 12px/16px Montserrat,sans-serif;cursor:pointer">Tablero</button>
+        <button onClick="{{ setPrototipo }}" style="height:32px;padding:0 14px;border:0;background:{{ protoBg }};color:{{ protoColor }};font:600 12px/16px Montserrat,sans-serif;cursor:pointer">Prototipo</button>
+      </div>
+      <sc-if value="{{ esPrototipo }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;gap:4px">
+          <sc-for list="{{ chips }}" as="ch" hint-placeholder-count="8">
+            <button onClick="{{ ch.pick }}" style="height:32px;min-width:32px;padding:0 8px;border:1px solid #DCDCDE;border-radius:4px;background:{{ ch.bg }};color:{{ ch.color }};font:600 12px/16px Montserrat,sans-serif;cursor:pointer">{{ ch.label }}</button>
+          </sc-for>
+        </div>
+        <span style="font:400 12px/16px Montserrat,sans-serif;color:#5B5B64">← → cambian de frame · P pausa la cuenta regresiva y el TDC en vivo</span>
+      </sc-if>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:40px;padding:32px">
+  <sc-for list="{{ filas }}" as="fila" hint-placeholder-count="1">
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap"><h2 style="margin:0;font:700 20px/24px Montserrat,sans-serif">{{ fila.titulo }}</h2><span style="font:400 12px/16px Montserrat,sans-serif;color:#5B5B64;max-width:1100px;text-wrap:pretty">{{ fila.nota }}</span></div>
+      <div style="display:flex;gap:48px;align-items:flex-start">
+        <sc-for list="{{ fila.frames }}" as="f" hint-placeholder-count="8">
+      <section id="{{ f.n }}" data-screen-label="{{ f.etiqueta }}" style="display:flex;flex-direction:column;gap:10px;flex:none">
+        <div style="display:flex;align-items:flex-start;gap:10px"><span style="padding:2px 8px;border-radius:4px;background:#151522;color:#fff;font:700 12px/16px Montserrat,sans-serif;flex:none">{{ f.n }}</span><div style="display:flex;flex-direction:column;gap:2px"><span style="font:600 14px/20px Montserrat,sans-serif">{{ f.titulo }}</span><span style="font:400 12px/16px Montserrat,sans-serif;color:#5B5B64;max-width:1100px;text-wrap:pretty">{{ f.nota }}</span></div></div>
+
+        <div data-frame-box="1" style="position:relative;width:1280px;display:flex;background:#F5F7FA;color:#151522;font:400 14px/20px Montserrat,sans-serif;box-shadow:0 6px 16px -2px rgba(0,0,0,.12);overflow:hidden">
+          <aside style="width:240px;flex:none;background:#fff;border-right:0.5px solid #E2E4E9;display:flex;flex-direction:column;padding:16px 8px;gap:4px">
+            <div style="display:flex;align-items:center;height:32px;padding:0 12px;margin-bottom:16px"><img src="referencias/logo/logo-valiu-dark.svg" alt="Valiu" style="height:22px;display:block"></div>
+            <sc-for list="{{ nav }}" as="it" hint-placeholder-count="5">
+              <div style="display:flex;align-items:center;gap:10px;height:40px;padding:0 10px;border-radius:8px;background:{{ it.bg }};color:{{ it.color }};font:{{ it.peso }} 14px/20px Montserrat,sans-serif;cursor:pointer" style-hover="background:#F6FBFF"><i class="uil {{ it.icono }}" style="font-size:18px;line-height:1;width:18px;text-align:center;flex:none"></i><span style="white-space:nowrap">{{ it.label }}</span></div>
+            </sc-for>
+            <div style="flex:1"></div>
+            <div style="display:flex;align-items:center;gap:10px;height:40px;padding:0 10px;border-radius:8px;color:#5B5B64;font:500 14px/20px Montserrat,sans-serif;cursor:pointer" style-hover="background:#F6FBFF"><i class="uil uil-signout" style="font-size:18px;line-height:1;width:18px;text-align:center;flex:none"></i><span style="white-space:nowrap">Cerrar sesión</span></div>
+          </aside>
+
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+            <header style="height:48px;flex:none;display:flex;align-items:center;justify-content:flex-end;gap:24px;padding:0 32px;background:#fff;border-bottom:0.5px solid #E2E4E9">
+              <span style="display:inline-flex;align-items:center;gap:4px;padding:6px 12px;border:1px solid #3D46CC;border-radius:40px;background:#fff;box-shadow:0 3px 6px rgba(0,0,0,.15);font:600 12px/16px Montserrat,sans-serif;color:#3D46CC;cursor:pointer"><i class="uil uil-whatsapp" style="font-size:16px;line-height:1"></i>Contáctanos</span>
+              <i class="uil uil-bell" style="font-size:22px;line-height:1;color:#151522;cursor:pointer"></i>
+            </header>
+
+            <main style="flex:1;padding:24px 32px 32px;display:flex;flex-direction:column;gap:20px">
+              <sc-if value="{{ f.home.tieneAviso }}" hint-placeholder-val="{{ false }}">
+                <div data-component="AvisoResultado" style="display:flex;align-items:center;gap:16px;padding:12px 16px;border:1px solid #17714B;border-radius:8px;background:#D5F3E6;font:500 14px/20px Montserrat,sans-serif"><i class="uil uil-check-circle" style="font-size:20px;line-height:1;color:#17714B"></i><span style="flex:1">{{ f.home.aviso }}</span><i class="uil uil-times" style="font-size:18px;line-height:1;color:#5B5B64;cursor:pointer"></i></div>
+              </sc-if>
+              <sc-if value="{{ f.home.tieneAvisoInfo }}" hint-placeholder-val="{{ false }}">
+                <div data-component="AvisoResultado" style="display:flex;align-items:center;gap:16px;padding:12px 16px;border:1px solid #3D46CC;border-radius:8px;background:#F6FBFF;font:500 14px/20px Montserrat,sans-serif"><i class="uil uil-calendar-alt" style="font-size:20px;line-height:1;color:#3D46CC"></i><span style="flex:1">{{ f.home.avisoInfo }}</span><i class="uil uil-times" style="font-size:18px;line-height:1;color:#5B5B64;cursor:pointer"></i></div>
+              </sc-if>
+
+              <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:24px">
+                <div style="display:flex;flex-direction:column;gap:2px"><h1 style="margin:0;font:700 24px/28px Montserrat,sans-serif">Inicio</h1><span style="font:400 14px/20px Montserrat,sans-serif;color:#5B5B64">Viajes Altavista · martes 6 de octubre</span></div>
+                <div style="display:flex;gap:12px">
+                  <button style="padding:8px 16px;border:1px solid #3D46CC;border-radius:4px;background:#fff;color:#3D46CC;font:700 14px/20px Montserrat,sans-serif;cursor:pointer" style-hover="background:#F6FBFF" style-focus="outline:2px solid #0086FF;outline-offset:2px">Subir documento</button>
+                  <button style="padding:8px 16px;border:1px solid #3D46CC;border-radius:4px;background:#fff;color:#3D46CC;font:700 14px/20px Montserrat,sans-serif;cursor:pointer" style-hover="background:#F6FBFF" style-focus="outline:2px solid #0086FF;outline-offset:2px">Pagar</button>
+                </div>
+              </div>
+
+              <div style="display:flex;border-bottom:1px solid #E2E4E9">
+                <button style="padding:14px 16px;border:0;border-bottom:2px solid #0086FF;margin-bottom:-1px;background:#F6FBFF;font:600 16px/20px Montserrat,sans-serif;color:#151522;cursor:pointer" style-focus="outline:2px solid #0086FF;outline-offset:-2px">Posición consolidada</button>
+                <button style="padding:14px 16px;border:0;border-bottom:2px solid transparent;margin-bottom:-1px;background:transparent;font:400 16px/20px Montserrat,sans-serif;color:#5B5B64;cursor:pointer" style-focus="outline:2px solid #0086FF;outline-offset:-2px">Operar clásico</button>
+              </div>
+
+              <section style="display:flex;flex-direction:column;gap:10px">
+                <div style="display:flex;align-items:baseline;justify-content:space-between"><h2 style="margin:0;font:600 16px/24px Montserrat,sans-serif">Posición por divisa</h2><button style="background:none;border:0;padding:4px 0;font:600 12px/16px Montserrat,sans-serif;color:#151522;text-decoration:underline;cursor:pointer">Ver total en MXN</button></div>
+                <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px">
+                  <sc-for list="{{ f.home.posiciones }}" as="c" hint-placeholder-count="3">
+                    <article data-component="TarjetaPosicion" style="background:#fff;border-radius:8px;box-shadow:0 3px 6px rgba(0,0,0,.08);padding:20px;display:flex;flex-direction:column;gap:10px;min-width:0">
+                      <div style="display:flex;align-items:center;gap:8px"><span style="padding:2px 8px;border-radius:4px;background:#F5F7FA;box-shadow:0 3px 6px rgba(0,0,0,.08);font:700 12px/16px Montserrat,sans-serif">{{ c.div }}</span><span style="font:600 14px/20px Montserrat,sans-serif;color:#5B5B64">{{ c.nombre }}</span></div>
+                      <div style="display:flex;flex-direction:column;gap:4px;font:400 14px/20px Montserrat,sans-serif;font-variant-numeric:tabular-nums">
+                        <div style="display:flex;justify-content:space-between;gap:8px"><span style="color:#5B5B64">Saldo</span><span style="font-weight:600">{{ c.saldo }}</span></div>
+                        <sc-if value="{{ c.tienePactadas }}" hint-placeholder-val="{{ false }}"><div style="display:flex;justify-content:space-between;gap:8px"><span style="color:#5B5B64">{{ c.pactadasLabel }}</span><span style="font-weight:600">{{ c.pactadas }}</span></div></sc-if>
+                        <div style="display:flex;justify-content:space-between;gap:8px"><span style="color:#5B5B64">{{ c.pagosLabel }}</span><span style="font-weight:600">{{ c.pagos }}</span></div>
+                      </div>
+                      <div style="height:1px;background:#E2E4E9"></div>
+                      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;min-height:52px">
+                        <div style="display:flex;flex-direction:column"><span style="font:500 14px/20px Montserrat,sans-serif;color:#5B5B64">{{ c.resLabel }}</span><span style="font:600 24px/32px Montserrat,sans-serif;font-variant-numeric:tabular-nums;color:{{ c.resColor }}">{{ c.res }}</span></div>
+                        <sc-if value="{{ c.tieneBadge }}" hint-placeholder-val="{{ false }}"><span style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px 4px 8px;border-radius:16px;background:{{ c.badgeBg }};font:500 12px/16px Montserrat,sans-serif;white-space:nowrap"><span style="width:8px;height:8px;border-radius:50%;background:{{ c.badgeDot }};flex:none"></span>{{ c.badge }}</span></sc-if>
+                      </div>
+                      <sc-if value="{{ c.tieneGrafica }}" hint-placeholder-val="{{ false }}">
+                        <svg viewBox="0 0 269 48" width="100%" height="48" style="display:block;overflow:visible">
+                          <sc-if value="{{ c.g.tieneCero }}" hint-placeholder-val="{{ false }}"><line x1="14" y1="{{ c.g.ceroY }}" x2="269" y2="{{ c.g.ceroY }}" stroke="#DCDCDE" stroke-width="1" stroke-dasharray="3 3"></line><text x="0" y="{{ c.g.ceroLabelY }}" font-size="10" font-weight="600" fill="#5B5B64" font-family="Montserrat,sans-serif">0</text></sc-if>
+                          <polyline points="{{ c.g.puntos }}" fill="none" stroke="#4D9EF7" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"></polyline>
+                          <sc-if value="{{ c.g.tieneMarca }}" hint-placeholder-val="{{ false }}"><circle cx="{{ c.g.mx }}" cy="{{ c.g.my }}" r="4" fill="#B40909"></circle></sc-if>
+                        </svg>
+                        <div style="display:flex;justify-content:space-between;font:400 12px/16px Montserrat,sans-serif;color:#5B5B64"><span>mar 6</span><span>mié 7</span><span style="color:{{ c.jueColor }};font-weight:{{ c.juePeso }}">jue 8</span><span style="color:{{ c.vieColor }};font-weight:{{ c.viePeso }}">vie 9</span></div>
+                      </sc-if>
+                      <span style="font:400 12px/16px Montserrat,sans-serif;color:#5B5B64;font-variant-numeric:tabular-nums;min-height:16px;text-wrap:pretty">{{ c.linea }}</span>
+                      <sc-if value="{{ c.tieneAccion }}" hint-placeholder-val="{{ false }}"><button style="align-self:flex-start;margin-top:4px;padding:8px 16px;border:0;border-radius:4px;background:#3D46CC;color:#fff;font:700 14px/20px Montserrat,sans-serif;cursor:pointer" style-hover="background:#0086FF" style-focus="outline:2px solid #0086FF;outline-offset:2px">{{ c.accion }}</button></sc-if>
+                    </article>
+                  </sc-for>
+                </div>
+              </section>
+
+              <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;align-items:start">
+                <div style="grid-column:span 2;display:flex;flex-direction:column;gap:20px;min-width:0">
+                  <section style="display:flex;flex-direction:column;gap:8px">
+                    <h2 style="margin:0;font:600 16px/24px Montserrat,sans-serif">Lo nuevo</h2>
+                    <div data-component="FranjaNuevo" style="display:flex;align-items:center;gap:16px;padding:12px 16px;border-radius:8px;background:#F6FBFF;border:1px solid #DCDCDE">
+                      <div style="display:flex;flex-direction:column;gap:2px;flex:1;min-width:0">
+                        <span style="font:400 14px/20px Montserrat,sans-serif"><span style="font-weight:600;color:#177B4B;font-variant-numeric:tabular-nums">+95,000.00 MXN</span> de Familia Ortega</span>
+                        <span style="font:400 12px/16px Montserrat,sans-serif;color:#5B5B64">Hoy 08:15 · BBVA México · Ref. Paquete Madrid</span>
+                      </div>
+                      <button style="background:none;border:0;padding:4px 8px;font:600 12px/16px Montserrat,sans-serif;color:#151522;text-decoration:underline;cursor:pointer">Comprobante</button>
+                      <button onClick="{{ f.home.onUsar }}" style="padding:4px 16px;border:1px solid #3D46CC;border-radius:4px;background:#fff;color:#3D46CC;font:700 14px/24px Montserrat,sans-serif;cursor:pointer;white-space:nowrap" style-hover="background:#F6FBFF" style-focus="outline:2px solid #0086FF;outline-offset:2px">Usar para pagar</button>
+                    </div>
+                  </section>
+
+                  <section style="display:flex;flex-direction:column">
+                    <div style="display:flex;align-items:baseline;justify-content:space-between;padding-bottom:8px;border-bottom:1px solid #E2E4E9"><h2 style="margin:0;font:600 16px/24px Montserrat,sans-serif">Movimientos</h2></div>
+                    <span style="padding:10px 0 2px;font:700 12px/16px Montserrat,sans-serif;color:#5B5B64">Próximos</span>
+                    <sc-for list="{{ f.home.proximos }}" as="p" hint-placeholder-count="2">
+                      <div data-component="FilaMovimiento" onClick="{{ p.onPagar }}" style="display:grid;grid-template-columns:56px minmax(0,1fr) 160px 120px;align-items:center;gap:16px;min-height:44px;padding:4px 8px;margin:0 -8px;border-bottom:1px solid #E2E4E9;border-radius:4px;cursor:pointer" style-hover="background:#F6FBFF">
+                        <span style="font:500 12px/16px Montserrat,sans-serif;color:#5B5B64">{{ p.fecha }}</span>
+                        <div style="display:flex;flex-direction:column;min-width:0"><span style="font:500 14px/20px Montserrat,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.nombre }}</span><sc-if value="{{ p.tieneDetalle }}" hint-placeholder-val="{{ false }}"><span style="font:400 12px/16px Montserrat,sans-serif;color:#5B5B64;font-variant-numeric:tabular-nums">{{ p.detalle }}</span></sc-if></div>
+                        <span style="text-align:right;font:600 14px/20px Montserrat,sans-serif;font-variant-numeric:tabular-nums;color:{{ p.color }}">{{ p.monto }}</span>
+                        <div style="display:flex;justify-content:flex-end"><sc-if value="{{ p.tieneAccion }}" hint-placeholder-val="{{ true }}"><button onClick="{{ p.onPagar }}" style="background:none;border:0;padding:4px 0;font:700 14px/20px Montserrat,sans-serif;color:#3D46CC;cursor:pointer" style-hover="text-decoration:underline" style-focus="outline:2px solid #0086FF;outline-offset:2px">Pagar</button></sc-if><sc-if value="{{ p.tieneBadge }}" hint-placeholder-val="{{ false }}"><span style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px 4px 8px;border-radius:16px;background:{{ p.badgeBg }};font:500 12px/16px Montserrat,sans-serif;white-space:nowrap"><span style="width:8px;height:8px;border-radius:50%;background:{{ p.badgeDot }};flex:none"></span>{{ p.badge }}</span></sc-if></div>
+                      </div>
+                    </sc-for>
+                    <div style="display:flex;align-items:center;gap:12px;padding:14px 0 2px"><span style="font:700 12px/16px Montserrat,sans-serif;color:#5B5B64;letter-spacing:.06em;text-transform:uppercase">Hoy</span><span style="flex:1;height:1px;background:#E2E4E9"></span></div>
+                    <span style="padding:4px 0 2px;font:700 12px/16px Montserrat,sans-serif;color:#5B5B64">Realizados</span>
+                    <sc-for list="{{ f.home.realizados }}" as="r" hint-placeholder-count="3">
+                      <div data-component="FilaMovimiento" style="display:grid;grid-template-columns:56px minmax(0,1fr) 160px 120px;align-items:center;gap:16px;min-height:44px;padding:4px 8px;margin:0 -8px;border-bottom:1px solid #E2E4E9;border-radius:4px;cursor:pointer" style-hover="background:#F6FBFF">
+                        <span style="font:500 12px/16px Montserrat,sans-serif;color:#5B5B64">{{ r.fecha }}</span>
+                        <div style="display:flex;flex-direction:column;min-width:0"><span style="font:500 14px/20px Montserrat,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.nombre }}</span><sc-if value="{{ r.tieneDetalle }}" hint-placeholder-val="{{ false }}"><span style="font:400 12px/16px Montserrat,sans-serif;color:#5B5B64;font-variant-numeric:tabular-nums">{{ r.detalle }}</span></sc-if></div>
+                        <span style="text-align:right;font:600 14px/20px Montserrat,sans-serif;font-variant-numeric:tabular-nums;color:{{ r.color }}">{{ r.monto }}</span>
+                        <div style="display:flex;justify-content:flex-end"><sc-if value="{{ r.tieneBadge }}" hint-placeholder-val="{{ false }}"><span style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px 4px 8px;border-radius:16px;background:{{ r.badgeBg }};font:500 12px/16px Montserrat,sans-serif;white-space:nowrap"><span style="width:8px;height:8px;border-radius:50%;background:{{ r.badgeDot }};flex:none"></span>{{ r.badge }}</span></sc-if></div>
+                      </div>
+                    </sc-for>
+                  </section>
+                </div>
+
+                <div style="display:flex;flex-direction:column;gap:20px;min-width:0">
+                  <section data-component="TarjetaTipoDeCambio" style="background:#fff;border:1px solid #E2E4E9;border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:12px">
+                    <div style="display:flex;align-items:center;justify-content:space-between"><h2 style="margin:0;font:600 16px/24px Montserrat,sans-serif">Tipo de cambio</h2><span style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px 4px 8px;border-radius:16px;background:#EBFFF6;font:500 12px/16px Montserrat,sans-serif"><span style="width:8px;height:8px;border-radius:50%;background:#82DAB5"></span>En vivo</span></div>
+                    <sc-for list="{{ f.home.pares }}" as="pr" hint-placeholder-count="2">
+                      <div style="display:flex;flex-direction:column;gap:8px;padding-top:{{ pr.padTop }};border-top:{{ pr.bordeTop }}">
+                        <span style="font:600 14px/20px Montserrat,sans-serif">{{ pr.par }}</span>
+                        <div style="display:flex;flex-direction:column;gap:6px;font-variant-numeric:tabular-nums">
+                          <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px"><span style="font:400 14px/20px Montserrat,sans-serif;color:#5B5B64">Para comprar {{ pr.base }}</span><span style="font:600 16px/20px Montserrat,sans-serif">{{ pr.compra }}</span></div>
+                          <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px"><span style="font:400 14px/20px Montserrat,sans-serif;color:#5B5B64">Para vender {{ pr.base }}</span><span style="font:600 16px/20px Montserrat,sans-serif">{{ pr.venta }}</span></div>
+                        </div>
+                        <sc-if value="{{ pr.tieneGrafica }}" hint-placeholder-val="{{ false }}">
+                          <svg viewBox="0 0 288 36" width="100%" height="36" preserveAspectRatio="none" style="display:block;overflow:visible"><polyline points="{{ pr.g.puntos }}" fill="none" stroke="#4D9EF7" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"></polyline></svg>
+                          <div style="display:flex;justify-content:space-between;font:400 12px/16px Montserrat,sans-serif;color:#5B5B64"><span>Tendencia del día</span><span>09:40</span></div>
+                        </sc-if>
+                      </div>
+                    </sc-for>
+                    <span style="font:400 12px/16px Montserrat,sans-serif;color:#5B5B64;padding-top:10px;border-top:1px solid #E2E4E9">Solo los pares de tus posiciones</span>
+                  </section>
+
+                  <section data-component="ModuloCuentas" style="background:#fff;border:1px solid #E2E4E9;border-radius:8px;padding:16px;display:flex;flex-direction:column">
+                    <div style="display:flex;align-items:baseline;justify-content:space-between;padding-bottom:8px;border-bottom:1px solid #E2E4E9"><h2 style="margin:0;font:600 16px/24px Montserrat,sans-serif">Cuentas</h2></div>
+                    <sc-for list="{{ f.home.cuentas }}" as="k" hint-placeholder-count="3">
+                      <div style="display:flex;flex-direction:column;gap:2px;padding:10px 0;border-bottom:1px solid #E2E4E9">
+                        <span style="font:500 14px/20px Montserrat,sans-serif">{{ k.nombre }}</span>
+                        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px"><span style="font:400 12px/16px Montserrat,sans-serif;color:#5B5B64;font-variant-numeric:tabular-nums">{{ k.num }}</span><span style="font:600 14px/20px Montserrat,sans-serif;font-variant-numeric:tabular-nums;white-space:nowrap">{{ k.saldo }}</span></div>
+                      </div>
+                    </sc-for>
+                    <button style="margin-top:16px;padding:4px 16px;border:1px solid #3D46CC;border-radius:4px;background:#fff;color:#3D46CC;font:700 14px/24px Montserrat,sans-serif;cursor:pointer" style-hover="background:#F6FBFF" style-focus="outline:2px solid #0086FF;outline-offset:2px">Ver todas mis cuentas</button>
+                  </section>
+                </div>
+              </div>
+            </main>
+
+            <footer style="height:40px;flex:none;display:flex;align-items:center;justify-content:center;gap:16px;padding:0 32px;font:400 12px/16px Montserrat,sans-serif;color:#5B5B64;border-top:0.5px solid #E2E4E9;white-space:nowrap">Las operaciones bancarias serán realizadas por Banco BASE<span style="color:#DCDCDE">·</span><a href="#" style="color:#5B5B64">Términos y condiciones</a><span style="color:#DCDCDE">·</span><a href="#" style="color:#5B5B64">Aviso de privacidad</a></footer>
+          </div>
+
+          <sc-if value="{{ f.tienePanel }}" hint-placeholder-val="{{ false }}">
+            <div onClick="{{ f.panel.onCerrar }}" style="position:absolute;inset:0;background:rgba(21,21,34,.4)"></div>
+            <aside data-component="PanelOperar" style="position:absolute;top:0;right:0;bottom:0;width:480px;background:#fff;box-shadow:0 18px 40px -12px rgba(21,21,34,.22);border-radius:16px 0 0 16px;display:flex;flex-direction:column">
+              <div style="padding:20px 24px 16px;border-bottom:1px solid #E2E4E9;display:flex;flex-direction:column;gap:4px">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:12px"><h2 style="margin:0;font:600 20px/24px Montserrat,sans-serif">{{ f.panel.titulo }}</h2><button onClick="{{ f.panel.onCerrar }}" aria-label="Cerrar" style="width:32px;height:32px;border:0;border-radius:8px;background:none;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#151522" style-hover="background:#F5F7FA" style-focus="outline:2px solid #0086FF;outline-offset:2px"><i class="uil uil-times" style="font-size:20px;line-height:1"></i></button></div>
+                <span style="font:400 14px/20px Montserrat,sans-serif;color:#5B5B64;font-variant-numeric:tabular-nums">{{ f.panel.sub }}</span>
+              </div>
+
+              <div style="flex:1;min-height:0;padding:20px 24px;display:flex;flex-direction:column;gap:16px">
+                <sc-if value="{{ f.panel.esPago }}" hint-placeholder-val="{{ false }}">
+                  <h3 style="margin:0;font:600 16px/24px Montserrat,sans-serif">¿Qué pagas con este cobro?</h3>
+                  <div style="display:flex;flex-direction:column;gap:10px">
+                    <sc-for list="{{ f.panel.pagos }}" as="o" hint-placeholder-count="2">
+                      <div data-component="OpcionPago" onClick="{{ o.pick }}" tabIndex="0" style="display:flex;gap:12px;padding:12px 16px;border:1px solid {{ o.borde }};border-radius:8px;background:{{ o.bg }};cursor:{{ o.cursor }}" style-focus="outline:2px solid #0086FF;outline-offset:2px">
+                        <span style="width:20px;height:20px;border-radius:50%;flex:none;margin-top:1px;border:1.5px solid {{ o.radioBorde }};background:{{ o.radioBg }};box-shadow:{{ o.radioSombra }}"></span>
+                        <div style="display:flex;flex-direction:column;gap:4px;flex:1;min-width:0">
+                          <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px"><span style="font:600 14px/20px Montserrat,sans-serif;white-space:nowrap;flex:none;color:{{ o.color }}">{{ o.nombre }}</span><span style="font:600 14px/20px Montserrat,sans-serif;font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap;color:{{ o.color }}">{{ o.pagas }}</span></div>
+                          <span style="font:400 12px/16px Montserrat,sans-serif;color:#5B5B64;font-variant-numeric:tabular-nums;text-wrap:pretty">{{ o.saldo }}</span>
+                          <span style="align-self:flex-start;display:inline-flex;align-items:center;gap:6px;padding:4px 12px 4px 8px;border-radius:16px;background:{{ o.consBg }};font:500 12px/16px Montserrat,sans-serif;font-variant-numeric:tabular-nums"><span style="width:8px;height:8px;border-radius:50%;background:{{ o.consDot }};flex:none"></span>{{ o.cons }}</span>
+                        </div>
+                      </div>
+                    </sc-for>
+                  </div>
+                  <span style="font:400 14px/20px Montserrat,sans-serif;color:#5B5B64;font-variant-numeric:tabular-nums;text-wrap:pretty">Del cobro quedan ≈ {{ f.panel.resto }} MXN en tu Cuenta Principal MXN.</span>
+                  <button style="align-self:flex-start;background:none;border:0;padding:0;font:700 14px/20px Montserrat,sans-serif;color:#3D46CC;text-decoration:underline;cursor:pointer" style-focus="outline:2px solid #0086FF;outline-offset:2px">Pagar a otro destinatario</button>
+                </sc-if>
+
+                <sc-if value="{{ f.panel.esOrigen }}" hint-placeholder-val="{{ false }}">
+                  <h3 style="margin:0;font:600 16px/24px Montserrat,sans-serif">¿Desde qué cuenta pagas?</h3>
+                  <div style="display:flex;flex-direction:column;gap:10px">
+                    <sc-for list="{{ f.panel.origenes }}" as="o" hint-placeholder-count="3">
+                      <div data-component="OpcionOrigen" onClick="{{ o.pick }}" tabIndex="0" style="display:flex;gap:12px;padding:12px 16px;border:1px solid {{ o.borde }};border-radius:8px;background:{{ o.bg }};cursor:{{ o.cursor }}" style-focus="outline:2px solid #0086FF;outline-offset:2px">
+                        <span style="width:20px;height:20px;border-radius:50%;flex:none;margin-top:1px;border:1.5px solid {{ o.radioBorde }};background:{{ o.radioBg }};box-shadow:{{ o.radioSombra }}"></span>
+                        <div style="display:flex;flex-direction:column;gap:4px;flex:1;min-width:0">
+                          <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px"><span style="font:600 14px/20px Montserrat,sans-serif;white-space:nowrap;flex:none;color:{{ o.color }}">{{ o.nombre }}</span><span style="font:600 14px/20px Montserrat,sans-serif;font-variant-numeric:tabular-nums;text-align:right;text-wrap:balance;color:{{ o.color }}">{{ o.pagas }}</span></div>
+                          <span style="font:400 12px/16px Montserrat,sans-serif;color:#5B5B64;font-variant-numeric:tabular-nums;text-wrap:pretty">{{ o.saldo }}</span>
+                          <span style="align-self:flex-start;display:inline-flex;align-items:center;gap:6px;padding:4px 12px 4px 8px;border-radius:16px;background:{{ o.consBg }};font:500 12px/16px Montserrat,sans-serif;font-variant-numeric:tabular-nums"><span style="width:8px;height:8px;border-radius:50%;background:{{ o.consDot }};flex:none"></span>{{ o.cons }}</span>
+                        </div>
+                      </div>
+                    </sc-for>
+                  </div>
+                </sc-if>
+
+                <sc-if value="{{ f.panel.esRevision }}" hint-placeholder-val="{{ false }}">
+                  <div data-component="BloqueMonto" style="border:1px solid #E2E4E9;border-radius:8px;display:flex;flex-direction:column">
+                    <div style="padding:12px 16px;display:flex;flex-direction:column;gap:4px">
+                      <div style="display:flex;justify-content:space-between;align-items:center"><span style="font:700 12px/16px Montserrat,sans-serif;color:#1C293B">Pagas</span><span style="display:inline-flex;align-items:center;gap:6px;font:400 12px/16px Montserrat,sans-serif;color:#5B5B64"><span style="width:8px;height:8px;border-radius:50%;background:#8BCAFB"></span>se actualiza en vivo</span></div>
+                      <div style="display:flex;align-items:baseline;gap:6px;font-variant-numeric:tabular-nums"><span style="font:600 24px/32px Montserrat,sans-serif">≈ {{ f.panel.pagasVivo }}</span><span style="font:600 12px/16px Montserrat,sans-serif;color:#5B5B64">MXN</span></div>
+                    </div>
+                    <div style="height:1px;background:#E2E4E9"></div>
+                    <div style="padding:12px 16px;display:flex;flex-direction:column;gap:4px">
+                      <div style="display:flex;justify-content:space-between;align-items:center"><span style="font:700 12px/16px Montserrat,sans-serif;color:#1C293B">Hotel Gran Vía Madrid recibe</span><span style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px 4px 8px;border-radius:16px;background:#F5F7FA;font:500 12px/16px Montserrat,sans-serif"><i class="uil uil-lock" style="font-size:14px;line-height:1"></i>Fijo</span></div>
+                      <div style="display:flex;align-items:baseline;gap:6px;font-variant-numeric:tabular-nums"><span style="font:600 24px/32px Montserrat,sans-serif">4,200.00</span><span style="font:600 12px/16px Montserrat,sans-serif;color:#5B5B64">EUR</span></div>
+                    </div>
+                  </div>
+                  <div data-component="FechaLiquidacion" style="display:flex;flex-direction:column;gap:8px">
+                    <span style="font:700 12px/16px Montserrat,sans-serif;color:#1C293B">¿Cuándo sale el dinero?</span>
+                    <div role="radiogroup" aria-label="¿Cuándo sale el dinero?" style="display:flex;align-items:center;gap:4px;padding:4px;background:#F5F7FA;border-radius:999px;box-shadow:0 3px 6px rgba(0,0,0,.08)">
+                      <sc-for list="{{ f.panel.fechas }}" as="fd" hint-placeholder-count="4">
+                        <sc-if value="{{ fd.sel }}" hint-placeholder-val="{{ false }}"><button role="radio" aria-checked="true" onClick="{{ fd.pick }}" style="flex:1 1 auto;display:inline-flex;justify-content:center;align-items:center;gap:4px;padding:6px 12px;border-radius:999px;border:1px solid #3D46CC;background:#F6FBFF;color:#3D46CC;font:600 14px/20px Montserrat,sans-serif;white-space:nowrap;cursor:pointer" style-focus="outline:2px solid #0086FF;outline-offset:2px">{{ fd.dia }}<sc-if value="{{ fd.vence }}" hint-placeholder-val="{{ false }}"><span style="font-weight:400">· vence</span></sc-if></button></sc-if>
+                        <sc-if value="{{ fd.noSel }}" hint-placeholder-val="{{ true }}"><button role="radio" aria-checked="false" onClick="{{ fd.pick }}" style="flex:1 1 auto;display:inline-flex;justify-content:center;align-items:center;gap:4px;padding:6px 12px;border-radius:999px;border:1px solid transparent;background:transparent;color:#5B5B64;font:400 14px/20px Montserrat,sans-serif;white-space:nowrap;cursor:pointer" style-hover="background:#FFFFFF;color:#151522" style-focus="outline:2px solid #0086FF;outline-offset:2px">{{ fd.dia }}<sc-if value="{{ fd.vence }}" hint-placeholder-val="{{ false }}"><span>· vence</span></sc-if></button></sc-if>
+                      </sc-for>
+                    </div>
+                    <span style="font:400 12px/16px Montserrat,sans-serif;color:#5B5B64">El precio queda cerrado hoy, elijas el día que elijas.</span>
+                  </div>
+                  <sc-if value="{{ f.panel.fechaEsHoy }}" hint-placeholder-val="{{ false }}">
+                    <p style="margin:0;font:500 14px/20px Montserrat,sans-serif;font-variant-numeric:tabular-nums;text-wrap:pretty">Vas a pagar 4,200.00 EUR con pesos. Compras los euros a {{ f.panel.tdcVivo }} MXN.</p>
+                  </sc-if>
+                  <sc-if value="{{ f.panel.fechaPactada }}" hint-placeholder-val="{{ true }}">
+                    <div style="display:flex;flex-direction:column;gap:6px">
+                      <p style="margin:0;font:500 14px/20px Montserrat,sans-serif;font-variant-numeric:tabular-nums;text-wrap:pretty">Cierras hoy el precio de 4,200.00 EUR. El {{ f.panel.dia }} salen ≈&nbsp;{{ f.panel.pagasVivo }} MXN de tu Cuenta Principal MXN y se envía el pago al Hotel Gran Vía Madrid.</p>
+                      <span style="display:flex;align-items:center;gap:8px;font:400 12px/16px Montserrat,sans-serif;color:#5B5B64"><i class="uil uil-info-circle" style="font-size:14px;line-height:1"></i><span>Hoy tienes el saldo. Asegúrate de que siga en tu cuenta el {{ f.panel.dia }}.</span></span>
+                    </div>
+                  </sc-if>
+                  <div data-component="CajaTdcValiu" style="align-self:flex-start;min-width:170px;padding:10px 16px;border:2px solid #0086FF;border-radius:8px;display:flex;flex-direction:column;gap:3px">
+                    <div style="display:flex;justify-content:space-between;gap:12px"><span style="font:700 10px/14px Montserrat,sans-serif">TDC Valiu · EUR/MXN</span><span style="font:400 10px/14px Montserrat,sans-serif;color:#5B5B64">Precio indicativo</span></div>
+                    <div style="display:flex;align-items:baseline;gap:4px"><span style="font:700 18px/24px Montserrat,sans-serif;font-variant-numeric:tabular-nums">{{ f.panel.tdcVivo }}</span><span style="font:400 11px/14px Montserrat,sans-serif;color:#5B5B64">MXN</span></div>
+                  </div>
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                    <div style="display:flex;flex-direction:column;gap:6px"><label style="font:700 12px/16px Montserrat,sans-serif;color:#1C293B">Concepto</label><div style="min-height:48px;padding:12px;border:0.5px solid #021734;border-radius:8px;display:flex;align-items:center;justify-content:space-between;gap:8px;font:400 14px/20px Montserrat,sans-serif;cursor:pointer">Pago a proveedores<i class="uil uil-angle-down-b" style="font-size:16px;line-height:1;color:#5B5B64"></i></div></div>
+                    <div style="display:flex;flex-direction:column;gap:6px"><label style="font:700 12px/16px Montserrat,sans-serif;color:#1C293B">Referencia</label><div style="min-height:48px;padding:12px;border:0.5px solid #021734;border-radius:8px;display:flex;align-items:center;font:400 14px/20px Montserrat,sans-serif;cursor:text">Reserva 88213</div></div>
+                  </div>
+                  <span style="font:400 14px/20px Montserrat,sans-serif;color:#5B5B64;font-variant-numeric:tabular-nums">Tu cuenta en pesos queda en ≈ {{ f.panel.quedaVivo }} MXN.</span>
+                  <span style="display:flex;align-items:center;gap:8px;font:400 12px/16px Montserrat,sans-serif;color:#5B5B64"><i class="uil uil-info-circle" style="font-size:14px;line-height:1"></i>Ten tu token a mano: el precio dura 2 minutos.</span>
+                </sc-if>
+
+                <sc-if value="{{ f.panel.esPrecio }}" hint-placeholder-val="{{ false }}">
+                  <sc-if value="{{ f.panel.vencido }}" hint-placeholder-val="{{ false }}">
+                    <div style="display:flex;gap:16px;align-items:flex-start;padding:16px;border:1px solid #770505;border-radius:8px;background:#F0CECE"><i class="uil uil-info-circle" style="font-size:20px;line-height:1;color:#770505;flex:none"></i><div style="display:flex;flex-direction:column;gap:2px"><span style="font:600 14px/20px Montserrat,sans-serif">El precio venció. Pide uno nuevo.</span><span style="font:400 12px/16px Montserrat,sans-serif;color:#5B5B64">El precio fijo dura 2 minutos. Los montos volvieron al indicativo.</span></div></div>
+                  </sc-if>
+                  <div data-component="PrecioEjecutable" style="border:1px solid #E2E4E9;border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:12px">
+                    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px"><span style="font:700 12px/16px Montserrat,sans-serif;color:#1C293B">{{ f.panel.precioLabel }}</span><span style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px 4px 8px;border-radius:16px;background:{{ f.panel.badgeBg }};font:500 12px/16px Montserrat,sans-serif;font-variant-numeric:tabular-nums;white-space:nowrap"><span style="width:8px;height:8px;border-radius:50%;background:{{ f.panel.badgeDot }};flex:none"></span>{{ f.panel.badge }}</span></div>
+                    <div style="display:flex;align-items:baseline;gap:6px;font-variant-numeric:tabular-nums;color:{{ f.panel.precioColor }}"><span style="font:600 24px/32px Montserrat,sans-serif">{{ f.panel.tdc }}</span><span style="font:600 12px/16px Montserrat,sans-serif;color:#5B5B64">MXN por EUR</span></div>
+                    <div style="height:1px;background:#E2E4E9"></div>
+                    <div style="display:flex;flex-direction:column;gap:6px;font-variant-numeric:tabular-nums">
+                      <div style="display:flex;justify-content:space-between;gap:12px"><span style="font:400 14px/20px Montserrat,sans-serif;color:#5B5B64">Pagas</span><span style="font:600 14px/20px Montserrat,sans-serif">{{ f.panel.pagas }}</span></div>
+                      <div style="display:flex;justify-content:space-between;gap:12px"><span style="font:400 14px/20px Montserrat,sans-serif;color:#5B5B64">Hotel Gran Vía Madrid recibe</span><span style="font:600 14px/20px Montserrat,sans-serif">4,200.00 EUR</span></div>
+                      <div style="display:flex;justify-content:space-between;gap:12px"><span style="font:400 14px/20px Montserrat,sans-serif;color:#5B5B64">Desde</span><span style="font:600 14px/20px Montserrat,sans-serif">Cuenta Principal MXN</span></div>
+                      <sc-if value="{{ f.panel.tieneSale }}" hint-placeholder-val="{{ true }}"><div style="display:flex;align-items:center;gap:8px;padding-top:2px;font:600 14px/20px Montserrat,sans-serif"><i class="uil uil-calendar-alt" style="font-size:16px;line-height:1;color:#5B5B64"></i><span>El dinero sale el {{ f.panel.dia }}</span></div></sc-if>
+                    </div>
+                  </div>
+                  <div data-component="CampoToken" style="display:flex;flex-direction:column;gap:8px">
+                    <label style="font:700 12px/16px Montserrat,sans-serif;color:{{ f.panel.tokenLabelColor }}">Ingresa el código de tu token</label>
+                    <div style="display:flex;gap:8px">
+                      <sc-for list="{{ f.panel.cajas }}" as="cj" hint-placeholder-count="6">
+                        <span style="width:48px;height:48px;border:{{ cj.borde }};border-radius:8px;background:{{ cj.bg }};display:flex;align-items:center;justify-content:center"><span style="width:1px;height:20px;background:{{ cj.caret }}"></span></span>
+                      </sc-for>
+                    </div>
+                  </div>
+                </sc-if>
+
+                <sc-if value="{{ f.panel.esConfirmacionPactada }}" hint-placeholder-val="{{ false }}">
+                  <div style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:16px 0 8px;text-align:center">
+                    <i class="uil uil-calendar-alt" style="font-size:48px;line-height:1;color:#3D46CC"></i>
+                    <h3 style="margin:0;font:600 20px/24px Montserrat,sans-serif">Pago pactado</h3>
+                    <span style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px 4px 8px;border-radius:16px;background:#EDF3FF;font:500 12px/16px Montserrat,sans-serif"><span style="width:8px;height:8px;border-radius:50%;background:#0086FF"></span>Pactada</span>
+                  </div>
+                  <p style="margin:0;font:400 14px/20px Montserrat,sans-serif;font-variant-numeric:tabular-nums;text-align:center;text-wrap:pretty">Cerraste el precio en {{ f.panel.tdcFijo }}. El {{ f.panel.dia }} salen {{ f.panel.pagasFijo }} MXN de tu Cuenta Principal MXN y se envían 4,200.00 EUR al Hotel Gran Vía Madrid.</p>
+                  <div style="display:flex;gap:16px;align-items:flex-start;padding:16px;border:1px solid #3D46CC;border-radius:8px;background:#F6FBFF"><i class="uil uil-info-circle" style="font-size:20px;line-height:1;color:#3D46CC;flex:none"></i><span style="font:400 14px/20px Montserrat,sans-serif;font-variant-numeric:tabular-nums;text-wrap:pretty">Ten {{ f.panel.pagasFijo }} MXN en tu Cuenta Principal MXN el {{ f.panel.dia }} para que el pago salga.</span></div>
+                </sc-if>
+                <sc-if value="{{ f.panel.esConfirmacion }}" hint-placeholder-val="{{ false }}">
+                  <div style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:16px 0 8px;text-align:center">
+                    <i class="uil uil-check-circle" style="font-size:48px;line-height:1;color:#3D46CC"></i>
+                    <h3 style="margin:0;font:600 20px/24px Montserrat,sans-serif">Pago enviado</h3>
+                    <span style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px 4px 8px;border-radius:16px;background:#FCEFCE;font:500 12px/16px Montserrat,sans-serif"><span style="width:8px;height:8px;border-radius:50%;background:#F5CE6C"></span>En proceso</span>
+                  </div>
+                  <div style="display:flex;flex-direction:column;border:1px solid #E2E4E9;border-radius:8px;padding:4px 16px;font-variant-numeric:tabular-nums">
+                    <sc-for list="{{ f.panel.detalle }}" as="d" hint-placeholder-count="4">
+                      <div style="display:flex;justify-content:space-between;gap:16px;padding:10px 0;border-bottom:1px solid #E2E4E9"><span style="font:400 14px/20px Montserrat,sans-serif;color:#5B5B64">{{ d.k }}</span><span style="font:600 14px/20px Montserrat,sans-serif;text-align:right">{{ d.v }}</span></div>
+                    </sc-for>
+                  </div>
+                  <span style="font:400 12px/16px Montserrat,sans-serif;color:#5B5B64;text-align:center;text-wrap:pretty">Te avisamos cuando Banco BASE confirme el envío.</span>
+                </sc-if>
+              </div>
+
+              <div style="padding:16px 24px 20px;border-top:1px solid #E2E4E9;display:flex;gap:12px">
+                <sc-if value="{{ f.panel.tieneSecundario }}" hint-placeholder-val="{{ true }}"><button onClick="{{ f.panel.onSecundario }}" style="flex:1;padding:8px 16px;border:1px solid #3D46CC;border-radius:4px;background:#fff;color:#3D46CC;font:700 14px/24px Montserrat,sans-serif;cursor:pointer" style-hover="background:#F6FBFF" style-focus="outline:2px solid #0086FF;outline-offset:2px">{{ f.panel.secundario }}</button></sc-if>
+                <button onClick="{{ f.panel.onPrimario }}" style="flex:1;padding:8px 16px;border:0;border-radius:4px;background:#3D46CC;color:#fff;font:700 16px/24px Montserrat,sans-serif;cursor:pointer" style-hover="background:#0086FF" style-focus="outline:2px solid #0086FF;outline-offset:2px">{{ f.panel.primario }}</button>
+              </div>
+            </aside>
+          </sc-if>
+        </div>
+      </section>
+        </sc-for>
+      </div>
+    </div>
+  </sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;modo&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;tablero&quot;,&quot;tsType&quot;:&quot;'tablero' | 'prototipo'&quot;,&quot;options&quot;:[&quot;tablero&quot;,&quot;prototipo&quot;],&quot;section&quot;:&quot;Vista&quot;},&quot;historia&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;pactado&quot;,&quot;tsType&quot;:&quot;'pactado' | 'hoy'&quot;,&quot;options&quot;:[&quot;pactado&quot;,&quot;hoy&quot;],&quot;section&quot;:&quot;Vista&quot;}}">
+class Component extends DCLogic {
+  state = { modo: null, actual: 1, restante: 119, pausado: false, fecha: 'hoy', vivo: 0 };
+  orden = [1, 2, 3, 4, 5, 6, 7, 8];
+  modo() { return this.state.modo || this.props.modo || 'tablero'; }
+  ir(n) {
+    if (!n) return;
+    const s = { actual: n };
+    if (n === 5) Object.assign(s, { restante: 119, pausado: false });
+    // Fecha valor: Hoy por defecto cada vez que se entra a la revisión desde atrás (D-27)
+    if (n <= 3 || (n === 4 && this.state.actual < 4)) s.fecha = 'hoy';
+    this.setState(s);
+  }
+  componentDidMount() {
+    this._key = (e) => {
+      if (this.modo() !== 'prototipo') return;
+      if (e.key === 'p' || e.key === 'P') this.setState(s => ({ pausado: !s.pausado }));
+      if (e.key === 'ArrowRight') this.ir(this.orden[Math.min(this.orden.length - 1, this.orden.indexOf(this.state.actual) + 1)]);
+      if (e.key === 'ArrowLeft') this.ir(this.orden[Math.max(0, this.orden.indexOf(this.state.actual) - 1)]);
+    };
+    window.addEventListener('keydown', this._key);
+    this._modoPrev = this.modo();
+    this._tick = setInterval(() => {
+      const s = this.state;
+      if (this.modo() !== 'prototipo' || s.pausado || s.actual !== 5) return;
+      if (s.restante <= 1) this.setState({ actual: 6, restante: 0 }); else this.setState({ restante: s.restante - 1 });
+    }, 1000);
+    // TDC indicativo en vivo (D-32): camina al azar dentro de ±0.0012 y se congela con el precio fijo (S05) y después de confirmar
+    this._vivo = setInterval(() => {
+      const s = this.state;
+      if (this.modo() !== 'prototipo' || s.pausado || s.actual === 5 || s.actual >= 7) return;
+      this.setState({ vivo: Math.max(-0.0012, Math.min(0.0012, s.vivo + (Math.random() - 0.5) * 0.0008)) });
+    }, 2000);
+  }
+  componentDidUpdate() {
+    const m = this.modo();
+    if (m !== this._modoPrev) { this._modoPrev = m; if (m === 'prototipo') this.setState({ actual: 1, restante: 119, pausado: false, fecha: 'hoy', vivo: 0 }); }
+  }
+  componentWillUnmount() { window.removeEventListener('keydown', this._key); clearInterval(this._tick); clearInterval(this._vivo); }
+  renderVals() {
+    const modo = this.modo(), proto = modo === 'prototipo';
+    const { actual, restante, pausado } = this.state;
+    const vivo = proto ? this.state.vivo : 0;
+    const noop = () => {};
+    const go = n => () => { if (this.modo() !== 'prototipo') return; this.ir(n); };
+    const fmt = n => n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const fmt6 = n => n.toFixed(6);
+    const spark = (vals, w, h, desdeCero, escalonado) => {
+      const pad = 4, mn = desdeCero ? Math.min(0, ...vals) : Math.min(...vals), mx = Math.max(...vals), rng = (mx - mn) || 1;
+      const x = i => pad + i * (w - 2 * pad) / (vals.length - 1), y = v => (h - pad) - (v - mn) / rng * (h - 2 * pad);
+      const neg = vals.findIndex(v => v < 0), pts = [];
+      vals.forEach((v, i) => { pts.push([x(i), y(v)]); if (escalonado && i < vals.length - 1) pts.push([x(i + 1), y(v)]); });
+      return { puntos: pts.map(p => p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' '), ceroY: y(0).toFixed(1), ceroLabelY: (y(0) + 3.5).toFixed(1), tieneCero: mn < 0, tieneMarca: neg >= 0, mx: neg >= 0 ? x(neg).toFixed(1) : 0, my: neg >= 0 ? y(vals[neg]).toFixed(1) : 0 };
+    };
+    const TAG = { ok: ['#EBFFF6', '#82DAB5'], warn: ['#FCEFCE', '#F5CE6C'], err: ['#FFF1F1', '#D26B6B'], neutro: ['#F5F7FA', '#8492A6'] }, PACTADA = ['#EDF3FF', '#0086FF'];
+    const pos = (o) => Object.assign({ resColor: '#151522', tieneBadge: !!o.badge, tieneAccion: !!o.accion, tienePactadas: !!o.pactadas, pactadasLabel: '', pactadas: '', linea: '', jueColor: '#5B5B64', juePeso: 400, vieColor: '#5B5B64', viePeso: 400 }, o, { g: o.serie ? spark(o.serie, 269, 48, true, true) : {}, tieneGrafica: !!o.serie, badgeBg: o.badge ? TAG[o.tag][0] : '', badgeDot: o.badge ? TAG[o.tag][1] : '' });
+    const fila = (fecha, nombre, monto, extra) => Object.assign({ fecha, nombre, monto, color: monto.charAt(0) === '+' ? '#177B4B' : '#151522', tieneAccion: false, tieneBadge: false, tieneDetalle: false, detalle: '', onPagar: noop }, extra || {});
+    // Escenario turismo (del pedido): Viajes Altavista · cuentas 420,000.00 MXN / 6,000.00 USD / 0.00 EUR · pagos 2,500.00 USD jue 8 (Mayorista Caribe) y 4,200.00 EUR vie 9 (Hotel Gran Vía Madrid)
+    // · cobro 95,000.00 MXN de Familia Ortega hoy · EUR/MXN 21.25, EUR/USD 1.085, USD/MXN 18.091183 / 18.032135.
+    // Inventados: venta EUR/MXN 21.10, precio ejecutable 21.251450, referencias, hora del cobro, Aerolínea Centro y Familia Ríos, tendencia intradía.
+    const TDC_EUR = 21.25, TDC_EUR_VENTA = 21.1, TDC_FIJO = 21.25145, MONTO = 4200, SALDO_MXN = 420000, COBRO = 95000;
+    const tdcVivoN = TDC_EUR + vivo, pagasVivoN = MONTO * tdcVivoN, pagasFijoN = MONTO * TDC_FIJO;
+    const tdcVivo = fmt6(tdcVivoN), pagasVivo = fmt(pagasVivoN), tdcFijo = fmt6(TDC_FIJO), pagasFijo = fmt(pagasFijoN);
+    const quedaVivo = fmt(SALDO_MXN - pagasVivoN), restoCobro = fmt(COBRO - pagasVivoN), mxnDespues = fmt(SALDO_MXN - pagasFijoN);
+    // Fecha valor: Hoy por defecto (D-27). La historia del tablero elige vie 9, el día en que vence el pago; el tweak "historia" muestra la variante Hoy.
+    const FECHAS = [['hoy', 'Hoy'], ['mie7', 'mié 7'], ['jue8', 'jue 8'], ['vie9', 'vie 9']], VENCE = 'vie9';
+    const fechaSel = proto ? (this.state.fecha || 'hoy') : (this.props.historia === 'hoy' ? 'hoy' : 'vie9');
+    const esHoy = fechaSel === 'hoy', dia = FECHAS.find(x => x[0] === fechaSel)[1];
+    const pickFecha = k => () => { if (this.modo() !== 'prototipo') return; this.setState({ fecha: k }); };
+    const fechas = FECHAS.map(([k, d]) => ({ dia: d, vence: k === VENCE, sel: k === fechaSel, noSel: k !== fechaSel, pick: pickFecha(k) }));
+    const ordenDia = { 'mié 7': 1, 'jue 8': 2, 'vie 9': 3 };
+    // Posición por divisa (D-34): la divisa con faltante primero; el orden no cambia al resolverse
+    const eurFalta = pos({ div: 'EUR', nombre: 'Euros', saldo: '0.00', pagosLabel: 'Pagos futuros (1)', pagos: '−4,200.00', resLabel: 'Faltan', res: '4,200.00', resColor: '#B40909', badge: 'Falta', tag: 'err', linea: '≈ ' + pagasVivo + ' MXN a precio de compra', accion: 'Comprar 4,200 EUR', serie: [0, 0, 0, -4200], vieColor: '#B40909', viePeso: 600 });
+    const eurPactado = pos({ div: 'EUR', nombre: 'Euros', saldo: '0.00', pagosLabel: 'Pagos futuros', pagos: '0.00', resLabel: 'Nada pendiente en euros', res: '', linea: 'Hotel Gran Vía Madrid: pactado en pesos, sale el ' + dia });
+    const eurHecho = pos({ div: 'EUR', nombre: 'Euros', saldo: '0.00', pagosLabel: 'Pagos futuros', pagos: '0.00', resLabel: 'Nada pendiente en euros', res: '', linea: 'Hotel Gran Vía Madrid: pagado hoy en pesos' });
+    const usd = pos({ div: 'USD', nombre: 'Dólares', saldo: '6,000.00', pagosLabel: 'Pagos futuros (1)', pagos: '−2,500.00', resLabel: 'Sobran', res: '3,500.00', badge: 'Alcanza', tag: 'ok', serie: [6000, 6000, 3500, 3500], juePeso: 600, jueColor: '#151522' });
+    const mxn = pos({ div: 'MXN', nombre: 'Pesos', saldo: '420,000.00', pagosLabel: 'Pagos futuros', pagos: '0.00', resLabel: 'Nada pendiente en pesos', res: '', linea: 'Incluye los 95,000.00 de Familia Ortega' });
+    const mxnPactado = pos({ div: 'MXN', nombre: 'Pesos', saldo: '420,000.00', pactadasLabel: 'Pactadas por liquidar (1)', pactadas: '−' + pagasFijo, pagosLabel: 'Pagos futuros', pagos: '0.00', resLabel: 'Sobran', res: mxnDespues, badge: 'Alcanza', tag: 'ok', linea: 'Incluye los 95,000.00 de Familia Ortega' });
+    const mxnHecho = pos({ div: 'MXN', nombre: 'Pesos', saldo: mxnDespues, pagosLabel: 'Pagos futuros', pagos: '0.00', resLabel: 'Nada pendiente en pesos', res: '', linea: 'Incluye los 95,000.00 de Familia Ortega' });
+    // Tipo de cambio (D-33): el par de la decisión con tendencia; los demás pares de las posiciones, compactos
+    const pares = [
+      { par: 'EUR/MXN', base: 'EUR', compra: tdcVivo, venta: fmt6(TDC_EUR_VENTA + vivo), tieneGrafica: true, g: spark([21.231, 21.238, 21.235, 21.246, 21.242, 21.255, 21.249, 21.25], 288, 36, false), padTop: '0', bordeTop: '0' },
+      { par: 'USD/MXN', base: 'USD', compra: '18.091183', venta: '18.032135', tieneGrafica: false, g: { puntos: '' }, padTop: '12px', bordeTop: '1px solid #E2E4E9' }
+    ];
+    const mayorista = fila('jue 8', 'Mayorista Caribe', '−2,500.00 USD', { tieneAccion: true });
+    const hotel = fila('vie 9', 'Hotel Gran Vía Madrid', '−4,200.00 EUR', { tieneAccion: true, onPagar: go(3) });
+    const hotelPactado = fila(dia, 'Hotel Gran Vía Madrid', '−4,200.00 EUR', { tieneDetalle: true, detalle: pagasFijo + ' MXN a ' + tdcFijo, tieneBadge: true, badge: 'Pactada', badgeBg: PACTADA[0], badgeDot: PACTADA[1] });
+    const hotelHecho = fila('Hoy', 'Hotel Gran Vía Madrid', '−' + pagasFijo + ' MXN', { tieneDetalle: true, detalle: '4,200.00 EUR a ' + tdcFijo, tieneBadge: true, badge: 'En proceso', badgeBg: TAG.warn[0], badgeDot: TAG.warn[1] });
+    const pasados = [fila('Hoy', 'Familia Ortega', '+95,000.00 MXN'), fila('5 oct', 'Aerolínea Centro', '−38,500.00 MXN'), fila('2 oct', 'Familia Ríos', '+62,000.00 MXN')];
+    const cuentas = (mxnSaldo) => [{ nombre: 'Cuenta Principal MXN', num: '****4410', saldo: mxnSaldo }, { nombre: 'Cuenta USD', num: '****8821', saldo: '6,000.00 USD' }, { nombre: 'Cuenta EUR', num: '****9034', saldo: '0.00 EUR' }];
+    const homeBase = (o) => Object.assign({ tieneAviso: false, aviso: '', tieneAvisoInfo: false, avisoInfo: '', pares, onUsar: go(2) }, o);
+    const homeInicio = homeBase({ posiciones: [eurFalta, usd, mxn], proximos: [mayorista, hotel], realizados: pasados, cuentas: cuentas('420,000.00 MXN') });
+    const homePactado = (aviso) => homeBase({ tieneAvisoInfo: !!aviso, avisoInfo: aviso, posiciones: [eurPactado, usd, mxnPactado], proximos: [mayorista, hotelPactado].sort((a, b) => ordenDia[a.fecha] - ordenDia[b.fecha]), realizados: pasados, cuentas: cuentas('420,000.00 MXN') });
+    const homeHecho = (aviso) => homeBase({ tieneAviso: !!aviso, aviso, posiciones: [eurHecho, usd, mxnHecho], proximos: [mayorista], realizados: [hotelHecho].concat(pasados), cuentas: cuentas(mxnDespues + ' MXN') });
+    // Panel: opciones de pago (D-30) y de origen (D-31). `off` = no se puede elegir.
+    const opcion = (o) => Object.assign(o, { consBg: TAG[o.tag][0], consDot: TAG[o.tag][1], borde: o.sel ? '#3D46CC' : '#E2E4E9', bg: o.off ? '#F5F7FA' : o.sel ? '#F0F1FD' : '#fff', radioBorde: o.off ? '#DCDCDE' : o.sel ? '#3D46CC' : '#8492A6', radioBg: o.off ? '#F5F7FA' : o.sel ? '#3D46CC' : '#fff', radioSombra: o.sel ? 'inset 0 0 0 4px #fff' : 'none', color: o.off ? '#5B5B64' : '#151522', cursor: o.off ? 'not-allowed' : 'pointer', pick: noop });
+    const pagos = [
+      { nombre: 'Hotel Gran Vía Madrid', pagas: '4,200.00 EUR', saldo: 'Vence vie 9 · Reserva 88213 · usa ≈ ' + pagasVivo + ' MXN', cons: 'Cubre el faltante en EUR', tag: 'ok', sel: true },
+      { nombre: 'Mayorista Caribe', pagas: '2,500.00 USD', saldo: 'Vence jue 8 · Bloqueo nov-26 · usaría ≈ 45,227.96 MXN', cons: 'Ya lo cubre tu Cuenta USD', tag: 'neutro' }
+    ].map(opcion);
+    const origenes = [
+      { nombre: 'Cuenta Principal MXN', saldo: 'Saldo 420,000.00 MXN · incluye el cobro de hoy', pagas: 'Pagas ≈ ' + pagasVivo + ' MXN', cons: 'Cubre el faltante en EUR', tag: 'ok', sel: true },
+      { nombre: 'Cuenta USD', saldo: 'Saldo 6,000.00 USD', pagas: 'Pagas ≈ 4,557.00 USD', cons: 'Te faltarían 1,057.00 USD el jueves', tag: 'warn' },
+      { nombre: 'Cuenta EUR', saldo: 'Saldo 0.00 EUR', pagas: 'Pagas 4,200.00 EUR, sin tipo de cambio', cons: 'Sin saldo', tag: 'neutro', off: true }
+    ].map(opcion);
+    const mm = Math.floor(restante / 60), ss = String(restante % 60).padStart(2, '0');
+    const cuenta = proto ? mm + ':' + ss : '1:59', porVencer = proto && restante <= 30;
+    const cajas = (activo) => [0, 1, 2, 3, 4, 5].map(i => ({ borde: !activo ? '0.5px solid #DCDCDE' : i === 0 ? '1px solid #0086FF' : '0.5px solid #021734', bg: activo ? '#fff' : '#F5F7FA', caret: activo && i === 0 ? '#151522' : 'transparent' }));
+    const panel = (o) => Object.assign({ titulo: 'Pagar al Hotel Gran Vía Madrid', sub: '4,200.00 EUR · vence vie 9 · Reserva 88213', esPago: false, esOrigen: false, esRevision: false, esPrecio: false, esConfirmacion: false, esConfirmacionPactada: false, vencido: false, tieneSecundario: true, primario: '', secundario: '', onPrimario: noop, onSecundario: noop, onCerrar: go(1), pagos, origenes, fechas, fechaEsHoy: esHoy, fechaPactada: !esHoy, dia, tieneSale: !esHoy, pagasVivo, tdcVivo, quedaVivo, resto: restoCobro, pagasFijo, tdcFijo, cajas: cajas(true), tokenLabelColor: '#1C293B', precioColor: '#151522', precioLabel: '', badge: '', badgeBg: '', badgeDot: '', tdc: '', pagas: '', detalle: [] }, o);
+    const sinPanel = panel({});
+    const detalle = [{ k: 'Enviaste', v: '4,200.00 EUR al Hotel Gran Vía Madrid' }, { k: 'Pagaste', v: pagasFijo + ' MXN' }, { k: 'TDC EUR/MXN', v: tdcFijo }, { k: 'Referencia', v: 'Reserva 88213' }];
+    const frames = [
+      { n: 'S01', titulo: 'Home · Turismo', nota: 'Mariana entra a las 9:40. La Cuenta EUR está en cero y el pago al Hotel Gran Vía Madrid (4,200.00 EUR) vence el vie 9: el faltante es el pago entero. El cobro de Familia Ortega por el paquete llegó a las 8:15, en pesos. USD alcanza para Mayorista Caribe.', home: homeInicio, tienePanel: false },
+      { n: 'S02', titulo: 'Panel · ¿Qué pagas con este cobro?', nota: 'Entrada desde el cobro: "Usar para pagar" abre el panel y pregunta qué pago se cubre con ese dinero. El Hotel viene seleccionado porque es el único faltante; Mayorista Caribe ya lo cubre la Cuenta USD. Desde la fila del Hotel ("Pagar") se entra directo a S03.', home: homeInicio, tienePanel: true, panel: panel({ titulo: 'Usar el cobro de Familia Ortega', sub: '+95,000.00 MXN · Hoy 08:15 · Ref. Paquete Madrid', esPago: true, primario: 'Continuar', secundario: 'Cancelar', onPrimario: go(3), onSecundario: go(1) }) },
+      { n: 'S03', titulo: 'Panel · Origen', nota: 'La cuenta donde entró el cobro viene seleccionada. La Cuenta USD muestra la consecuencia de usarla (faltarían 1,057.00 USD el jueves) y la Cuenta EUR, sin saldo, no se puede elegir.', home: homeInicio, tienePanel: true, panel: panel({ esOrigen: true, primario: 'Continuar', secundario: 'Cancelar', onPrimario: go(4), onSecundario: go(1) }) },
+      { n: 'S04', titulo: 'Panel · Revisión', nota: esHoy ? 'Llega con Hoy por defecto: el pago sale hoy, tres días antes del vencimiento. (Variante Hoy del tablero.)' : 'El pago vence el viernes: Mariana cierra hoy el precio de los euros con los pesos recién cobrados y elige vie 9 para que el dinero salga el día del vencimiento. Llega con Hoy por defecto; en el prototipo el TDC indicativo se mueve en una banda chica.', home: homeInicio, tienePanel: true, panel: panel({ esRevision: true, primario: 'Pedir precio', secundario: 'Volver', onPrimario: go(5), onSecundario: go(3) }) },
+      { n: 'S05', titulo: 'Panel · Precio y token', nota: 'Precio ejecutable EUR/MXN fijo por 2 minutos, con el día en que sale el dinero, y token dentro del panel. El TDC deja de moverse.', home: homeInicio, tienePanel: true, panel: panel({ esPrecio: true, primario: 'Confirmar pago', secundario: 'Cancelar', onPrimario: go(7), onSecundario: go(1), precioLabel: 'Precio ejecutable', badge: 'Precio fijo por ' + cuenta + (pausado ? ' · pausa' : ''), badgeBg: porVencer ? TAG.warn[0] : TAG.ok[0], badgeDot: porVencer ? TAG.warn[1] : TAG.ok[1], tdc: tdcFijo, pagas: pagasFijo + ' MXN' }) },
+      { n: 'S06', titulo: 'Panel · Precio vencido', nota: 'Al vencer, los montos vuelven al indicativo (y a moverse) y la única salida es pedir un precio nuevo. La fecha elegida se conserva.', home: homeInicio, tienePanel: true, panel: panel({ esPrecio: true, vencido: true, primario: 'Pedir precio', secundario: 'Cancelar', onPrimario: go(5), onSecundario: go(1), precioLabel: 'Precio indicativo', badge: 'Vencido', badgeBg: TAG.err[0], badgeDot: TAG.err[1], tdc: tdcVivo, pagas: '≈ ' + pagasVivo + ' MXN', cajas: cajas(false), tokenLabelColor: '#8492A6', precioColor: '#5B5B64' }) },
+      esHoy
+        ? { n: 'S07', titulo: 'Confirmación · Pago enviado', nota: 'Con Hoy, el pago sale ya: la confirmación es la del flujo principal (06).', home: homeHecho(''), tienePanel: true, panel: panel({ esConfirmacion: true, sub: '4,200.00 EUR · Reserva 88213', primario: 'Volver al inicio', secundario: 'Descargar comprobante', onPrimario: go(8), onCerrar: go(8), detalle }) }
+        : { n: 'S07', titulo: 'Confirmación · Pago pactado', nota: 'La operación queda Pactada: el precio está cerrado y el dinero sale el ' + dia + '. El aviso recuerda tener el saldo ese día.', home: homePactado(''), tienePanel: true, panel: panel({ esConfirmacionPactada: true, sub: '4,200.00 EUR · Reserva 88213', primario: 'Volver al inicio', secundario: 'Descargar comprobante', onPrimario: go(8), onCerrar: go(8) }) },
+      esHoy
+        ? { n: 'S08', titulo: 'Home con la posición resuelta', nota: 'Aviso success; EUR sin pendientes; el Hotel pasa a Realizados con "En proceso"; la cuenta en pesos ya descontó el pago.', home: homeHecho('Pago enviado. Ya no tienes pagos pendientes en euros.'), tienePanel: false }
+        : { n: 'S08', titulo: 'Home con el pago pactado', nota: 'EUR ya no tiene nada pendiente; la posición en pesos descuenta la pactada por liquidar; el Hotel sigue en Próximos con badge Pactada y el detalle en pesos. El cobro de hoy sigue en Lo nuevo.', home: homePactado('Pactaste el pago al Hotel Gran Vía Madrid. El dinero sale el ' + dia + '.'), tienePanel: false }
+    ].map(f => Object.assign(f, { etiqueta: f.n + ' · ' + f.titulo, panel: f.panel || sinPanel, nota: f.nota || '' }));
+    const filas = proto
+      ? [{ titulo: 'Prototipo · frame ' + frames[actual - 1].n, nota: 'Los botones navegan · ← → cambian de frame · P pausa la cuenta regresiva y el TDC en vivo', frames: [frames[actual - 1]] }]
+      : [{ titulo: 'Flujo secundario · Turismo', nota: 'Viajes Altavista cobra en pesos a sus clientes y paga en euros a los hoteles. El cobro de Familia Ortega llega hoy; el pago al Hotel Gran Vía Madrid vence el viernes y la Cuenta EUR está en cero → usa el cobro, cierra hoy el precio y el dinero sale el ' + dia + '. El tweak "historia" muestra la variante con Hoy.', frames }];
+    const navDef = [['Inicio', 'uil-estate'], ['Movimientos', 'uil-credit-card'], ['Control de operaciones', 'uil-chart'], ['Destinatarios', 'uil-sign-alt'], ['Monitoreo de divisas', 'uil-chart-line']];
+    const nav = navDef.map(([label, icono], i) => ({ label, icono, bg: i === 0 ? '#F6FBFF' : 'transparent', color: i === 0 ? '#0086FF' : '#151522', peso: i === 0 ? 600 : 500 }));
+    const on = ['#151522', '#fff'], off = ['#fff', '#151522'];
+    const chips = this.orden.map(k => ({ label: frames[k - 1].n, bg: actual === k ? on[0] : off[0], color: actual === k ? on[1] : off[1], pick: go(k) }));
+    return {
+      filas, nav, chips, esPrototipo: proto,
+      setTablero: () => this.setState({ modo: 'tablero' }), setPrototipo: () => this.setState({ modo: 'prototipo', actual: 1, restante: 119, pausado: false, fecha: 'hoy', vivo: 0 }),
+      tabBg: proto ? off[0] : on[0], tabColor: proto ? off[1] : on[1], protoBg: proto ? on[0] : off[0], protoColor: proto ? on[1] : off[1]
+    };
+  }
+}
+</script>
+</body>
+</html>

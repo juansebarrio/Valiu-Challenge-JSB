@@ -1,0 +1,1 @@
+`escenario-importadora.ts` es el escenario del flujo principal (frames 01–07 y 03B–07B). `escenarios-prototipo.js` es el borrador anterior con el escenario de turismo; sirve de referencia para el challenge 2 y no lo usa el flujo principal.

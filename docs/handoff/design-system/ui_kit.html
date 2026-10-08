@@ -1,0 +1,2772 @@
+<!doctype html>
+<!-- @dsCard group="Brand" name="ui-kit" subtitle="Full UI kit — palette, type, buttons, fields, status, data, icons, foundations" -->
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Valiu — UI Kit</title>
+<link rel="stylesheet" href="./colors_and_type.css" />
+<style>
+  /* ---------- Page shell ---------- */
+  body {
+    margin: 0;
+    background: var(--bg-canvas);
+    color: var(--fg-1);
+    font: var(--type-body-2);
+    padding: 0 0 96px 0;
+  }
+  .uk-topbar {
+    background: var(--ink-900);
+    color: var(--ink-0);
+    padding: 20px 48px;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    border-bottom: 1px solid rgba(255,255,255,.08);
+  }
+  .uk-topbar .brand {
+    color: var(--ink-0);
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .uk-topbar .brand .mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: var(--valiu-blue-bg);
+    color: var(--ink-900);
+    flex: none;
+  }
+  .uk-topbar .brand .mark svg { width: 16px; height: 16px; display: block; }
+  .uk-topbar .brand .wm { height: 20px; width: auto; display: block; color: var(--ink-0); }
+  .uk-topbar .chip {
+    margin-left: auto;
+    font: var(--type-overline);
+    letter-spacing: .12em;
+    padding: 6px 10px;
+    border-radius: var(--radius-full);
+    background: rgba(255,255,255,.08);
+    color: var(--valiu-mint);
+    text-transform: uppercase;
+  }
+  .uk-topbar .meta {
+    font: var(--type-caption);
+    color: rgba(255,255,255,.6);
+  }
+  .uk-container {
+    max-width: 1360px;
+    margin: 0 auto;
+    padding: 0 48px;
+  }
+
+  /* ---------- Hero ---------- */
+  .uk-hero {
+    background: linear-gradient(180deg, var(--valiu-mint-bg) 0%, var(--bg-canvas) 100%);
+    padding: 72px 48px 56px;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .uk-hero .inner {
+    max-width: 1360px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1.3fr 1fr;
+    gap: 72px;
+    align-items: end;
+  }
+  .uk-hero h1 {
+    font: var(--type-display-xxl);
+    margin: 0 0 16px;
+    color: var(--ink-900);
+    letter-spacing: -0.02em;
+  }
+  .uk-hero h1 em {
+    color: var(--valiu-purple);
+    font-style: normal;
+  }
+  .uk-hero p {
+    font: var(--type-body-1);
+    color: var(--ink-500);
+    margin: 0;
+    max-width: 560px;
+    text-wrap: pretty;
+  }
+  .uk-hero .specimen {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 24px;
+    background: var(--bg-surface);
+    border-radius: var(--radius-2xl);
+    border: 1px solid var(--border-subtle);
+    box-shadow: var(--shadow-sm);
+  }
+  .uk-hero .specimen-row {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    border-bottom: 1px dashed var(--border-subtle);
+    padding-bottom: 10px;
+  }
+  .uk-hero .specimen-row:last-child { border-bottom: 0; padding-bottom: 0; }
+  .uk-hero .specimen-row .label {
+    font: var(--type-overline);
+    color: var(--ink-400);
+    letter-spacing: .1em;
+    width: 56px;
+  }
+  .uk-hero .specimen-row .sample { color: var(--ink-900); }
+
+  /* ---------- Section layout ---------- */
+  .uk-section { padding: 64px 0 8px; }
+  .uk-section-head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 24px;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .uk-section-head h2 {
+    font: var(--type-display-xl);
+    margin: 0;
+    letter-spacing: -0.01em;
+  }
+  .uk-section-head .num {
+    font: var(--type-overline);
+    color: var(--valiu-purple);
+    letter-spacing: .2em;
+  }
+  .uk-section-head .desc {
+    color: var(--ink-500);
+    font: var(--type-body-2);
+    max-width: 460px;
+    text-align: right;
+    text-wrap: pretty;
+  }
+  .uk-subhead {
+    font: var(--type-overline);
+    color: var(--ink-500);
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    margin: 24px 0 12px;
+  }
+
+  /* ---------- Cards / panels ---------- */
+  .panel {
+    background: var(--bg-surface);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-subtle);
+    padding: 24px;
+  }
+
+  /* ==========================================================
+     COLOR SWATCHES
+     ========================================================== */
+  .swatch-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 14px;
+  }
+  .swatch {
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    border: 1px solid var(--border-subtle);
+    background: var(--bg-surface);
+    display: flex;
+    flex-direction: column;
+  }
+  .swatch .chip {
+    height: 92px;
+    position: relative;
+  }
+  .swatch .chip .tag {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    font: var(--type-overline);
+    padding: 2px 8px;
+    border-radius: var(--radius-full);
+    background: rgba(255,255,255,.9);
+    color: var(--ink-700);
+    letter-spacing: .08em;
+  }
+  .swatch .chip.dark .tag { background: rgba(0,0,0,.25); color: var(--ink-0); }
+  .swatch .meta {
+    padding: 10px 12px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .swatch .meta .name {
+    font: var(--type-label);
+    color: var(--ink-900);
+  }
+  .swatch .meta .hex {
+    font: 500 11px/1.4 "SFMono-Regular", ui-monospace, Menlo, monospace;
+    color: var(--ink-400);
+    letter-spacing: .04em;
+  }
+
+  /* ==========================================================
+     TYPE STACK
+     ========================================================== */
+  .type-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-subtle);
+    background: var(--bg-surface);
+    overflow: hidden;
+  }
+  .type-row {
+    display: grid;
+    grid-template-columns: 180px 1fr 260px;
+    gap: 24px;
+    padding: 20px 28px;
+    border-bottom: 1px solid var(--border-subtle);
+    align-items: baseline;
+  }
+  .type-row:last-child { border-bottom: 0; }
+  .type-row .name {
+    font: var(--type-overline);
+    letter-spacing: .14em;
+    color: var(--ink-400);
+  }
+  .type-row .meta {
+    font: 500 11px/1.3 ui-monospace, monospace;
+    color: var(--ink-400);
+    letter-spacing: .04em;
+    text-align: right;
+  }
+  .type-row .sample { color: var(--ink-900); }
+
+  /* ==========================================================
+     BUTTONS
+     ========================================================== */
+  .v-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border: 0;
+    cursor: pointer;
+    font: var(--type-cta);
+    border-radius: var(--radius-xs);
+    padding: 12px 20px;
+    transition: background-color .12s ease, color .12s ease,
+                border-color .12s ease, box-shadow .12s ease,
+                transform .12s ease;
+    white-space: nowrap;
+    letter-spacing: 0;
+    text-decoration: none;
+    line-height: 1;
+  }
+  .v-btn:focus-visible {
+    outline: 3px solid color-mix(in oklab, var(--valiu-purple) 45%, transparent);
+    outline-offset: 2px;
+  }
+  .v-btn svg { width: 16px; height: 16px; }
+
+  /* Primary — purple */
+  .v-btn--primary {
+    background: var(--valiu-purple);
+    color: var(--fg-on-brand);
+  }
+  .v-btn--primary:hover { background: var(--valiu-blue); }
+  .v-btn--primary:active { background: var(--valiu-indigo-press); }
+
+  /* Secondary — white with indigo-deep outline + text */
+  .v-btn--secondary {
+    background: var(--bg-surface);
+    color: var(--valiu-indigo-deep);
+    border: 1.5px solid var(--valiu-indigo-deep);
+  }
+  .v-btn--secondary:hover {
+    background: #F6FBFF;
+    color: var(--valiu-indigo-deep);
+    border-color: var(--valiu-indigo-deep);
+    box-shadow: 0 3px 6px 0 rgba(0,0,0,0.15);
+  }
+
+  /* Ghost / tertiary — just text */
+  .v-btn--ghost {
+    background: transparent;
+    color: var(--valiu-purple);
+    padding: 10px 12px;
+  }
+  .v-btn--ghost:hover { background: var(--valiu-purple-100); }
+
+  /* Danger */
+  .v-btn--danger {
+    background: var(--danger);
+    color: var(--fg-on-brand);
+  }
+  .v-btn--danger:hover { background: var(--danger-strong); }
+
+  /* Disabled */
+  .v-btn[disabled],
+  .v-btn--disabled {
+    background: var(--ink-300);
+    color: var(--ink-400);
+    border-color: transparent;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
+  .v-btn--lg { padding: 14px 28px; font-size: 15px; }
+  .v-btn--sm { padding: 8px 14px; font-size: 13px; }
+
+  /* Pill variant (seen on Marketing pages) */
+  .v-btn--pill { border-radius: var(--radius-full); padding: 12px 22px; }
+
+  .btn-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+
+  /* ==========================================================
+     FIELDS
+     ========================================================== */
+  .v-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 260px;
+  }
+  .v-field .lbl {
+    font: var(--type-label);
+    color: var(--ink-600);
+  }
+  .v-field .hint {
+    font: var(--type-caption);
+    color: var(--ink-400);
+  }
+  .v-field .err {
+    font: var(--type-caption);
+    color: var(--danger);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .v-input,
+  .v-select,
+  .v-textarea {
+    width: 100%;
+    font: var(--type-body-2);
+    padding: 12px 14px;
+    border: 1.5px solid var(--border-default);
+    background: var(--bg-surface);
+    color: var(--ink-900);
+    border-radius: var(--radius-sm);
+    outline: none;
+    transition: border-color .12s ease, box-shadow .12s ease;
+  }
+  .v-input::placeholder { color: var(--ink-400); }
+  .v-input:hover,
+  .v-select:hover,
+  .v-textarea:hover { border-color: var(--ink-900); }
+  .v-input:focus,
+  .v-select:focus,
+  .v-textarea:focus {
+    border-color: var(--valiu-blue);
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--valiu-blue) 20%, transparent);
+  }
+  /* Custom chevron for native <select>, 16px right margin */
+  .v-select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    padding-right: 48px;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23151522' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M6 9l6 6 6-6'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 16px center;
+    background-size: 16px 16px;
+  }
+  .v-select::-ms-expand { display: none; }
+
+  /* ----------------------------------------------------------------------
+     MONEY INPUT — amount-left, currency-right
+     Optional flag · single / paired-joined / paired-separated variants.
+     ---------------------------------------------------------------------- */
+  .money-input {
+    display: flex;
+    align-items: stretch;
+    border: 1.5px solid var(--border-default);
+    border-radius: var(--radius-sm);
+    background: #fff;
+    overflow: hidden;
+    min-height: 56px;
+  }
+  .money-input--joined { padding: 0; }
+  .money-input__half {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 6px 14px 8px;
+    min-width: 0;
+  }
+  .money-input__divider {
+    width: 1px;
+    background: var(--border-subtle);
+    align-self: stretch;
+    flex: none;
+  }
+  .money-input__title {
+    font-family: "Montserrat", var(--font-sans);
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--ink-900);
+    padding-top: 4px;
+  }
+  .money-input__field {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 32px;
+  }
+  .money-input__amount {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    background: transparent;
+    outline: none;
+    padding: 14px 8px 14px 14px;
+    font: 400 18px/1 "Montserrat", var(--font-sans);
+    color: var(--ink-900);
+    font-variant-numeric: tabular-nums;
+  }
+  .money-input__half .money-input__amount {
+    padding: 6px 4px;
+    font-size: 18px;
+  }
+  .money-input__cur {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 14px 0 8px;
+    color: var(--ink-500);
+    font: 700 13px/1 "Montserrat", var(--font-sans);
+  }
+  .money-input__half .money-input__cur { padding: 0 4px 0 8px; }
+  .money-input__cur .code { letter-spacing: .04em; }
+  .money-input__cur .flag {
+    display: flex;
+    padding: 3px;
+    align-items: center;
+    border-radius: 4px;
+    background: #F5F7FA;
+    box-shadow: 0 3px 6px 0 rgba(0,0,0,0.08);
+  }
+  .money-input__cur .flag-img {
+    display: block;
+    width: 20px;
+    height: 14px;
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .money-input__cur .flag-img svg { display: block; width: 100%; height: 100%; }
+  .money-input:focus-within {
+    border-color: var(--valiu-blue);
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--valiu-blue) 20%, transparent);
+  }
+  .v-dd { position: relative; }
+  .v-dd .v-dd-trigger {
+    width: 100%;
+    font: var(--type-body-2);
+    padding: 12px 48px 12px 14px;
+    border: 1.5px solid var(--border-default);
+    background: #fff;
+    color: var(--ink-900);
+    border-radius: var(--radius-sm);
+    outline: none;
+    text-align: left;
+    cursor: pointer;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23151522' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M6 9l6 6 6-6'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 16px center;
+    background-size: 16px 16px;
+  }
+  .v-dd.is-open .v-dd-trigger {
+    border-color: var(--valiu-blue);
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--valiu-blue) 20%, transparent);
+  }
+  .v-dd .v-dd-menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 8px 4px 8px 8px;
+    align-items: flex-start;
+    gap: 8px;
+    border-radius: 8px;
+    background: #fff;
+    box-shadow: 0 3px 6px 0 rgba(0,0,0,0.15);
+    z-index: 2;
+  }
+  .v-dd .v-dd-item {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    font: var(--type-body-2);
+    color: var(--ink-900);
+  }
+  .v-dd .v-dd-item:hover { background: #F6FBFF; color: var(--valiu-blue); }
+  .v-dd .v-dd-item[aria-selected="true"] { background: var(--valiu-indigo-100); color: var(--valiu-indigo-deep); font-weight: 600; }
+  .v-dd .v-dd-item .check { width: 14px; height: 14px; flex: none; opacity: 0; }
+  .v-dd .v-dd-item[aria-selected="true"] .check { opacity: 1; }
+  .v-input--error { border-color: var(--danger); }
+  .v-input--error:focus { box-shadow: 0 0 0 3px color-mix(in oklab, var(--danger) 20%, transparent); }
+  .v-input[disabled] {
+    background: var(--ink-200);
+    color: var(--ink-400);
+    border-color: var(--border-subtle);
+    cursor: not-allowed;
+  }
+  .v-input-group {
+    display: flex;
+    align-items: stretch;
+    border: 1.5px solid var(--border-default);
+    border-radius: var(--radius-sm);
+    background: var(--bg-surface);
+    overflow: hidden;
+  }
+  .v-input-group:focus-within {
+    border-color: var(--valiu-purple);
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--valiu-purple) 20%, transparent);
+  }
+  .v-input-group .adorn {
+    display: flex;
+    align-items: center;
+    padding: 0 14px;
+    background: var(--ink-200);
+    color: var(--ink-500);
+    font: var(--type-label);
+    border-right: 1px solid var(--border-subtle);
+  }
+  .v-input-group .adorn--end {
+    border-right: 0;
+    border-left: 1px solid var(--border-subtle);
+  }
+  .v-input-group .v-input {
+    border: 0;
+    flex: 1;
+    border-radius: 0;
+  }
+  .v-input-group .v-input:focus { box-shadow: none; }
+
+  /* ==========================================================
+     TABS
+     ========================================================== */
+  /* ==========================================================
+     TABS — atom + group
+     Active: V20 bg, blue border, bold, soft shadow.
+     Inactive: text only. Hover: white bg + shadow.
+     ========================================================== */
+  .v-tabs {
+    display: flex;
+    gap: 4px;
+    border-bottom: 1px solid var(--border-subtle);
+    width: fit-content;
+  }
+  .v-tab {
+    appearance: none;
+    background: transparent;
+    border: 0;
+    border-radius: 8px 8px 0 0;
+    padding: 10px 22px;
+    font: 400 14px/1 "Montserrat", var(--font-sans);
+    color: var(--ink-500);
+    cursor: pointer;
+    margin-bottom: -1px;
+    transition: background .12s, color .12s, border-color .12s, box-shadow .12s;
+  }
+  .v-tab:hover { background: #fff; color: var(--ink-900); box-shadow: 0 3px 6px 0 rgba(0,0,0,0.08); }
+  .v-tab[aria-selected="true"] {
+    background: #F6FBFF;
+    color: var(--ink-900);
+    font-weight: 700;
+    border: 1px solid var(--valiu-blue);
+    border-bottom-color: #fff;
+    box-shadow: 0 3px 6px 0 rgba(0,0,0,0.08);
+  }
+
+  /* ==========================================================
+     TAGS  (.v-badge kept as legacy alias for in-table tags)
+     Five types · two sizes (sm/md) · filled by default.
+     ========================================================== */
+  .v-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    font-family: "Montserrat", var(--font-sans);
+    font-weight: 600;
+    font-size: 12px;
+    line-height: 1;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    white-space: nowrap;
+  }
+  .v-badge--sm  { padding: 3px 8px; font-size: 11px; }
+  .v-badge--outline { background: transparent !important; }
+  .v-badge--success    { background: #D7F0DC; color: #228847; border-color: #D7F0DC; }
+  .v-badge--success.v-badge--outline    { color: #228847; border-color: #228847; }
+  .v-badge--process,
+  .v-badge--warning    { background: #FCEFC0; color: #B58A00; border-color: #FCEFC0; }
+  .v-badge--process.v-badge--outline,
+  .v-badge--warning.v-badge--outline    { color: #B58A00; border-color: #B58A00; }
+  .v-badge--error,
+  .v-badge--danger     { background: #F5D8D8; color: #B40909; border-color: #F5D8D8; }
+  .v-badge--error.v-badge--outline,
+  .v-badge--danger.v-badge--outline     { color: #B40909; border-color: #B40909; }
+  .v-badge--descriptive,
+  .v-badge--info       { background: #D8ECFF; color: #0086FF; border-color: #D8ECFF; }
+  .v-badge--descriptive.v-badge--outline,
+  .v-badge--info.v-badge--outline       { color: #0086FF; border-color: #0086FF; }
+  .v-badge--neutral    { background: #E5E7EB; color: #5B5B64; border-color: #E5E7EB; }
+  .v-badge--neutral.v-badge--outline    { color: #5B5B64; border-color: #5B5B64; }
+  .v-badge .dot {
+    width: 6px; height: 6px; border-radius: 999px;
+    background: currentColor;
+    flex: none;
+  }
+
+  /* ==========================================================
+     ALERTS — card with X close button
+     4 types: info / error / warning / success
+     ========================================================== */
+  .v-alert {
+    border-radius: 12px;
+    padding: 14px 16px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    border: 1px solid;
+    background: #fff;
+  }
+  .v-alert .body-col { flex: 1; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .v-alert .title { font: 700 14px/1.3 "Montserrat", var(--font-sans); color: var(--ink-900); margin: 0; }
+  .v-alert .body  { font: 400 13px/1.4 "Montserrat", var(--font-sans); color: var(--ink-700); margin: 0; }
+  .v-alert .action {
+    margin-top: 8px;
+    display: inline-flex; align-items: center; gap: 4px;
+    color: var(--ink-900);
+    font: 700 13px/1 "Montserrat", var(--font-sans);
+    text-decoration: underline;
+    background: transparent; border: 0; padding: 0; cursor: pointer;
+    align-self: flex-start;
+  }
+  .v-alert .action svg { width: 14px; height: 14px; }
+  .v-alert .close {
+    flex: none;
+    width: 24px; height: 24px;
+    border-radius: 999px;
+    background: #5B5B64;
+    color: #fff;
+    border: 0;
+    cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .v-alert .close svg { width: 12px; height: 12px; }
+
+  .v-alert--info    { background: #E8F4FF; border-color: #B9DDFF; }
+  .v-alert--error,
+  .v-alert--danger  { background: #F5D8D8; border-color: #E8A6A6; }
+  .v-alert--warning { background: #FCEFC0; border-color: #F5DA8C; }
+  .v-alert--success { background: #D7F0DC; border-color: #A8D8B3; }
+
+  /* ==========================================================
+     CARDS / ACCOUNTS
+     ========================================================== */
+  .demo-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+  }
+
+  /* ACCOUNT CARD — Figma spec
+     246 wide · 16/24/12/24 padding · column · 24px gap · 8 radius · Low shadow */
+  .account-card {
+    display: flex;
+    width: 246px;
+    padding: 16px 24px 12px 24px;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 24px;
+    background: #fff;
+    border-radius: 8px;
+    border: 1px solid var(--border-subtle);
+    box-shadow: var(--shadow-xs);
+    transition: background .14s, border-color .14s;
+  }
+  .account-card:hover {
+    border-color: var(--valiu-blue);          /* #0086FF */
+    background: var(--valiu-blue-bg);         /* #F6FBFF */
+  }
+
+  .account-card .head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+  }
+  .account-card .flag {
+    display: flex;
+    padding: 4px;
+    align-items: center;
+    flex: none;
+    border-radius: 4px;
+    background: #F5F7FA;                       /* Grey 4 */
+    box-shadow: 0 3px 6px 0 rgba(0,0,0,0.08);  /* Mid */
+  }
+  .account-card .flag .flag-img {
+    display: block;
+    width: 24px;
+    height: 16px;
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .account-card .flag .flag-img svg { display:block; width:100%; height:100%; }
+
+  .account-card .mask {
+    color: var(--ink-900);
+    text-align: right;
+    font-family: "Montserrat", var(--font-sans);
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 12px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .account-card .divider {
+    height: 0;
+    align-self: stretch;
+    border: 0;
+    border-top: 1px solid var(--border-subtle);
+    margin: 0;
+  }
+
+  .account-card .info {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .account-card .balance {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+  }
+  .account-card .balance .amount {
+    color: var(--ink-900);
+    font-family: "Montserrat", var(--font-sans);
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 16px;
+  }
+  .account-card .balance .cur {
+    color: var(--ink-400);
+    font-family: "Montserrat", var(--font-sans);
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 12px;
+    letter-spacing: .04em;
+  }
+  .account-card .alias {
+    color: var(--ink-900);
+    font-family: "Montserrat", var(--font-sans);
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 12px;
+  }
+
+  /* FAB tile used inside account card actions */
+  .account-card .actions {
+    display: flex;
+    gap: 16px;
+    width: 100%;
+  }
+  .account-card .fab {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    background: transparent;
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+    font-family: var(--font-sans);
+  }
+  .account-card .fab .tile {
+    display: flex;
+    padding: 8px;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    border-radius: 8px;
+    border: 1px solid var(--valiu-indigo);     /* #3D46CC */
+    background: #fff;
+    color: var(--valiu-indigo);
+    box-shadow: 0 3px 6px 0 rgba(0,0,0,0.15);  /* High */
+    transition: background .12s, border-color .12s, color .12s, box-shadow .12s;
+  }
+  .account-card .fab .tile svg { width: 16px; height: 16px; display: block; }
+  .account-card .fab:hover .tile {
+    background: #E8F7F9;
+    border-color: var(--valiu-blue);
+    color: var(--valiu-blue);
+  }
+  .account-card .fab:active .tile {
+    background: #fff;
+    border-color: var(--valiu-indigo-press);
+    color: var(--valiu-indigo-press);
+    box-shadow: none;
+    transform: translateY(1px);
+  }
+  .account-card .fab .label {
+    color: var(--ink-900);
+    text-align: right;
+    font-family: "Montserrat", var(--font-sans);
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 12px;
+  }
+
+  /* ==========================================================
+     DATA TABLE
+     ========================================================== */
+  .v-table-wrap {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+  .v-table {
+    width: 100%;
+    border-collapse: collapse;
+    font: var(--type-body-2);
+  }
+  .v-table thead th {
+    background: var(--ink-100);
+    color: var(--ink-500);
+    text-align: left;
+    font: var(--type-overline);
+    letter-spacing: .1em;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .v-table tbody td {
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--border-subtle);
+    color: var(--ink-900);
+  }
+  .v-table tbody tr:last-child td { border-bottom: 0; }
+  .v-table tbody tr:hover { background: #F6FBFF; }
+  .v-table .amount { font-variant-numeric: tabular-nums; font-weight: 600; }
+  .v-table .amount.neg { color: var(--danger); }
+  .v-table .amount.pos { color: var(--success-strong); }
+
+  /* ==========================================================
+     ICON GRID
+     ========================================================== */
+  .icon-grid {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 12px;
+  }
+  .icon-cell {
+    aspect-ratio: 1;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 10px 6px;
+    transition: transform .12s ease, box-shadow .12s ease;
+  }
+  .icon-cell:hover { box-shadow: var(--shadow-xs); transform: translateY(-1px); }
+  .icon-cell svg { width: 22px; height: 22px; color: var(--ink-900); }
+  .icon-cell .lbl {
+    font: 500 10px/1.1 var(--font-sans);
+    color: var(--ink-500);
+    text-align: center;
+    letter-spacing: .02em;
+  }
+
+  /* ==========================================================
+     Radio / Check / Toggle
+     ========================================================== */
+  .ctrl-row { display: flex; gap: 24px; flex-wrap: wrap; align-items: center; }
+
+  .v-check {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font: var(--type-body-2);
+    color: var(--ink-900);
+    cursor: pointer;
+    user-select: none;
+  }
+  .v-check input {
+    appearance: none;
+    width: 18px; height: 18px;
+    border: 1.5px solid var(--border-default);
+    border-radius: 4px;
+    position: relative;
+    cursor: pointer;
+    background: var(--bg-surface);
+    transition: border-color .1s, background .1s;
+  }
+  .v-check input:checked {
+    background: var(--valiu-blue);
+    border-color: var(--valiu-blue);
+  }
+  .v-check input:checked::after {
+    content: "";
+    position: absolute;
+    left: 4.5px; top: 1.5px;
+    width: 5px; height: 9px;
+    border: solid var(--ink-0);
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+  }
+
+  .v-radio {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font: var(--type-body-2);
+    color: var(--ink-900);
+    cursor: pointer;
+    user-select: none;
+  }
+  .v-radio input {
+    appearance: none;
+    width: 18px; height: 18px;
+    border: 1.5px solid var(--border-default);
+    border-radius: 999px;
+    position: relative;
+    cursor: pointer;
+  }
+  .v-radio input:checked { border-color: var(--valiu-blue); border-width: 2px; }
+  .v-radio input:checked::after {
+    content: "";
+    position: absolute;
+    inset: 3px;
+    border-radius: 999px;
+    background: var(--valiu-blue);
+  }
+
+  .v-toggle {
+    position: relative;
+    display: inline-block;
+    width: 44px; height: 24px;
+  }
+  .v-toggle input { opacity: 0; width: 0; height: 0; }
+  .v-toggle .track {
+    position: absolute; inset: 0;
+    background: var(--ink-300);
+    border-radius: 999px;
+    transition: background .15s;
+  }
+  .v-toggle .track::before {
+    content: "";
+    position: absolute;
+    height: 20px; width: 20px;
+    left: 2px; top: 2px;
+    background: #fff;
+    border-radius: 999px;
+    transition: transform .15s;
+    box-shadow: 0 1px 2px rgba(0,0,0,.25);
+  }
+  .v-toggle input:checked + .track { background: var(--valiu-blue); }
+  .v-toggle input:checked + .track::before { transform: translateX(20px); }
+
+  /* ==========================================================
+     AVATARS
+     ========================================================== */
+  .avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    background: var(--valiu-purple-200);
+    color: var(--valiu-purple-deep);
+    font: 700 14px/1 var(--font-sans);
+  }
+  .avatar-32 { width: 32px; height: 32px; font-size: 13px; }
+  .avatar-40 { width: 40px; height: 40px; }
+  .avatar-56 { width: 56px; height: 56px; font-size: 18px; }
+
+  /* ==========================================================
+     NAV
+     ========================================================== */
+  /* SIDEBAR — app shell
+     240 wide · white bg · brand block, account row, nav, logout */
+  .sidenav-demo {
+    display: flex;
+    width: 240px;
+    padding: 24px 16px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    background: #fff;
+    border-radius: 8px;
+    border: 1px solid var(--border-subtle);
+    box-shadow: var(--shadow-xs);
+    min-height: 640px;
+  }
+  /* Brand block: dark glyph tile + Valiu wordmark */
+  .sidenav-demo .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 4px 4px 20px;
+  }
+  .sidenav-demo .brand .mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: var(--ink-900);
+    color: #fff;
+    flex: none;
+  }
+  .sidenav-demo .brand .mark svg { width: 18px; height: 18px; }
+  .sidenav-demo .brand .word {
+    color: var(--ink-900);
+    font: 700 22px/1 var(--font-sans);
+    letter-spacing: -0.02em;
+  }
+
+  /* Account row */
+  .sidenav-demo .account {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 4px;
+    border-top: 1px solid var(--border-subtle);
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .sidenav-demo .account .who { flex: 1; min-width: 0; }
+  .sidenav-demo .account .name {
+    font: 600 13px/1.2 var(--font-sans);
+    color: var(--ink-900);
+  }
+  .sidenav-demo .account .org {
+    margin-top: 3px;
+    font: 400 12px/1.2 var(--font-sans);
+    color: var(--ink-500);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .sidenav-demo .account .avatar {
+    width: 28px; height: 28px;
+    border-radius: 999px;
+    background: #DDE7F2 url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 28'><circle cx='14' cy='10.5' r='4.2' fill='%23A0875A'/><path d='M5 28c1.5-5.5 5-8 9-8s7.5 2.5 9 8z' fill='%234A90D9'/><path d='M9 11c0-3 2-5 5-5s5 2 5 5v2H9z' fill='%23222'/></svg>") center/cover no-repeat;
+    flex: none;
+  }
+  .sidenav-demo .account .caret {
+    width: 16px; height: 16px;
+    color: var(--ink-500);
+    flex: none;
+  }
+
+  /* Nav list */
+  .sidenav-demo .nav {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 24px 0 0;
+    flex: 1;
+  }
+  .sidenav-demo a {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    color: var(--ink-800);
+    font: 500 14px/1 var(--font-sans);
+    text-decoration: none;
+    cursor: pointer;
+    transition: background .12s, color .12s;
+  }
+  .sidenav-demo a svg { width: 18px; height: 18px; flex: none; opacity: .9; }
+  .sidenav-demo a:hover:not(.active) {
+    background: #F6FBFF;
+    color: var(--valiu-blue);
+  }
+  .sidenav-demo a.active {
+    background: #E8F4FF;
+    color: var(--valiu-blue);
+    font-weight: 600;
+  }
+  .sidenav-demo a.active svg { opacity: 1; }
+  .sidenav-demo .logout {
+    margin-top: 12px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  /* ==========================================================
+     MODALS
+     Centered dialog · 480px default · radius-lg · shadow-lg
+     Header (title + close) / Body / Footer (1 or 2 actions, or none)
+     ========================================================== */
+  .v-modal-stage {
+    position: relative;
+    background: linear-gradient(180deg, #F4F6F8 0%, #E9EDF2 100%);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-subtle);
+    padding: 40px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 360px;
+    overflow: hidden;
+  }
+  .v-modal-stage::before {
+    content: "";
+    position: absolute; inset: 0;
+    background: rgba(20,24,32,0.32);
+    border-radius: inherit;
+  }
+  .v-modal {
+    position: relative;
+    width: 100%;
+    max-width: 480px;
+    background: var(--bg-surface);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    border: 1px solid var(--border-subtle);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .v-modal--sm { max-width: 400px; }
+  .v-modal--lg { max-width: 560px; }
+
+  .v-modal__header {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 24px 24px 8px;
+  }
+  .v-modal__title {
+    flex: 1;
+    margin: 0;
+    font: 700 18px/1.3 var(--font-sans);
+    color: var(--ink-900);
+    letter-spacing: -0.01em;
+  }
+  .v-modal__close {
+    appearance: none;
+    background: transparent;
+    border: 0;
+    padding: 6px;
+    margin: -6px -6px 0 0;
+    border-radius: 8px;
+    color: var(--ink-500);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .v-modal__close:hover { background: var(--ink-100); color: var(--ink-900); }
+  .v-modal__close svg { width: 20px; height: 20px; }
+
+  .v-modal__body {
+    padding: 8px 24px 20px;
+    color: var(--ink-700);
+    font: 400 14px/1.55 var(--font-sans);
+  }
+  .v-modal__body p { margin: 0 0 12px; }
+  .v-modal__body p:last-child { margin-bottom: 0; }
+
+  .v-modal__footer {
+    display: flex;
+    align-items: center;
+    justify-content: stretch;
+    gap: 8px;
+    padding: 16px 24px 24px;
+    border-top: 1px solid var(--border-subtle);
+    background: var(--bg-surface);
+  }
+  .v-modal__footer .v-btn { flex: 1; justify-content: center; }
+  .v-modal__footer--start { justify-content: flex-start; }
+  .v-modal__footer--split { justify-content: space-between; }
+  .v-modal--no-footer .v-modal__body { padding-bottom: 24px; }
+
+  /* Iconed header variant */
+  .v-modal__hero {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px; height: 48px;
+    border-radius: 999px;
+    flex: none;
+  }
+  .v-modal__hero svg { width: 24px; height: 24px; }
+  .v-modal__hero--success { background: var(--success-pale); color: var(--success-strong); }
+  .v-modal__hero--danger  { background: var(--danger-pale); color: var(--danger-strong); }
+  .v-modal__hero--warning { background: var(--warning-bg); color: #8A5A00; }
+  .v-modal__hero--info    { background: var(--valiu-blue-bg); color: var(--valiu-blue); }
+  .v-modal__hero--brand   { background: var(--valiu-purple-100); color: var(--valiu-purple); }
+
+  /* ==========================================================
+     DRAWERS
+     Right side sheet · FIXED 440px width · slides from right
+     Sticky header + sticky footer · body is the only scroll surface
+     ========================================================== */
+  .v-drawer-stage {
+    position: relative;
+    background: var(--bg-canvas);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-subtle);
+    overflow: hidden;
+    height: 540px;
+    display: flex;
+  }
+  .v-drawer-stage::before {
+    content: "";
+    position: absolute; inset: 0;
+    background: rgba(20,24,32,0.32);
+  }
+  .v-drawer {
+    position: relative;
+    margin-left: auto;
+    width: 440px;          /* fixed, never changes */
+    flex: none;
+    background: var(--bg-surface);
+    box-shadow: var(--shadow-lg);
+    height: 100%;
+    overflow-y: auto;      /* the ONLY scroll surface in the drawer */
+    overflow-x: hidden;
+    display: block;
+  }
+  .v-drawer--left { margin-left: 0; margin-right: auto; }
+
+  .v-drawer__header {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 20px 20px 16px;
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .v-drawer__title {
+    flex: 1;
+    margin: 0;
+    font: 700 16px/1.3 var(--font-sans);
+    color: var(--ink-900);
+    letter-spacing: -0.01em;
+  }
+  .v-drawer__sub {
+    font: 400 12px/1.4 var(--font-sans);
+    color: var(--ink-500);
+    margin-top: 2px;
+  }
+  .v-drawer__close {
+    appearance: none;
+    background: transparent;
+    border: 0;
+    padding: 6px;
+    border-radius: 8px;
+    color: var(--ink-500);
+    cursor: pointer;
+    display: inline-flex;
+  }
+  .v-drawer__close:hover { background: var(--ink-100); color: var(--ink-900); }
+  .v-drawer__close svg { width: 20px; height: 20px; }
+
+  .v-drawer__body {
+    padding: 20px;
+    color: var(--ink-700);
+    font: 400 14px/1.55 var(--font-sans);
+  }
+  .v-drawer__footer {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 16px 20px;
+    background: var(--bg-surface);
+    border-top: 1px solid var(--border-subtle);
+  }
+  .v-drawer__footer .v-btn { flex: 1; justify-content: center; }
+  .v-drawer--no-footer .v-drawer__body { padding-bottom: 24px; }
+
+  /* Drawer info row helper */
+  .v-drawer-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .v-drawer-row:last-child { border-bottom: 0; }
+  .v-drawer-row .lbl { color: var(--ink-500); font-size: 13px; }
+  .v-drawer-row .val { color: var(--ink-900); font-weight: 600; font-size: 13px; text-align: right; }
+
+  /* Mini chart used inside drawer demo */
+  .v-drawer-chart {
+    height: 120px;
+    background: linear-gradient(180deg, var(--valiu-blue-bg) 0%, transparent 100%);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-subtle);
+    display: flex;
+    align-items: flex-end;
+    gap: 4px;
+    padding: 12px;
+  }
+  .v-drawer-chart span {
+    flex: 1;
+    background: linear-gradient(180deg, var(--valiu-blue) 0%, var(--valiu-blue-soft) 100%);
+    border-radius: 2px 2px 0 0;
+    min-height: 4px;
+  }
+
+  /* ==========================================================
+     KPI Card (deprecated — kept for legacy refs, not exposed in kit)
+     ========================================================== */
+  .kpi {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .kpi .tag {
+    font: var(--type-overline);
+    color: var(--ink-400);
+    letter-spacing: .14em;
+  }
+  .kpi .val {
+    font: 700 32px/1.1 var(--font-sans);
+    letter-spacing: -0.015em;
+    color: var(--ink-900);
+    font-variant-numeric: tabular-nums;
+  }
+  .kpi .delta {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font: var(--type-caption);
+  }
+  .delta--pos { color: var(--success-strong); }
+  .delta--neg { color: var(--danger); }
+
+  /* spark — simple decorative bar chart */
+  .spark {
+    display: flex;
+    align-items: flex-end;
+    gap: 3px;
+    height: 32px;
+  }
+  .spark span {
+    flex: 1;
+    background: linear-gradient(180deg, var(--valiu-blue-soft), var(--valiu-purple));
+    border-radius: 2px;
+    opacity: .85;
+  }
+
+  /* ==========================================================
+     Dot / stepper
+     Spec: 24×24 circle (Mid shadow) · V20 bg + 0.5px Valiu Light border
+     Active/done text ink-900 · Off bg Grey4 + Grey2 text
+     Connectors: 4px mint (#E8F7F9)
+     ========================================================== */
+  .stepper {
+    display: flex;
+    padding: 8px 0;
+    justify-content: space-between;
+    align-items: center;
+    border-radius: 8px;
+    box-shadow: 0 3px 6px 0 rgba(0,0,0,0.08);
+    background: #fff;
+  }
+  .stepper .step {
+    display: flex;
+    width: 44px;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+    z-index: 1;
+  }
+  .stepper .step .num {
+    width: 24px;
+    height: 24px;
+    border-radius: 16px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    background: #F5F7FA;
+    border: 0 solid transparent;
+    box-shadow: 0 3px 6px 0 rgba(0,0,0,0.08);
+    color: #DCDCDE;
+    font: 700 12px/1 "Montserrat", var(--font-sans);
+  }
+  .stepper .step .lbl {
+    font: 700 12px/1 "Montserrat", var(--font-sans);
+    color: #151522;
+    white-space: nowrap;
+  }
+  .stepper .step.active .num,
+  .stepper .step.done .num {
+    background: #F6FBFF;
+    border: 0.5px solid #0086FF;
+    color: #151522;
+  }
+  .stepper .step:not(.active):not(.done) .lbl {
+    color: #DCDCDE;
+  }
+  .stepper .bar {
+    flex: 1;
+    height: 4px;
+    background: #E8F7F9;
+    margin: 0 4px;
+    align-self: flex-start;
+    margin-top: 18px;
+    border-radius: 2px;
+  }
+
+  /* ==========================================================
+     AVATAR + LIST ROWS (recipients)
+     ========================================================== */
+  .list-row {
+    display: grid;
+    grid-template-columns: 40px 1fr auto;
+    gap: 14px;
+    align-items: center;
+    padding: 12px 14px;
+    border-radius: var(--radius-sm);
+  }
+  .list-row:hover { background: var(--valiu-purple-100); }
+  .list-row .title { font: var(--type-label); color: var(--ink-900); }
+  .list-row .sub   { font: var(--type-caption); color: var(--ink-400); }
+  .list-row .amt   { font: 700 14px/1 var(--font-sans); color: var(--ink-900); font-variant-numeric: tabular-nums; }
+
+  /* ==========================================================
+     SHADOW & RADIUS SAMPLER
+     ========================================================== */
+  .sampler-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .sampler-cell {
+    background: var(--bg-surface);
+    height: 120px;
+    display: flex;
+    align-items: flex-end;
+    padding: 14px;
+    font: var(--type-caption);
+    color: var(--ink-500);
+    border: 1px solid var(--border-subtle);
+  }
+  .sampler-cell--s1 { box-shadow: var(--shadow-xs); }
+  .sampler-cell--s2 { box-shadow: var(--shadow-sm); }
+  .sampler-cell--s3 { box-shadow: var(--shadow-md); }
+  .sampler-cell--s4 { box-shadow: var(--shadow-lg); }
+
+  .sampler-cell--r1 { border-radius: var(--radius-xs); }
+  .sampler-cell--r2 { border-radius: var(--radius-sm); }
+  .sampler-cell--r3 { border-radius: var(--radius-lg); }
+  .sampler-cell--r4 { border-radius: var(--radius-2xl); }
+
+  /* ==========================================================
+     2-col / 3-col helpers
+     ========================================================== */
+  .cols-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .cols-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+  .cols-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+
+  /* ==========================================================
+     Figma-style caption footer under group titles
+     ========================================================== */
+  .group-title {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin: 28px 0 12px;
+  }
+  .group-title h3 {
+    font: var(--type-h2);
+    margin: 0;
+    color: var(--ink-900);
+    letter-spacing: -0.005em;
+  }
+  .group-title small {
+    font: var(--type-caption);
+    color: var(--ink-400);
+  }
+
+</style>
+</head>
+<body>
+
+<!-- =================================================================== -->
+<!-- TOPBAR                                                              -->
+<!-- =================================================================== -->
+<div class="uk-topbar">
+  <span class="brand" aria-label="Valiu logo">
+    <!-- Canonical lockup: tile glyph + 'Valiu' wordmark (matches preview/brand.html) -->
+    <span class="mark" aria-hidden="true">
+      <svg viewBox="0 0 16.195 16.195" fill="currentColor"><use href="#valiu-glyph"></use></svg>
+    </span>
+    <svg class="wm" viewBox="0 0 138.88 51.533" fill="currentColor" aria-hidden="true">
+      <use href="#valiu-wordmark"></use>
+    </svg>
+  </span>
+  <span class="meta">Design System · UI Kit · v1.0</span>
+  <span class="chip">Core components</span>
+</div>
+
+<!-- Define the logo once as a reusable symbol -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="valiu-wordmark" viewBox="0 0 138.88 51.533">
+    <path d="M 9.562 16.756 L 17.115 35.811 C 17.294 36.256 17.925 36.256 18.104 35.811 L 25.752 16.75 C 25.992 16.15 26.579 15.75 27.232 15.75 L 33.657 15.75 C 34.802 15.75 35.573 16.911 35.126 17.956 L 21.5 49.778 C 21.249 50.361 20.674 50.744 20.031 50.744 L 15.026 50.744 C 14.383 50.744 13.802 50.361 13.556 49.772 L 0.126 17.95 C -0.315 16.906 0.456 15.75 1.595 15.75 L 8.081 15.75 C 8.735 15.75 9.327 16.15 9.562 16.756 Z" fill="currentColor"/>
+    <path d="M 59.875 27.294 L 65.126 27.294 C 66.009 27.294 66.718 28.006 66.718 28.878 L 66.718 49.156 C 66.718 50.033 66.003 50.739 65.126 50.739 L 59.875 50.739 C 58.992 50.739 58.283 50.028 58.283 49.156 L 58.283 48.939 C 58.283 48.689 57.975 48.572 57.808 48.761 C 55.858 50.95 53.093 51.528 50.953 51.528 C 48.422 51.528 45.311 50.794 42.461 47.806 C 40.193 45.394 39.087 42.717 39.087 39.2 C 39.087 34.794 40.83 31.7 42.73 29.811 C 44.735 27.817 47.847 26.506 51.221 26.506 C 54.595 26.506 56.668 27.972 57.83 29.078 C 58.003 29.244 58.288 29.117 58.288 28.878 C 58.288 28 59.003 27.294 59.88 27.294 L 59.875 27.294 Z M 49.417 35.161 C 48.255 36.261 47.73 37.783 47.73 38.989 C 47.73 40.356 48.311 41.822 49.366 42.817 C 50.266 43.656 51.741 44.389 53.165 44.389 C 54.59 44.389 55.908 43.811 56.964 42.761 C 57.702 42.028 58.545 40.872 58.545 38.983 C 58.545 37.883 58.227 36.411 56.908 35.156 C 56.115 34.422 54.903 33.633 53.109 33.633 C 52.054 33.633 50.629 34 49.417 35.156 L 49.417 35.161 Z" fill="currentColor"/>
+    <path d="M 85.188 14.083 L 85.188 49.156 C 85.188 50.033 84.473 50.739 83.595 50.739 L 78.344 50.739 C 77.461 50.739 76.752 50.028 76.752 49.156 L 76.752 14.083 C 76.752 13.206 77.467 12.5 78.344 12.5 L 83.595 12.5 C 84.478 12.5 85.188 13.211 85.188 14.083 Z" fill="currentColor"/>
+    <path d="M 98.953 12.833 C 101.925 12.583 104.361 15 104.104 17.961 C 103.914 20.211 102.065 22.05 99.802 22.244 C 96.825 22.494 94.394 20.078 94.646 17.117 C 94.841 14.867 96.69 13.028 98.953 12.839 L 98.953 12.833 Z M 103.595 28.878 L 103.595 49.156 C 103.595 50.033 102.88 50.739 102.003 50.739 L 96.752 50.739 C 95.869 50.739 95.16 50.028 95.16 49.156 L 95.16 28.878 C 95.16 28 95.875 27.294 96.752 27.294 L 102.003 27.294 C 102.886 27.294 103.595 28.006 103.595 28.878 Z" fill="currentColor"/>
+    <path d="M 120.411 27.294 C 121.294 27.294 122.003 28.006 122.003 28.878 L 122.003 40.406 C 122.003 41.35 122.16 42.817 123.271 43.817 C 124.115 44.55 125.221 44.711 126.227 44.711 C 127.283 44.711 128.283 44.606 129.232 43.717 C 130.288 42.667 130.445 41.461 130.445 40.411 L 130.445 28.883 C 130.445 28.006 131.16 27.3 132.037 27.3 L 137.288 27.3 C 138.171 27.3 138.88 28.011 138.88 28.883 L 138.88 41.933 C 138.88 43.928 138.724 46.078 136.612 48.228 C 133.713 51.217 129.651 51.533 126.428 51.533 C 122.892 51.533 118.568 51.167 115.774 48.178 C 113.981 46.289 113.556 44.189 113.556 41.933 L 113.556 28.883 C 113.556 28.006 114.271 27.3 115.149 27.3 L 120.4 27.3 L 120.411 27.294 Z" fill="currentColor"/>
+  </symbol>
+
+  <!-- Glyph mark (rounded square with inset rounded square + small inner rect) -->
+  <symbol id="valiu-glyph" viewBox="0 0 16.195 16.195">
+    <path d="M 15.39 0 C 15.833 0 16.195 0.363 16.195 0.807 L 16.195 9.384 C 16.195 9.601 16.111 9.803 15.958 9.956 L 9.936 15.962 C 9.786 16.111 9.581 16.195 9.367 16.195 L 0.807 16.195 C 0.363 16.195 0 15.833 0 15.39 L 0 6.893 C 0 6.679 0.084 6.473 0.233 6.324 L 6.28 0.238 C 6.433 0.085 6.639 0 6.853 0 L 15.39 0 Z M 4.075 3.269 C 3.632 3.269 3.269 3.632 3.269 4.075 L 3.269 12.12 C 3.269 12.564 3.632 12.927 4.075 12.927 L 12.12 12.927 C 12.564 12.927 12.927 12.564 12.927 12.12 L 12.927 4.075 C 12.927 3.632 12.564 3.269 12.12 3.269 L 4.075 3.269 Z M 9.823 5.506 C 10.268 5.506 10.629 5.867 10.629 6.313 L 10.629 9.831 C 10.629 10.276 10.268 10.637 9.823 10.637 L 6.305 10.637 C 5.86 10.637 5.498 10.276 5.498 9.831 L 5.498 6.313 C 5.498 5.867 5.859 5.506 6.305 5.506 L 9.823 5.506 Z" fill="currentColor" fill-rule="nonzero"/>
+  </symbol>
+
+  <!-- Core icon symbols (inlined paths so we don't depend on external files) -->
+  <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></symbol>
+  <symbol id="i-arrow-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></symbol>
+  <symbol id="i-arrow-up" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></symbol>
+  <symbol id="i-arrow-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12l7 7 7-7"/></symbol>
+  <symbol id="i-chevron-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></symbol>
+  <symbol id="i-chevron-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></symbol>
+  <symbol id="i-cog" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06A2 2 0 1 1 4.21 17l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06A2 2 0 1 1 7 4.21l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></symbol>
+  <symbol id="i-warn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></symbol>
+  <symbol id="i-check-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></symbol>
+  <symbol id="i-dashboard" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></symbol>
+  <symbol id="i-wallet" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+  <symbol id="i-doc" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></symbol>
+  <symbol id="i-credit-card" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></symbol>
+  <symbol id="i-filter" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></symbol>
+  <symbol id="i-more-v" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.06 10.06 0 0 1 12 20c-7 0-11-8-11-8a19 19 0 0 1 4.22-5.39"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></symbol>
+  <symbol id="i-calculator" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="11" x2="8" y2="11"/><line x1="12" y1="11" x2="12" y2="11"/><line x1="16" y1="11" x2="16" y2="11"/><line x1="8" y1="15" x2="8" y2="15"/><line x1="12" y1="15" x2="12" y2="15"/><line x1="16" y1="15" x2="16" y2="15"/><line x1="8" y1="19" x2="8" y2="19"/><line x1="12" y1="19" x2="12" y2="19"/><line x1="16" y1="19" x2="16" y2="19"/></symbol>
+  <symbol id="i-trending-up" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></symbol>
+  <symbol id="i-logout" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></symbol>
+  <symbol id="i-share" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></symbol>
+  <symbol id="i-mail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22 6 12 13 2 6"/></symbol>
+  <symbol id="i-calendar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></symbol>
+  <symbol id="i-help" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></symbol>
+  <symbol id="i-globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></symbol>
+  <symbol id="i-bank" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10h18M5 10v9M19 10v9M3 19h18"/><path d="M12 3l9 5H3l9-5z"/></symbol>
+  <symbol id="i-bolt" viewBox="0 0 24 24" fill="currentColor"><polygon points="13 2 3 14 11 14 10 22 21 10 13 10 13 2"/></symbol>
+  <symbol id="i-swap" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3l4 4-4 4"/><path d="M21 7H9a4 4 0 0 0-4 4v2"/><path d="M7 21l-4-4 4-4"/><path d="M3 17h12a4 4 0 0 0 4-4v-2"/></symbol>
+  <symbol id="i-lightbulb" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.37 1.9.72 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.35 1.85.59 2.81.72A2 2 0 0 1 22 16.92z"/></symbol>
+
+  <!-- Country flags used by account cards -->
+  <symbol id="flag-us" viewBox="0 0 60 40" preserveAspectRatio="xMidYMid slice">
+    <rect width="60" height="40" fill="#fff"/>
+    <g fill="#B22234"><rect y="3" width="60" height="3"/><rect y="9" width="60" height="3"/><rect y="15" width="60" height="3"/><rect y="21" width="60" height="3"/><rect y="27" width="60" height="3"/><rect y="33" width="60" height="3"/></g>
+    <rect width="26" height="21" fill="#3C3B6E"/>
+  </symbol>
+  <symbol id="flag-co" viewBox="0 0 60 40" preserveAspectRatio="xMidYMid slice">
+    <rect width="60" height="20" fill="#FCD116"/>
+    <rect y="20" width="60" height="10" fill="#003893"/>
+    <rect y="30" width="60" height="10" fill="#CE1126"/>
+  </symbol>
+  <symbol id="flag-ve" viewBox="0 0 60 40" preserveAspectRatio="xMidYMid slice">
+    <rect width="60" height="13.33" fill="#FCD116"/>
+    <rect y="13.33" width="60" height="13.34" fill="#00247D"/>
+    <rect y="26.67" width="60" height="13.33" fill="#CF142B"/>
+  </symbol>
+  <symbol id="flag-mx" viewBox="0 0 60 40" preserveAspectRatio="xMidYMid slice">
+    <rect width="20" height="40" fill="#006847"/>
+    <rect x="20" width="20" height="40" fill="#fff"/>
+    <rect x="40" width="20" height="40" fill="#CE1126"/>
+    <circle cx="30" cy="20" r="4" fill="none" stroke="#9D6A2E" stroke-width=".6"/>
+  </symbol>
+</svg>
+
+<!-- =================================================================== -->
+<!-- HERO                                                                -->
+<!-- =================================================================== -->
+<section class="uk-hero">
+  <div class="inner">
+    <div>
+      <h1>The <em>Valiu</em><br/>design system.</h1>
+      <p>A small, opinionated toolkit of tokens and components for building Valiu's web surfaces — the dashboard, onboarding, KYC, transfers, admin, marketing. Built on Montserrat, Valiu purple, and a restrained eight-step ink scale.</p>
+    </div>
+    <div class="specimen">
+      <div class="specimen-row">
+        <span class="label">Aa</span>
+        <span class="sample" style="font: 700 32px/1 var(--font-sans); letter-spacing:-.01em;">Montserrat</span>
+      </div>
+      <div class="specimen-row">
+        <span class="label">#</span>
+        <span class="sample" style="font: 700 28px/1 var(--font-sans); color: var(--valiu-purple)">Purple</span>
+      </div>
+      <div class="specimen-row">
+        <span class="label">01</span>
+        <span class="sample" style="font: 500 13px/1.5 var(--font-sans); color: var(--ink-500)">42 components · 6 semantic color sets · 7 type roles</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =================================================================== -->
+<!-- 1. COLOR                                                            -->
+<!-- =================================================================== -->
+<section class="uk-section uk-container">
+  <div class="uk-section-head">
+    <div>
+      <div class="num">01 — COLOR</div>
+      <h2>Palette</h2>
+    </div>
+    <div class="desc">Purple anchors Valiu's brand voice. Electric blue is reserved for system links and subtle accents. Mint is the "wave" — used for header strips and illustrative frames.</div>
+  </div>
+
+  <div class="group-title">
+    <h3>Brand</h3>
+    <small>Purple + indigo carry most of the brand expression</small>
+  </div>
+  <div class="swatch-grid">
+    <div class="swatch">
+      <div class="chip dark" style="background: var(--valiu-purple)"><span class="tag">Primary</span></div>
+      <div class="meta"><span class="name">Purple</span><span class="hex">#812DFB</span></div>
+    </div>
+    <div class="swatch">
+      <div class="chip dark" style="background: var(--valiu-purple-deep)"><span class="tag">Brand</span></div>
+      <div class="meta"><span class="name">Indigo deep</span><span class="hex">#3D46CC</span></div>
+    </div>
+    <div class="swatch">
+      <div class="chip" style="background: var(--valiu-purple-200)"><span class="tag">Surface</span></div>
+      <div class="meta"><span class="name">Lilac 200</span><span class="hex">#BF96FF</span></div>
+    </div>
+    <div class="swatch">
+      <div class="chip" style="background: var(--valiu-purple-100)"><span class="tag">Tint</span></div>
+      <div class="meta"><span class="name">Lilac 100</span><span class="hex">#F8F4FF</span></div>
+    </div>
+    <div class="swatch">
+      <div class="chip dark" style="background: var(--valiu-blue)"><span class="tag">Accent</span></div>
+      <div class="meta"><span class="name">Blue</span><span class="hex">#0086FF</span></div>
+    </div>
+    <div class="swatch">
+      <div class="chip" style="background: var(--valiu-blue-soft)"><span class="tag">Accent</span></div>
+      <div class="meta"><span class="name">Sky</span><span class="hex">#46BDFB</span></div>
+    </div>
+  </div>
+
+  <div class="group-title">
+    <h3>Brand · Wave (Mint)</h3>
+    <small>Secondary: reserved for illustrations and frame strips</small>
+  </div>
+  <div class="swatch-grid">
+    <div class="swatch"><div class="chip" style="background: var(--valiu-mint)"><span class="tag">Mint</span></div><div class="meta"><span class="name">Mint</span><span class="hex">#99FFF7</span></div></div>
+    <div class="swatch"><div class="chip" style="background: var(--valiu-mint-soft)"><span class="tag">Mint 80</span></div><div class="meta"><span class="name">Mint soft</span><span class="hex">#BFFFF8</span></div></div>
+    <div class="swatch"><div class="chip" style="background: var(--valiu-mint-pale)"><span class="tag">Mint 40</span></div><div class="meta"><span class="name">Mint pale</span><span class="hex">#DFFFFB</span></div></div>
+    <div class="swatch"><div class="chip" style="background: var(--valiu-mint-bg)"><span class="tag">Strip</span></div><div class="meta"><span class="name">Mint bg</span><span class="hex">#E8F7F9</span></div></div>
+    <div class="swatch"><div class="chip" style="background: var(--valiu-mint-ice)"><span class="tag">Ice</span></div><div class="meta"><span class="name">Mint ice</span><span class="hex">#EBFFF6</span></div></div>
+    <div class="swatch"><div class="chip" style="background: var(--valiu-blue-bg)"><span class="tag">Fill</span></div><div class="meta"><span class="name">Blue bg</span><span class="hex">#F6FBFF</span></div></div>
+  </div>
+
+  <div class="group-title">
+    <h3>Ink &amp; Surface</h3>
+    <small>Use ink-900 for primary text — never pure black</small>
+  </div>
+  <div class="swatch-grid">
+    <div class="swatch"><div class="chip dark" style="background: var(--ink-900)"><span class="tag">Text</span></div><div class="meta"><span class="name">Ink 900</span><span class="hex">#151522</span></div></div>
+    <div class="swatch"><div class="chip dark" style="background: var(--ink-800)"><span class="tag">Border</span></div><div class="meta"><span class="name">Ink 800</span><span class="hex">#021734</span></div></div>
+    <div class="swatch"><div class="chip dark" style="background: var(--ink-500)"><span class="tag">Text 2</span></div><div class="meta"><span class="name">Ink 500</span><span class="hex">#5B5B64</span></div></div>
+    <div class="swatch"><div class="chip" style="background: var(--ink-400)"><span class="tag">Text 3</span></div><div class="meta"><span class="name">Ink 400</span><span class="hex">#8492A6</span></div></div>
+    <div class="swatch"><div class="chip" style="background: var(--ink-300)"><span class="tag">Line</span></div><div class="meta"><span class="name">Ink 300</span><span class="hex">#DCDCDE</span></div></div>
+    <div class="swatch"><div class="chip" style="background: var(--ink-100); border-right: 1px solid var(--border-subtle)"><span class="tag">Canvas</span></div><div class="meta"><span class="name">Ink 100</span><span class="hex">#F5F7FA</span></div></div>
+  </div>
+
+  <div class="group-title">
+    <h3>Feedback</h3>
+    <small>Four semantic color pairs: success · warning · danger · info</small>
+  </div>
+  <div class="swatch-grid">
+    <div class="swatch"><div class="chip dark" style="background: var(--success)"><span class="tag">Success</span></div><div class="meta"><span class="name">Success</span><span class="hex">#44C857</span></div></div>
+    <div class="swatch"><div class="chip" style="background: var(--success-bg)"><span class="tag">BG</span></div><div class="meta"><span class="name">Success bg</span><span class="hex">#D9FCDE</span></div></div>
+    <div class="swatch"><div class="chip dark" style="background: var(--warning)"><span class="tag">Warning</span></div><div class="meta"><span class="name">Warning</span><span class="hex">#EEAE09</span></div></div>
+    <div class="swatch"><div class="chip" style="background: var(--warning-bg)"><span class="tag">BG</span></div><div class="meta"><span class="name">Warning bg</span><span class="hex">#FFF2CC</span></div></div>
+    <div class="swatch"><div class="chip dark" style="background: var(--danger)"><span class="tag">Danger</span></div><div class="meta"><span class="name">Danger</span><span class="hex">#B40909</span></div></div>
+    <div class="swatch"><div class="chip" style="background: var(--danger-pale)"><span class="tag">BG</span></div><div class="meta"><span class="name">Danger bg</span><span class="hex">#FCE8E8</span></div></div>
+  </div>
+</section>
+
+<!-- =================================================================== -->
+<!-- 2. TYPE                                                             -->
+<!-- =================================================================== -->
+<section class="uk-section uk-container">
+  <div class="uk-section-head">
+    <div>
+      <div class="num">02 — TYPE</div>
+      <h2>Montserrat scale</h2>
+    </div>
+    <div class="desc">One family, seven semantic roles. Headings run 700+; body stays 400/500. Labels and CTAs are always 700 to hold weight against Montserrat's open counters.</div>
+  </div>
+
+  <div class="type-stack">
+    <div class="type-row">
+      <div class="name">Display XXL</div>
+      <div class="sample" style="font: var(--type-display-xxl); letter-spacing:-0.02em">Send money across borders.</div>
+      <div class="meta">Montserrat 700 · 40/44</div>
+    </div>
+    <div class="type-row">
+      <div class="name">Display XL</div>
+      <div class="sample" style="font: var(--type-display-xl); letter-spacing:-0.01em">One app. Four currencies.</div>
+      <div class="meta">Montserrat 700 · 32/37</div>
+    </div>
+    <div class="type-row">
+      <div class="name">Heading 1</div>
+      <div class="sample" style="font: var(--type-h1)">Your Valiu accounts</div>
+      <div class="meta">Montserrat 700 · 24/29</div>
+    </div>
+    <div class="type-row">
+      <div class="name">Heading 2</div>
+      <div class="sample" style="font: var(--type-h2)">Recent activity</div>
+      <div class="meta">Montserrat 700 · 20/25</div>
+    </div>
+    <div class="type-row">
+      <div class="name">Heading 3</div>
+      <div class="sample" style="font: var(--type-h3)">Transfer details</div>
+      <div class="meta">Montserrat 700 · 16/22</div>
+    </div>
+    <div class="type-row">
+      <div class="name">Body 1</div>
+      <div class="sample" style="font: var(--type-body-1)">Move USD, EUR, COP and VES between verified wallets with one of the region's lowest spread rates. Real-time quotes, instant settlement.</div>
+      <div class="meta">Montserrat 400 · 16/24</div>
+    </div>
+    <div class="type-row">
+      <div class="name">Body 2</div>
+      <div class="sample" style="font: var(--type-body-2)">Default body size for tables, forms and most product copy. Works down to 320px-wide screens without clipping.</div>
+      <div class="meta">Montserrat 400 · 14/21</div>
+    </div>
+    <div class="type-row">
+      <div class="name">Label</div>
+      <div class="sample" style="font: var(--type-label); color: var(--ink-600)">Email address</div>
+      <div class="meta">Montserrat 700 · 14/18</div>
+    </div>
+    <div class="type-row">
+      <div class="name">Caption</div>
+      <div class="sample" style="font: var(--type-caption); color: var(--ink-500)">Processed on Mar 14 · ref VL-20240314-8812</div>
+      <div class="meta">Montserrat 400 · 12/17</div>
+    </div>
+    <div class="type-row">
+      <div class="name">Overline</div>
+      <div class="sample" style="font: var(--type-overline); letter-spacing:.14em; text-transform:uppercase; color: var(--ink-500)">Transfer receipt</div>
+      <div class="meta">Montserrat 700 · 10/14</div>
+    </div>
+  </div>
+</section>
+
+<!-- =================================================================== -->
+<!-- 3. BUTTONS                                                          -->
+<!-- =================================================================== -->
+<section class="uk-section uk-container">
+  <div class="uk-section-head">
+    <div>
+      <div class="num">03 — ACTIONS</div>
+      <h2>Buttons</h2>
+    </div>
+    <div class="desc">One primary per view. Secondary is outlined ink. Ghost is for in-context, non-committal actions — cancels, "learn more".</div>
+  </div>
+
+  <div class="cols-2">
+    <div class="panel">
+      <div class="uk-subhead">Variants</div>
+      <div class="btn-row">
+        <button class="v-btn v-btn--primary">Create transfer</button>
+        <button class="v-btn v-btn--secondary">Cancel</button>
+        <button class="v-btn v-btn--ghost">Learn more</button>
+        <button class="v-btn v-btn--danger">Delete account</button>
+        <button class="v-btn v-btn--primary" disabled>Review &amp; send</button>
+      </div>
+
+      <div class="uk-subhead" style="margin-top:24px">Sizes</div>
+      <div class="btn-row">
+        <button class="v-btn v-btn--primary v-btn--lg">Send money</button>
+        <button class="v-btn v-btn--primary">Send money</button>
+        <button class="v-btn v-btn--primary v-btn--sm">Send money</button>
+      </div>
+
+      <div class="uk-subhead" style="margin-top:24px">With icons</div>
+      <div class="btn-row">
+        <button class="v-btn v-btn--primary"><svg><use href="#i-plus"/></svg> New account</button>
+        <button class="v-btn v-btn--secondary">Download <svg><use href="#i-download"/></svg></button>
+        <button class="v-btn v-btn--ghost">Continue <svg><use href="#i-arrow-right"/></svg></button>
+      </div>
+
+      <div class="uk-subhead" style="margin-top:24px">Pill (marketing)</div>
+      <div class="btn-row">
+        <button class="v-btn v-btn--primary v-btn--pill v-btn--lg">Open a Valiu account</button>
+        <button class="v-btn v-btn--secondary v-btn--pill v-btn--lg">See how it works</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="uk-subhead">Hover / focus / pressed states</div>
+      <div class="cols-2" style="gap:12px">
+        <div>
+          <div class="v-caption" style="margin-bottom:8px;color:var(--ink-400)">Rest</div>
+          <button class="v-btn v-btn--primary">Continue</button>
+        </div>
+        <div>
+          <div class="v-caption" style="margin-bottom:8px;color:var(--ink-400)">Hover</div>
+          <button class="v-btn v-btn--primary" style="background:var(--valiu-purple-hover)">Continue</button>
+        </div>
+        <div>
+          <div class="v-caption" style="margin-bottom:8px;color:var(--ink-400)">Pressed</div>
+          <button class="v-btn v-btn--primary" style="background:var(--valiu-purple-press)">Continue</button>
+        </div>
+        <div>
+          <div class="v-caption" style="margin-bottom:8px;color:var(--ink-400)">Focus ring</div>
+          <button class="v-btn v-btn--primary" style="outline: 3px solid color-mix(in oklab, var(--valiu-purple) 45%, transparent); outline-offset:2px">Continue</button>
+        </div>
+        <div>
+          <div class="v-caption" style="margin-bottom:8px;color:var(--ink-400)">Disabled</div>
+          <button class="v-btn v-btn--primary" disabled>Continue</button>
+        </div>
+        <div>
+          <div class="v-caption" style="margin-bottom:8px;color:var(--ink-400)">Loading</div>
+          <button class="v-btn v-btn--primary">
+            <span style="display:inline-block;width:12px;height:12px;border:2px solid currentColor;border-top-color:transparent;border-radius:999px;animation: spin 1s linear infinite"></span>
+            Processing…
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+<style>@keyframes spin { to { transform: rotate(360deg); } }</style>
+
+<!-- =================================================================== -->
+<!-- 4. FIELDS                                                           -->
+<!-- =================================================================== -->
+<section class="uk-section uk-container">
+  <div class="uk-section-head">
+    <div>
+      <div class="num">04 — FORMS</div>
+      <h2>Fields</h2>
+    </div>
+    <div class="desc">Inputs sit on a 1.5px ink border at rest — a deliberate anchor. On focus the border flips to purple with a 3px transparent halo for accessibility.</div>
+  </div>
+
+  <div class="cols-3">
+    <div class="v-field">
+      <label class="lbl">Legal name</label>
+      <input class="v-input" placeholder="Natalia Pérez" />
+      <span class="hint">As it appears on your ID</span>
+    </div>
+    <div class="v-field">
+      <label class="lbl">Email</label>
+      <input class="v-input" value="nat@valiu.com" />
+    </div>
+    <div class="v-field" style="margin-bottom: 180px">
+      <label class="lbl">Country</label>
+      <div class="v-dd is-open">
+        <button class="v-dd-trigger" aria-expanded="true">Colombia</button>
+        <div class="v-dd-menu" role="listbox">
+          <div class="v-dd-item" role="option" aria-selected="true">
+            <svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>Colombia</span>
+          </div>
+          <div class="v-dd-item" role="option">
+            <svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>Venezuela</span>
+          </div>
+          <div class="v-dd-item" role="option">
+            <svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>United States</span>
+          </div>
+          <div class="v-dd-item" role="option">
+            <svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>Eurozone</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="v-field">
+    <div class="v-field" style="grid-column: span 2">
+      <label class="lbl">Amount</label>
+      <div class="money-input-row" style="display:flex;align-items:stretch;gap:12px">
+        <div class="money-input">
+          <input class="money-input__amount" value="1,250.00" />
+          <div class="money-input__cur">
+            <span class="flag" aria-label="US"><span class="flag-img"><svg><use href="#flag-us"/></svg></span></span>
+            <span class="code">USD</span>
+          </div>
+        </div>
+      </div>
+      <span class="hint">Single input with flag + currency code on the right.</span>
+    </div>
+
+    <div class="v-field" style="grid-column: span 2">
+      <label class="lbl">Compra / Pago — paired (joined)</label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;align-items:end">
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <span class="lbl">Compras</span>
+          <div class="money-input" style="border-top-right-radius:0;border-bottom-right-radius:0;border-right-width:0">
+            <input class="money-input__amount" value="300,000.00" />
+            <div class="money-input__cur">
+              <span class="flag" aria-label="US"><span class="flag-img"><svg><use href="#flag-us"/></svg></span></span>
+              <span class="code">USD</span>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <span class="lbl">Pagas</span>
+          <div class="money-input" style="border-top-left-radius:0;border-bottom-left-radius:0">
+            <input class="money-input__amount" value="5,649,000.00" />
+            <div class="money-input__cur">
+              <span class="flag" aria-label="MX"><span class="flag-img"><svg><use href="#flag-mx"/></svg></span></span>
+              <span class="code">MXN</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="v-field" style="grid-column: span 2">
+      <label class="lbl">Compra / Pago — paired (separated)</label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:end">
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <span class="lbl">Compras</span>
+          <div class="money-input">
+            <input class="money-input__amount" value="300,000.00" />
+            <div class="money-input__cur">
+              <span class="flag" aria-label="US"><span class="flag-img"><svg><use href="#flag-us"/></svg></span></span>
+              <span class="code">USD</span>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <span class="lbl">Pagas</span>
+          <div class="money-input">
+            <input class="money-input__amount" value="5,649,000.00" />
+            <div class="money-input__cur">
+              <span class="flag" aria-label="MX"><span class="flag-img"><svg><use href="#flag-mx"/></svg></span></span>
+              <span class="code">MXN</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="v-field" style="grid-column: span 2">
+      <label class="lbl">Sin bandera — código de divisa solamente</label>
+      <div class="money-input-row" style="display:flex;align-items:stretch;gap:12px">
+        <div class="money-input" style="flex:1">
+          <input class="money-input__amount" value="1,250.00" />
+          <div class="money-input__cur"><span class="code">USD</span></div>
+        </div>
+        <div class="money-input" style="flex:1">
+          <input class="money-input__amount" value="5,649,000.00" />
+          <div class="money-input__cur"><span class="code">MXN</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="v-field">
+      <label class="lbl">Password</label>
+      <div class="v-input-group">
+        <input class="v-input" type="password" value="••••••••••" />
+        <span class="adorn adorn--end" style="background:transparent"><svg width="18" height="18"><use href="#i-eye"/></svg></span>
+      </div>
+    </div>
+    <div class="v-field">
+      <label class="lbl">Tax ID</label>
+      <input class="v-input v-input--error" value="123" />
+      <span class="err"><svg width="14" height="14"><use href="#i-alert"/></svg> Must be at least 8 digits.</span>
+    </div>
+    <div class="v-field">
+      <label class="lbl">Disabled</label>
+      <input class="v-input" value="natalia.p@gmail.com" disabled />
+    </div>
+    <div class="v-field">
+      <label class="lbl">Message to recipient</label>
+      <textarea class="v-textarea" rows="3" placeholder="Optional note…"></textarea>
+    </div>
+    <div class="v-field">
+      <label class="lbl">Search</label>
+      <div class="v-input-group">
+        <span class="adorn" style="background:transparent"><svg width="18" height="18"><use href="#i-search"/></svg></span>
+        <input class="v-input" placeholder="Find a recipient…" />
+      </div>
+    </div>
+  </div>
+
+  <div class="uk-subhead" style="margin-top:32px">Controls</div>
+  <div class="panel">
+    <div class="ctrl-row">
+      <label class="v-check"><input type="checkbox" checked /> Save this recipient</label>
+      <label class="v-check"><input type="checkbox" /> Opt into rewards</label>
+      <label class="v-check"><input type="checkbox" disabled /> Disabled option</label>
+
+      <span style="width:24px"></span>
+
+      <label class="v-radio"><input type="radio" name="r" checked /> Individual</label>
+      <label class="v-radio"><input type="radio" name="r" /> Business</label>
+
+      <span style="width:24px"></span>
+
+      <label class="v-toggle"><input type="checkbox" checked /><span class="track"></span></label>
+      <span style="font: var(--type-body-2); color: var(--ink-600)">Biometric login</span>
+
+      <label class="v-toggle" style="margin-left:16px"><input type="checkbox" /><span class="track"></span></label>
+      <span style="font: var(--type-body-2); color: var(--ink-600)">Monthly report</span>
+    </div>
+  </div>
+</section>
+
+<!-- =================================================================== -->
+<!-- 5. STATUS — badges, alerts, progress                                -->
+<!-- =================================================================== -->
+<section class="uk-section uk-container">
+  <div class="uk-section-head">
+    <div>
+      <div class="num">05 — STATUS</div>
+      <h2>Feedback</h2>
+    </div>
+    <div class="desc">Badges for compact states. Alerts for full-width notices. Both pull from the same four semantic sets — never mix and match colors outside this vocabulary.</div>
+  </div>
+
+  <div class="cols-2">
+    <div class="panel">
+      <div class="uk-subhead">Badges</div>
+      <div class="btn-row" style="gap:10px">
+        <span class="v-badge v-badge--success"><span class="dot"></span>Completed</span>
+        <span class="v-badge v-badge--warning"><span class="dot"></span>Pending</span>
+        <span class="v-badge v-badge--danger"><span class="dot"></span>Failed</span>
+        <span class="v-badge v-badge--info"><span class="dot"></span>In review</span>
+        <span class="v-badge v-badge--neutral"><span class="dot"></span>Draft</span>
+      </div>
+
+      <div class="uk-subhead" style="margin-top:20px">Stepper</div>
+      <div class="stepper" style="margin-top:8px">
+        <div class="step active"><div class="num">1</div><div class="lbl">Cargar</div></div>
+        <div class="bar"></div>
+        <div class="step"><div class="num">2</div><div class="lbl">Extraer</div></div>
+        <div class="bar"></div>
+        <div class="step"><div class="num">3</div><div class="lbl">Revisar</div></div>
+        <div class="bar"></div>
+        <div class="step"><div class="num">4</div><div class="lbl">Guardar o pagar</div></div>
+      </div>
+
+      <div class="uk-subhead" style="margin-top:20px">Progress</div>
+      <div style="height:6px;background:var(--ink-200);border-radius:999px;overflow:hidden">
+        <div style="height:100%;width:62%;background:linear-gradient(90deg,var(--valiu-blue),var(--valiu-purple));border-radius:999px"></div>
+      </div>
+      <div class="v-caption" style="color:var(--ink-500);margin-top:6px">KYC verification · 62% complete</div>
+    </div>
+
+    <div class="panel" style="display:flex;flex-direction:column;gap:12px">
+      <div class="uk-subhead" style="margin:0">Alerts</div>
+      <div class="v-alert v-alert--info">
+        <div class="body-col">
+          <p class="title">Rate locked for 2m 30s</p>
+          <p class="body">1 USD = 4,180.50 COP. Re-quote automatically after expiry.</p>
+          <button class="action">Extend <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button>
+        </div>
+        <button class="close" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+      </div>
+      <div class="v-alert v-alert--success">
+        <div class="body-col">
+          <p class="title">Transfer complete</p>
+          <p class="body">$1,250.00 sent to Maria G. · ref VL-20240314-8812</p>
+        </div>
+        <button class="close" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+      </div>
+      <div class="v-alert v-alert--warning">
+        <div class="body-col">
+          <p class="title">ID photo expires in 11 days</p>
+          <p class="body">Upload a new document to keep your USD account active.</p>
+          <button class="action">Upload now <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button>
+        </div>
+        <button class="close" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+      </div>
+      <div class="v-alert v-alert--error">
+        <div class="body-col">
+          <p class="title">We couldn't process the transfer</p>
+          <p class="body">Recipient bank declined the incoming deposit. Funds returned to your wallet.</p>
+          <button class="action">View details <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button>
+        </div>
+        <button class="close" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =================================================================== -->
+<!-- 6. DATA — accounts, KPI, tables, nav                                -->
+<!-- =================================================================== -->
+<section class="uk-section uk-container">
+  <div class="uk-section-head">
+    <div>
+      <div class="num">06 — DATA</div>
+      <h2>Product blocks</h2>
+    </div>
+    <div class="desc">Building blocks composed from the tokens above — account cards, tables, nav. These are the surfaces Valiu ships.</div>
+  </div>
+
+  <div class="uk-subhead">Account cards</div>
+  <div class="demo-grid" style="margin-bottom:32px">
+    <div class="account-card">
+      <div class="head">
+        <span class="flag" aria-label="US"><span class="flag-img"><svg><use href="#flag-us"/></svg></span></span>
+        <span class="mask">••••&nbsp;4410</span>
+      </div>
+      <hr class="divider"/>
+      <div class="info">
+        <div class="balance"><span class="amount">12,480.55</span><span class="cur">USD</span></div>
+        <div class="alias">Cuenta principal</div>
+      </div>
+      <div class="actions">
+        <button class="fab" aria-label="Send">
+          <span class="tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg></span>
+          <span class="label">Send</span>
+        </button>
+        <button class="fab" aria-label="Deposit">
+          <span class="tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></span>
+          <span class="label">Deposit</span>
+        </button>
+      </div>
+    </div>
+    <div class="account-card">
+      <div class="head">
+        <span class="flag" aria-label="CO"><span class="flag-img"><svg><use href="#flag-co"/></svg></span></span>
+        <span class="mask">••••&nbsp;0221</span>
+      </div>
+      <hr class="divider"/>
+      <div class="info">
+        <div class="balance"><span class="amount">4&#8239;180&#8239;500</span><span class="cur">COP</span></div>
+        <div class="alias">Bolsillo familia</div>
+      </div>
+      <div class="actions">
+        <button class="fab" aria-label="Send">
+          <span class="tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg></span>
+          <span class="label">Send</span>
+        </button>
+        <button class="fab" aria-label="Deposit">
+          <span class="tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></span>
+          <span class="label">Deposit</span>
+        </button>
+      </div>
+    </div>
+    <div class="account-card">
+      <div class="head">
+        <span class="flag" aria-label="VE"><span class="flag-img"><svg><use href="#flag-ve"/></svg></span></span>
+        <span class="mask">••••&nbsp;8806</span>
+      </div>
+      <hr class="divider"/>
+      <div class="info">
+        <div class="balance"><span class="amount">92,415.00</span><span class="cur">VES</span></div>
+        <div class="alias">Ahorros</div>
+      </div>
+      <div class="actions">
+        <button class="fab" aria-label="Send">
+          <span class="tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg></span>
+          <span class="label">Send</span>
+        </button>
+        <button class="fab" aria-label="Deposit">
+          <span class="tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></span>
+          <span class="label">Deposit</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="uk-subhead">Transactions table</div>
+  <div class="v-table-wrap" style="margin-bottom:32px">
+    <div style="display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid var(--border-subtle);">
+      <div class="v-input-group" style="max-width:320px;flex:1">
+        <span class="adorn" style="background:transparent"><svg width="18" height="18"><use href="#i-search"/></svg></span>
+        <input class="v-input" placeholder="Search by recipient, reference, amount…" />
+      </div>
+      <button class="v-btn v-btn--secondary v-btn--sm"><svg><use href="#i-filter"/></svg> Filters · 2</button>
+      <button class="v-btn v-btn--secondary v-btn--sm"><svg><use href="#i-calendar"/></svg> Last 30 days</button>
+      <span style="flex:1"></span>
+      <button class="v-btn v-btn--ghost v-btn--sm"><svg><use href="#i-download"/></svg> Export</button>
+    </div>
+    <table class="v-table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Recipient</th>
+          <th>Type</th>
+          <th>Status</th>
+          <th style="text-align:right">Amount</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="color:var(--ink-500)">Mar 14 · 10:22</td>
+          <td>
+            <div style="display:flex;align-items:center;gap:10px">
+              <span class="avatar avatar-32">MG</span>
+              <div><div style="font-weight:700">Maria Gómez</div><div class="v-caption" style="color:var(--ink-400)">Bancolombia · •••• 7712</div></div>
+            </div>
+          </td>
+          <td><span class="v-badge v-badge--info"><span class="dot"></span>USD → COP</span></td>
+          <td><span class="v-badge v-badge--success"><span class="dot"></span>Completed</span></td>
+          <td style="text-align:right" class="amount neg">−$1,250.00</td>
+          <td style="text-align:right"><button class="v-btn v-btn--ghost v-btn--sm"><svg><use href="#i-more"/></svg></button></td>
+        </tr>
+        <tr>
+          <td style="color:var(--ink-500)">Mar 12 · 09:04</td>
+          <td>
+            <div style="display:flex;align-items:center;gap:10px">
+              <span class="avatar avatar-32" style="background:#DFFFFB;color:var(--success-strong)">JR</span>
+              <div><div style="font-weight:700">Jorge Ramírez</div><div class="v-caption" style="color:var(--ink-400)">Chase · •••• 0088</div></div>
+            </div>
+          </td>
+          <td><span class="v-badge v-badge--info"><span class="dot"></span>USD → USD</span></td>
+          <td><span class="v-badge v-badge--warning"><span class="dot"></span>Pending</span></td>
+          <td style="text-align:right" class="amount neg">−$420.00</td>
+          <td style="text-align:right"><button class="v-btn v-btn--ghost v-btn--sm"><svg><use href="#i-more"/></svg></button></td>
+        </tr>
+        <tr>
+          <td style="color:var(--ink-500)">Mar 11 · 15:48</td>
+          <td>
+            <div style="display:flex;align-items:center;gap:10px">
+              <span class="avatar avatar-32" style="background:#FCE8E8;color:var(--danger-strong)">CS</span>
+              <div><div style="font-weight:700">Carlos Suárez</div><div class="v-caption" style="color:var(--ink-400)">Mercantil · •••• 2210</div></div>
+            </div>
+          </td>
+          <td><span class="v-badge v-badge--info"><span class="dot"></span>USDT → VES</span></td>
+          <td><span class="v-badge v-badge--danger"><span class="dot"></span>Failed</span></td>
+          <td style="text-align:right" class="amount neg">−$80.00</td>
+          <td style="text-align:right"><button class="v-btn v-btn--ghost v-btn--sm"><svg><use href="#i-more"/></svg></button></td>
+        </tr>
+        <tr>
+          <td style="color:var(--ink-500)">Mar 10 · 11:31</td>
+          <td>
+            <div style="display:flex;align-items:center;gap:10px">
+              <span class="avatar avatar-32" style="background:#FFF2CC;color:#8A5A00">CM</span>
+              <div><div style="font-weight:700">Carla Mendes</div><div class="v-caption" style="color:var(--ink-400)">BBVA · •••• 5529</div></div>
+            </div>
+          </td>
+          <td><span class="v-badge v-badge--info"><span class="dot"></span>EUR → USD</span></td>
+          <td><span class="v-badge v-badge--success"><span class="dot"></span>Completed</span></td>
+          <td style="text-align:right" class="amount pos">+€2,100.00</td>
+          <td style="text-align:right"><button class="v-btn v-btn--ghost v-btn--sm"><svg><use href="#i-more"/></svg></button></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="uk-subhead">Navigation</div>
+  <div class="cols-2">
+    <div>
+      <div class="v-caption" style="color:var(--ink-400);margin-bottom:8px">Sidebar (app shell)</div>
+      <div class="sidenav-demo">
+        <div class="brand">
+          <span class="mark" aria-hidden="true">
+            <svg viewBox="0 0 16.195 16.195" fill="currentColor"><use href="#valiu-glyph"/></svg>
+          </span>
+          <span class="word">Valiu</span>
+        </div>
+        <div class="account">
+          <span class="avatar" aria-hidden="true"></span>
+          <div class="who">
+            <div class="name">Mateo Tarabal</div>
+            <div class="org">Gas natural del noroeste…</div>
+          </div>
+          <svg class="caret" aria-hidden="true"><use href="#i-chevron-down"/></svg>
+        </div>
+        <nav class="nav" aria-label="Primary">
+          <a class="active"><svg><use href="#i-calculator"/></svg>Operar</a>
+          <a><svg><use href="#i-calendar"/></svg>Planificador de pagos</a>
+          <a><svg><use href="#i-chart"/></svg>Historial de operaciones</a>
+          <a><svg><use href="#i-credit-card"/></svg>Movimientos</a>
+          <a><svg><use href="#i-users"/></svg>Destinatarios</a>
+          <a><svg><use href="#i-trending-up"/></svg>Seguimiento de divisas</a>
+        </nav>
+        <div class="logout">
+          <a><svg><use href="#i-logout"/></svg>Cerrar sesión</a>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="v-caption" style="color:var(--ink-400);margin-bottom:8px">Tabs</div>
+      <div class="v-tabs" style="margin-bottom:16px" role="tablist">
+        <button class="v-tab" role="tab" aria-selected="true">Overview</button>
+        <button class="v-tab" role="tab" aria-selected="false">Transactions</button>
+        <button class="v-tab" role="tab" aria-selected="false">Recipients</button>
+        <button class="v-tab" role="tab" aria-selected="false">Statements</button>
+      </div>
+
+      <div class="v-caption" style="color:var(--ink-400);margin:20px 0 8px">Recipient list</div>
+      <div class="panel" style="padding:8px">
+        <div class="list-row">
+          <span class="avatar avatar-40">MG</span>
+          <div><div class="title">Maria Gómez</div><div class="sub">Bancolombia · COP</div></div>
+          <span class="amt">COP 1.2M</span>
+        </div>
+        <div class="list-row">
+          <span class="avatar avatar-40" style="background:#DFFFFB;color:var(--success-strong)">JR</span>
+          <div><div class="title">Jorge Ramírez</div><div class="sub">Chase · USD</div></div>
+          <span class="amt">$8.4k</span>
+        </div>
+        <div class="list-row">
+          <span class="avatar avatar-40" style="background:#FFF2CC;color:#8A5A00">CM</span>
+          <div><div class="title">Carla Mendes</div><div class="sub">BBVA · EUR</div></div>
+          <span class="amt">€3.1k</span>
+        </div>
+        <div class="list-row">
+          <span class="avatar avatar-40" style="background:#FCE8E8;color:var(--danger-strong)">CS</span>
+          <div><div class="title">Carlos Suárez</div><div class="sub">Mercantil · VES</div></div>
+          <span class="amt">$620</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =================================================================== -->
+<!-- 7. ICONOGRAPHY                                                      -->
+<!-- =================================================================== -->
+<section class="uk-section uk-container">
+  <div class="uk-section-head">
+    <div>
+      <div class="num">07 — ICONOGRAPHY</div>
+      <h2>Icons</h2>
+    </div>
+    <div class="desc">24×24 grid, 2px stroke, rounded caps/joins, currentColor fill. Stroke icons for UI chrome; a small set of solid icons (dots, star, bolt) for emphasis.</div>
+  </div>
+
+  <div class="panel">
+    <div class="icon-grid">
+      <div class="icon-cell"><svg><use href="#i-dashboard"/></svg><span class="lbl">dashboard</span></div>
+      <div class="icon-cell"><svg><use href="#i-wallet"/></svg><span class="lbl">wallet</span></div>
+      <div class="icon-cell"><svg><use href="#i-send"/></svg><span class="lbl">send</span></div>
+      <div class="icon-cell"><svg><use href="#i-swap"/></svg><span class="lbl">swap</span></div>
+      <div class="icon-cell"><svg><use href="#i-chart"/></svg><span class="lbl">chart</span></div>
+      <div class="icon-cell"><svg><use href="#i-users"/></svg><span class="lbl">users</span></div>
+      <div class="icon-cell"><svg><use href="#i-doc"/></svg><span class="lbl">doc</span></div>
+      <div class="icon-cell"><svg><use href="#i-credit-card"/></svg><span class="lbl">card</span></div>
+
+      <div class="icon-cell"><svg><use href="#i-bank"/></svg><span class="lbl">bank</span></div>
+      <div class="icon-cell"><svg><use href="#i-bell"/></svg><span class="lbl">bell</span></div>
+      <div class="icon-cell"><svg><use href="#i-cog"/></svg><span class="lbl">settings</span></div>
+      <div class="icon-cell"><svg><use href="#i-shield"/></svg><span class="lbl">shield</span></div>
+      <div class="icon-cell"><svg><use href="#i-help"/></svg><span class="lbl">help</span></div>
+      <div class="icon-cell"><svg><use href="#i-info"/></svg><span class="lbl">info</span></div>
+      <div class="icon-cell"><svg><use href="#i-alert"/></svg><span class="lbl">alert</span></div>
+      <div class="icon-cell"><svg><use href="#i-check-circle"/></svg><span class="lbl">check</span></div>
+
+      <div class="icon-cell"><svg><use href="#i-warn"/></svg><span class="lbl">warn</span></div>
+      <div class="icon-cell"><svg><use href="#i-search"/></svg><span class="lbl">search</span></div>
+      <div class="icon-cell"><svg><use href="#i-filter"/></svg><span class="lbl">filter</span></div>
+      <div class="icon-cell"><svg><use href="#i-plus"/></svg><span class="lbl">plus</span></div>
+      <div class="icon-cell"><svg><use href="#i-edit"/></svg><span class="lbl">edit</span></div>
+      <div class="icon-cell"><svg><use href="#i-trash"/></svg><span class="lbl">trash</span></div>
+      <div class="icon-cell"><svg><use href="#i-copy"/></svg><span class="lbl">copy</span></div>
+      <div class="icon-cell"><svg><use href="#i-share"/></svg><span class="lbl">share</span></div>
+
+      <div class="icon-cell"><svg><use href="#i-download"/></svg><span class="lbl">download</span></div>
+      <div class="icon-cell"><svg><use href="#i-mail"/></svg><span class="lbl">mail</span></div>
+      <div class="icon-cell"><svg><use href="#i-phone"/></svg><span class="lbl">phone</span></div>
+      <div class="icon-cell"><svg><use href="#i-calendar"/></svg><span class="lbl">calendar</span></div>
+      <div class="icon-cell"><svg><use href="#i-globe"/></svg><span class="lbl">globe</span></div>
+      <div class="icon-cell"><svg><use href="#i-eye"/></svg><span class="lbl">eye</span></div>
+      <div class="icon-cell"><svg><use href="#i-eye-off"/></svg><span class="lbl">eye-off</span></div>
+      <div class="icon-cell"><svg><use href="#i-logout"/></svg><span class="lbl">logout</span></div>
+
+      <div class="icon-cell"><svg><use href="#i-arrow-up"/></svg><span class="lbl">arrow-up</span></div>
+      <div class="icon-cell"><svg><use href="#i-arrow-down"/></svg><span class="lbl">arrow-down</span></div>
+      <div class="icon-cell"><svg><use href="#i-arrow-right"/></svg><span class="lbl">arrow-right</span></div>
+      <div class="icon-cell"><svg><use href="#i-chevron-down"/></svg><span class="lbl">chevron-down</span></div>
+      <div class="icon-cell"><svg><use href="#i-chevron-right"/></svg><span class="lbl">chevron-right</span></div>
+      <div class="icon-cell"><svg><use href="#i-more"/></svg><span class="lbl">more</span></div>
+      <div class="icon-cell"><svg><use href="#i-more-v"/></svg><span class="lbl">more-v</span></div>
+      <div class="icon-cell"><svg><use href="#i-star"/></svg><span class="lbl">star</span></div>
+
+      <div class="icon-cell"><svg><use href="#i-bolt"/></svg><span class="lbl">bolt</span></div>
+      <div class="icon-cell"><svg><use href="#i-lightbulb"/></svg><span class="lbl">lightbulb</span></div>
+      <div class="icon-cell"><svg><use href="#i-check"/></svg><span class="lbl">check</span></div>
+      <div class="icon-cell"><svg><use href="#i-x"/></svg><span class="lbl">x</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- =================================================================== -->
+<!-- 8. OVERLAYS — modals & drawers                                      -->
+<!-- =================================================================== -->
+<section class="uk-section uk-container">
+  <div class="uk-section-head">
+    <div>
+      <div class="num">08 — OVERLAYS</div>
+      <h2>Modals &amp; drawers</h2>
+    </div>
+    <div class="desc">Modals are centered confirm/decision surfaces; drawers are right-anchored side sheets for detail and edit flows. Both use radius-lg, shadow-lg, and a 32% ink scrim.</div>
+  </div>
+
+  <div class="uk-subhead">Modals · 1 action, 2 actions, no action</div>
+  <div class="cols-3" style="margin-bottom:32px">
+    <!-- Two actions: primary + secondary -->
+    <div class="v-modal-stage">
+      <div class="v-modal" role="dialog" aria-modal="true" aria-labelledby="m1-title">
+        <div class="v-modal__header">
+          <h3 class="v-modal__title" id="m1-title">¿Confirmar transferencia?</h3>
+          <button class="v-modal__close" aria-label="Cerrar"><svg><use href="#i-x"/></svg></button>
+        </div>
+        <div class="v-modal__body">
+          <p>Estás por enviar <strong>USD 4,200.00</strong> a <strong>María Gómez · Bancolombia</strong>. Esta acción no se puede revertir.</p>
+        </div>
+        <div class="v-modal__footer">
+          <button class="v-btn v-btn--secondary">Cancelar</button>
+          <button class="v-btn v-btn--primary">Confirmar envío</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- One action: primary only -->
+    <div class="v-modal-stage">
+      <div class="v-modal" role="dialog" aria-modal="true" aria-labelledby="m2-title">
+        <div class="v-modal__header">
+          <span class="v-modal__hero v-modal__hero--success" aria-hidden="true"><svg><use href="#i-check"/></svg></span>
+          <div style="flex:1">
+            <h3 class="v-modal__title" id="m2-title">Transferencia enviada</h3>
+            <div style="margin-top:4px;color:var(--ink-500);font:400 13px/1.4 var(--font-sans)">Ref · TRF-2024-9821</div>
+          </div>
+          <button class="v-modal__close" aria-label="Cerrar"><svg><use href="#i-x"/></svg></button>
+        </div>
+        <div class="v-modal__body">
+          <p>Tu envío de <strong>USD 4,200.00</strong> está en proceso. Recibirás una confirmación cuando se acredite, normalmente en 1–2 días hábiles.</p>
+        </div>
+        <div class="v-modal__footer">
+          <button class="v-btn v-btn--primary">Listo</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- No action: status / info -->
+    <div class="v-modal-stage">
+      <div class="v-modal v-modal--no-footer" role="dialog" aria-modal="true" aria-labelledby="m3-title">
+        <div class="v-modal__header">
+          <span class="v-modal__hero v-modal__hero--brand" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+          </span>
+          <div style="flex:1">
+            <h3 class="v-modal__title" id="m3-title">Procesando…</h3>
+            <div style="margin-top:4px;color:var(--ink-500);font:400 13px/1.4 var(--font-sans)">Esto puede tardar unos segundos</div>
+          </div>
+        </div>
+        <div class="v-modal__body">
+          <p>Estamos validando los datos de tu beneficiario con el banco receptor. No cierres esta ventana.</p>
+          <div style="margin-top:12px;height:6px;background:var(--ink-100);border-radius:999px;overflow:hidden">
+            <div style="height:100%;width:62%;background:var(--valiu-blue);border-radius:999px"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="uk-subhead">Modals · destructive &amp; large</div>
+  <div class="cols-2" style="margin-bottom:32px">
+    <!-- Destructive -->
+    <div class="v-modal-stage">
+      <div class="v-modal" role="dialog" aria-modal="true" aria-labelledby="m4-title">
+        <div class="v-modal__header">
+          <span class="v-modal__hero v-modal__hero--danger" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+          </span>
+          <div style="flex:1">
+            <h3 class="v-modal__title" id="m4-title">Eliminar destinatario</h3>
+          </div>
+          <button class="v-modal__close" aria-label="Cerrar"><svg><use href="#i-x"/></svg></button>
+        </div>
+        <div class="v-modal__body">
+          <p>Vas a eliminar a <strong>Carlos Suárez · Mercantil VES</strong> de tus destinatarios guardados. Las operaciones ya enviadas no se verán afectadas.</p>
+        </div>
+        <div class="v-modal__footer">
+          <button class="v-btn v-btn--secondary">Cancelar</button>
+          <button class="v-btn v-btn--danger">Eliminar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Large with form -->
+    <div class="v-modal-stage">
+      <div class="v-modal v-modal--lg" role="dialog" aria-modal="true" aria-labelledby="m5-title">
+        <div class="v-modal__header">
+          <h3 class="v-modal__title" id="m5-title">Editar alias del destinatario</h3>
+          <button class="v-modal__close" aria-label="Cerrar"><svg><use href="#i-x"/></svg></button>
+        </div>
+        <div class="v-modal__body">
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <label class="v-field">
+              <span class="lbl">Alias</span>
+              <input class="v-input" value="María — Bancolombia COP" />
+            </label>
+            <label class="v-field">
+              <span class="lbl">Notas internas</span>
+              <textarea class="v-textarea" rows="3">Familia · pago mensual</textarea>
+            </label>
+          </div>
+        </div>
+        <div class="v-modal__footer">
+          <button class="v-btn v-btn--secondary">Cancelar</button>
+          <button class="v-btn v-btn--primary">Guardar cambios</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="uk-subhead">Drawers · text, form, chart</div>
+  <p class="v-caption" style="color:var(--ink-500);max-width:680px;margin:0 0 16px">
+    Fixed 440 px width. Header and footer stick; only the body scrolls. The form example
+    has long content — drag inside it to see the header and footer hold their place.
+  </p>
+  <div class="cols-2" style="margin-bottom:24px">
+
+    <!-- 1. Text-only drawer -->
+    <div class="v-drawer-stage">
+      <aside class="v-drawer v-drawer--no-footer" role="dialog" aria-modal="true" aria-labelledby="d1-title">
+        <header class="v-drawer__header">
+          <div style="flex:1">
+            <h3 class="v-drawer__title" id="d1-title">Detalle de operación</h3>
+            <div class="v-drawer__sub">TRF-2024-9821 · 14 abr 2026</div>
+          </div>
+          <button class="v-drawer__close" aria-label="Cerrar"><svg><use href="#i-x"/></svg></button>
+        </header>
+        <div class="v-drawer__body">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+            <span class="avatar avatar-40">MG</span>
+            <div>
+              <div style="font:600 14px/1.2 var(--font-sans);color:var(--ink-900)">María Gómez</div>
+              <div style="font:400 12px/1.3 var(--font-sans);color:var(--ink-500)">Bancolombia · COP · ****4231</div>
+            </div>
+          </div>
+          <div class="v-drawer-row"><span class="lbl">Estado</span><span class="val"><span class="v-badge v-badge--success"><span class="dot"></span>Completada</span></span></div>
+          <div class="v-drawer-row"><span class="lbl">Monto enviado</span><span class="val">USD 4,200.00</span></div>
+          <div class="v-drawer-row"><span class="lbl">Tasa aplicada</span><span class="val">1 USD = 4,180.50 COP</span></div>
+          <div class="v-drawer-row"><span class="lbl">Comisión</span><span class="val">USD 4.50</span></div>
+          <div class="v-drawer-row"><span class="lbl">Recibe</span><span class="val">COP 17,558,100</span></div>
+          <div class="v-drawer-row"><span class="lbl">Referencia</span><span class="val">Pago alquiler abril</span></div>
+        </div>
+      </aside>
+    </div>
+
+    <!-- 2. Form drawer (long content → demonstrates sticky scroll) -->
+    <div class="v-drawer-stage">
+      <aside class="v-drawer" role="dialog" aria-modal="true" aria-labelledby="d2-title">
+        <header class="v-drawer__header">
+          <div style="flex:1">
+            <h3 class="v-drawer__title" id="d2-title">Nuevo destinatario</h3>
+            <div class="v-drawer__sub">Paso 1 de 3 · Datos del beneficiario</div>
+          </div>
+          <button class="v-drawer__close" aria-label="Cerrar"><svg><use href="#i-x"/></svg></button>
+        </header>
+        <div class="v-drawer__body">
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <label class="v-field">
+              <span class="lbl">Nombre completo</span>
+              <input class="v-input" placeholder="Como aparece en la cuenta" />
+            </label>
+            <label class="v-field">
+              <span class="lbl">Documento</span>
+              <input class="v-input" placeholder="CC / NIT / RUT" />
+            </label>
+            <label class="v-field">
+              <span class="lbl">País</span>
+              <select class="v-select">
+                <option>Colombia</option>
+                <option>México</option>
+                <option>Argentina</option>
+              </select>
+            </label>
+            <label class="v-field">
+              <span class="lbl">Banco</span>
+              <select class="v-select">
+                <option>Bancolombia</option>
+                <option>BBVA</option>
+                <option>Davivienda</option>
+              </select>
+            </label>
+            <label class="v-field">
+              <span class="lbl">Tipo de cuenta</span>
+              <select class="v-select">
+                <option>Ahorros</option>
+                <option>Corriente</option>
+              </select>
+            </label>
+            <label class="v-field">
+              <span class="lbl">Número de cuenta</span>
+              <input class="v-input" placeholder="0000 0000 0000 0000" />
+            </label>
+            <label class="v-field">
+              <span class="lbl">Email del beneficiario</span>
+              <input class="v-input" placeholder="opcional" />
+            </label>
+            <label class="v-field">
+              <span class="lbl">Teléfono</span>
+              <input class="v-input" placeholder="+57 300 0000000" />
+            </label>
+            <label class="v-field">
+              <span class="lbl">Alias</span>
+              <input class="v-input" placeholder="María — Bancolombia" />
+            </label>
+            <label class="v-field">
+              <span class="lbl">Notas internas</span>
+              <textarea class="v-textarea" rows="3" placeholder="Para tu referencia"></textarea>
+            </label>
+          </div>
+        </div>
+        <footer class="v-drawer__footer">
+          <button class="v-btn v-btn--ghost">Cancelar</button>
+          <button class="v-btn v-btn--primary">Continuar</button>
+        </footer>
+      </aside>
+    </div>
+
+    <!-- 3. Chart drawer -->
+    <div class="v-drawer-stage">
+      <aside class="v-drawer" role="dialog" aria-modal="true" aria-labelledby="d3-title">
+        <header class="v-drawer__header">
+          <div style="flex:1">
+            <h3 class="v-drawer__title" id="d3-title">USD / COP · 30 días</h3>
+            <div class="v-drawer__sub">Última actualización · hace 2 min</div>
+          </div>
+          <button class="v-drawer__close" aria-label="Cerrar"><svg><use href="#i-x"/></svg></button>
+        </header>
+        <div class="v-drawer__body">
+          <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:4px">
+            <span style="font:700 28px/1 var(--font-sans);color:var(--ink-900);letter-spacing:-0.02em;font-variant-numeric:tabular-nums">4,180.50</span>
+            <span class="v-badge v-badge--success"><span class="dot"></span>+0.32%</span>
+          </div>
+          <div style="font:400 12px/1.4 var(--font-sans);color:var(--ink-500);margin-bottom:16px">vs. promedio 30d · 4,167.18 COP</div>
+
+          <div class="v-drawer-chart" aria-hidden="true">
+            <span style="height:38%"></span><span style="height:46%"></span><span style="height:42%"></span>
+            <span style="height:55%"></span><span style="height:50%"></span><span style="height:62%"></span>
+            <span style="height:58%"></span><span style="height:68%"></span><span style="height:64%"></span>
+            <span style="height:72%"></span><span style="height:78%"></span><span style="height:70%"></span>
+            <span style="height:82%"></span><span style="height:76%"></span><span style="height:88%"></span>
+            <span style="height:84%"></span><span style="height:92%"></span><span style="height:86%"></span>
+          </div>
+
+          <div style="margin-top:20px">
+            <div class="v-drawer-row"><span class="lbl">Mínimo 30d</span><span class="val">4,098.20</span></div>
+            <div class="v-drawer-row"><span class="lbl">Máximo 30d</span><span class="val">4,212.85</span></div>
+            <div class="v-drawer-row"><span class="lbl">Volumen operado</span><span class="val">USD 12.4M</span></div>
+            <div class="v-drawer-row"><span class="lbl">Operaciones</span><span class="val">1,108</span></div>
+          </div>
+        </div>
+        <footer class="v-drawer__footer">
+          <button class="v-btn v-btn--secondary">Configurar alerta</button>
+          <button class="v-btn v-btn--primary">Operar ahora</button>
+        </footer>
+      </aside>
+    </div>
+
+  </div>
+</section>
+
+<!-- =================================================================== -->
+<!-- 9. RADII / SHADOWS / SPACING                                        -->
+<!-- =================================================================== -->
+<section class="uk-section uk-container">
+  <div class="uk-section-head">
+    <div>
+      <div class="num">09 — FOUNDATIONS</div>
+      <h2>Radii, elevation, space</h2>
+    </div>
+    <div class="desc">Four radii (4 / 8 / 16 / 40) and four shadows (xs, sm, md, lg). Cards use sm radius + sm shadow; panels use lg radius + xs shadow.</div>
+  </div>
+
+  <div class="cols-2">
+    <div>
+      <div class="uk-subhead">Radii</div>
+      <div class="sampler-grid">
+        <div class="sampler-cell sampler-cell--r1">4 · xs (buttons)</div>
+        <div class="sampler-cell sampler-cell--r2">8 · sm (inputs)</div>
+        <div class="sampler-cell sampler-cell--r3">16 · lg (cards)</div>
+        <div class="sampler-cell sampler-cell--r4">40 · 2xl (panels)</div>
+      </div>
+    </div>
+    <div>
+      <div class="uk-subhead">Elevation</div>
+      <div class="sampler-grid">
+        <div class="sampler-cell sampler-cell--s1 sampler-cell--r2" style="border-color:transparent">xs · icon chips</div>
+        <div class="sampler-cell sampler-cell--s2 sampler-cell--r3" style="border-color:transparent">sm · cards</div>
+        <div class="sampler-cell sampler-cell--s3 sampler-cell--r3" style="border-color:transparent">md · popovers</div>
+        <div class="sampler-cell sampler-cell--s4 sampler-cell--r3" style="border-color:transparent">lg · modals</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="uk-subhead" style="margin-top:28px">Spacing scale</div>
+  <div class="panel" style="padding:28px">
+    <div style="display:flex;align-items:flex-end;gap:14px;height:88px">
+      <div style="text-align:center"><div style="width:4px;height:8px;background:var(--valiu-purple)"></div><div class="v-caption" style="margin-top:4px">4</div></div>
+      <div style="text-align:center"><div style="width:8px;height:16px;background:var(--valiu-purple)"></div><div class="v-caption" style="margin-top:4px">8</div></div>
+      <div style="text-align:center"><div style="width:12px;height:24px;background:var(--valiu-purple)"></div><div class="v-caption" style="margin-top:4px">12</div></div>
+      <div style="text-align:center"><div style="width:16px;height:32px;background:var(--valiu-purple)"></div><div class="v-caption" style="margin-top:4px">16</div></div>
+      <div style="text-align:center"><div style="width:24px;height:48px;background:var(--valiu-purple)"></div><div class="v-caption" style="margin-top:4px">24</div></div>
+      <div style="text-align:center"><div style="width:32px;height:64px;background:var(--valiu-purple)"></div><div class="v-caption" style="margin-top:4px">32</div></div>
+      <div style="text-align:center"><div style="width:40px;height:80px;background:var(--valiu-purple)"></div><div class="v-caption" style="margin-top:4px">40</div></div>
+      <div style="text-align:center"><div style="width:64px;height:88px;background:var(--valiu-purple)"></div><div class="v-caption" style="margin-top:4px">64</div></div>
+    </div>
+  </div>
+</section>
+
+<div style="height:80px"></div>
+<div class="uk-container v-caption" style="color:var(--ink-400);border-top:1px solid var(--border-subtle);padding-top:24px">
+  Valiu Design System · UI Kit v1.0 · Built from /Design System (Valiu) + /Core-Components + /Complex-components
+</div>
+
+</body>
+</html>
