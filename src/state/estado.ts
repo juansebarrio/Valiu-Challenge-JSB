@@ -1,7 +1,7 @@
 // src/state/estado.ts — estado en memoria del prototipo y su reducer, puro y determinista.
 // Recargar reinicia el escenario; /tablero/alta construye cada frame aplicando acciones sobre el estado inicial.
 import type { Centavos, TdcMicro } from '@/lib/dinero';
-import { leerCentavos } from '@/lib/dinero';
+import { leerCentavos, limpiarMonto } from '@/lib/dinero';
 import { cotizar, deducir, ejecutable, esFinDeSemana, fechasLiquidacion, mismoDia, PARES, siguienteHabil, tdcDe, type Cotizacion, type Divisa, type Operacion, type TablaPares } from '@/lib/fx';
 import { neto } from '@/lib/posicion';
 import * as fmt from '@/lib/format';
@@ -299,9 +299,9 @@ export const cuentaQueSale = (e: Pick<EstadoApp, 'datos' | 'operaciones'>, divis
 /** Cotización del cotizador con el indicativo en vivo desde el lado que escribió el usuario (sin comisión: la clase se sabe al elegir el destino). */
 export function cotizacionCotizador(e: Pick<EstadoApp, 'tdcVivo'>, c: Cotizador): Cotizacion | null {
   if (!c.ladoFijo) return null;
-  const monto = leerCentavos(c.ladoFijo === 'recibe' ? c.recibe : c.pagas);
-  if (monto == null || monto <= 0) return null;
   const d = divisasCotizador(c);
+  const monto = leerCentavos(c.ladoFijo === 'recibe' ? c.recibe : c.pagas, d[c.ladoFijo]);
+  if (monto == null || monto <= 0) return null;
   return cotizar({ origen: d.pagas, destino: d.recibe, monto, ladoFijo: c.ladoFijo, pares: e.tdcVivo });
 }
 
@@ -322,7 +322,8 @@ export function validarCotizador(e: Pick<EstadoApp, 'datos' | 'operaciones' | 't
 function recalcularCotizador(e: Pick<EstadoApp, 'tdcVivo'>, c: Cotizador): Cotizador {
   if (!c.ladoFijo) return c;
   const cot = cotizacionCotizador(e, c);
-  return c.ladoFijo === 'recibe' ? { ...c, pagas: aTexto(cot ? cot.pagas : null) } : { ...c, recibe: aTexto(cot ? cot.recibe : null) };
+  const d = divisasCotizador(c);
+  return c.ladoFijo === 'recibe' ? { ...c, pagas: aTexto(cot ? cot.pagas : null, d.pagas) } : { ...c, recibe: aTexto(cot ? cot.recibe : null, d.recibe) };
 }
 
 /** Invertir el sentido solo si la empresa tiene cuenta en la divisa que pagaría (C-53). */
@@ -346,8 +347,9 @@ export function cotizacionPanel(e: Pick<EstadoApp, 'datos' | 'tdcVivo'>, panel: 
   return cotizar({ origen: origen.divisa, destino: orden.destino.divisa, monto: orden.monto, ladoFijo: orden.ladoFijo, fechaValor: panel.fechaValor, tdc, pares: e.tdcVivo, comisionBp: comisionPara(e, origen.divisa, orden.destino) });
 }
 
-function aTexto(c: Centavos | null) {
-  return c != null && c > 0 ? fmt.numero(c) : '';
+/** Monto de un campo, con los decimales de su divisa (sin decimales en JPY, C-57). */
+function aTexto(c: Centavos | null, divisa: Divisa) {
+  return c != null && c > 0 ? fmt.numero(c, divisa) : '';
 }
 
 /** C-48: con la ventana abierta, el precio ejecutable sigue al indicativo en vivo; mientras se confirma queda el del momento del clic. */
@@ -462,7 +464,7 @@ export function fechaAgendable(f: Date): 'ok' | 'fin-de-semana' | 'fuera-de-rang
 /** El pago que crearía "Cargar" con lo cargado, o null si falta algo. */
 export function pagoAgendado(e: Pick<EstadoApp, 'datos' | 'panel'>): PagoFuturo | null {
   const { destino, montoTexto, fecha, motivo, referencia } = e.panel.agenda;
-  const monto = leerCentavos(montoTexto);
+  const monto = destino ? leerCentavos(montoTexto, destino.divisa) : null;
   if (!destino || destino.tipo !== 'tercero' || monto == null || monto <= 0 || !fecha || fechaAgendable(fecha) !== 'ok') return null;
   const n = e.datos.pagosFuturos.filter((p) => p.id.startsWith('a')).length + 1;
   return {
@@ -692,8 +694,11 @@ export function reducer(e: EstadoApp, a: Accion): EstadoApp {
       return { ...e, onboarding: { ...e.onboarding, activo: false }, cotizador: cerrarSelector(e.cotizador), panel: { ...PANEL_CERRADO, abierto: true, tipo: 'agendar', paso: 'destino' } };
     case 'agendaDestino':
       return { ...e, panel: { ...e.panel, paso: 'revision', busquedaDestino: '', agenda: { ...e.panel.agenda, destino: a.destino } } };
-    case 'agendaMonto':
-      return { ...e, panel: { ...e.panel, agenda: { ...e.panel.agenda, montoTexto: a.texto.replace(/[^\d.,]/g, '') } } };
+    case 'agendaMonto': {
+      // En una divisa sin decimales (JPY) el campo no acepta el punto (C-57).
+      const montoTexto = limpiarMonto(a.texto, e.panel.agenda.destino?.divisa);
+      return montoTexto == null ? e : { ...e, panel: { ...e.panel, agenda: { ...e.panel.agenda, montoTexto } } };
+    }
     case 'agendaFecha':
       return { ...e, panel: { ...e.panel, agenda: { ...e.panel.agenda, fecha: a.fecha } } };
     case 'agendaMotivo':
@@ -729,15 +734,18 @@ export function reducer(e: EstadoApp, a: Accion): EstadoApp {
     case 'cotAbierto':
       return { ...e, cotizador: { ...cerrarSelector(e.cotizador), abierto: a.abierto } };
     case 'cotMonto': {
-      const limpio = a.valor.replace(/[^\d.,]/g, '');
+      // En una divisa sin decimales (JPY) el campo no acepta el punto (C-57).
+      const limpio = limpiarMonto(a.valor, divisasCotizador(e.cotizador)[a.lado]);
+      if (limpio == null) return e;
       const c: Cotizador = { ...cerrarSelector(e.cotizador), [a.lado]: limpio, ladoFijo: a.lado };
       return { ...e, cotizador: recalcularCotizador(e, c) };
     }
     case 'cotEditando': {
       if (a.lado) return { ...e, cotizador: { ...e.cotizador, editando: a.lado } };
       const c = e.cotizador;
-      const normal = (t: string) => aTexto(leerCentavos(t));
-      return { ...e, cotizador: recalcularCotizador(e, { ...c, editando: null, recibe: normal(c.recibe), pagas: normal(c.pagas) }) };
+      const d = divisasCotizador(c);
+      const normal = (t: string, divisa: Divisa) => aTexto(leerCentavos(t, divisa), divisa);
+      return { ...e, cotizador: recalcularCotizador(e, { ...c, editando: null, recibe: normal(c.recibe, d.recibe), pagas: normal(c.pagas, d.pagas) }) };
     }
     case 'cotInvertir': {
       const c = e.cotizador;

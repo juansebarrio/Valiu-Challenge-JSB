@@ -112,8 +112,11 @@ export interface Arquetipo {
   ordenPosiciones: CuentaId[];
   /** Pago que resuelven los escenarios "resuelta" y "pactada". */
   pagoPrincipal: string;
-  /** Escenario "otras-divisas" (C-54): el pago cargado que se suma al base, en una divisa en la que la empresa no tiene cuenta. */
-  pagoOtrasDivisas: { destinatarioId: string; monto: number; fecha: Date; referencia: string };
+  /**
+   * Escenario "otras-divisas" (C-54, C-57): los pagos cargados que se suman al base, en divisas en las que la empresa no tiene cuenta, y los
+   * destinatarios que solo existen en ese escenario (el base no cambia).
+   */
+  otrasDivisas: { destinatarios: Destinatario[]; pagos: { id: string; destinatarioId: string; monto: number; fecha: Date; referencia: string }[] };
   /** "Usar para pagar": paso Destino (como quedó en el código para la importadora) o paso Pago "¿Qué pagas con este cobro?" (D-30). */
   /** Tres líneas de contexto de la tarjeta de la pantalla inicial. */
   contexto: string[];
@@ -128,6 +131,7 @@ export const NOMBRE_DIVISA: Record<Divisa, { singular: string; plural: string; c
   EUR: { singular: 'Euro', plural: 'Euros', con: 'euros' },
   GBP: { singular: 'Libra', plural: 'Libras', con: 'libras' },
   CAD: { singular: 'Dólar canadiense', plural: 'Dólares canadienses', con: 'dólares canadienses' },
+  JPY: { singular: 'Yen', plural: 'Yenes', con: 'yenes' },
 };
 
 const CUENTAS: Cuenta[] = [
@@ -195,6 +199,7 @@ export const TENDENCIAS: Record<string, number[]> = {
   'EUR/USD': [1.1712, 1.1725, 1.1719, 1.1738, 1.1731, 1.1746, 1.1742, 1.175],
   'GBP/MXN': [24.262, 24.271, 24.268, 24.284, 24.279, 24.295, 24.288, 24.3],
   'CAD/MXN': [13.171, 13.178, 13.175, 13.186, 13.182, 13.195, 13.189, 13.2],
+  'JPY/MXN': [0.12218, 0.12226, 0.12223, 0.12237, 0.12232, 0.12246, 0.12241, 0.1225],
 };
 export const HORA_TDC = '10:42';
 
@@ -208,7 +213,18 @@ export const IMPORTADORA: Arquetipo = {
   paresTarjeta: ['USD/MXN', 'EUR/MXN'],
   ordenPosiciones: ORDEN_POSICIONES,
   pagoPrincipal: 'p1',
-  pagoOtrasDivisas: { destinatarioId: 'tt', monto: 40_000, fecha: new Date(2026, 9, 9), referencia: 'Factura TT-3381' /* inventado */ },
+  // Escenario "otras-divisas": el pago en libras (C-54) y dos en yenes (C-57), a proveedores japoneses que solo existen en ese escenario. Inventados.
+  otrasDivisas: {
+    destinatarios: [
+      { id: 'kpp', nombre: 'Kanto Precision Parts K.K.', divisa: 'JPY', banco: 'MUFG Bank', mascara: '5402' }, // inventado (C-57)
+      { id: 'npc', nombre: 'Nagoya Packaging Co.', divisa: 'JPY', banco: 'Mizuho Bank', mascara: '1187' }, // inventado (C-57)
+    ],
+    pagos: [
+      { id: 'x1', destinatarioId: 'tt', monto: 40_000, fecha: new Date(2026, 9, 9), referencia: 'Factura TT-3381' },
+      { id: 'x2', destinatarioId: 'kpp', monto: 600_000, fecha: new Date(2026, 9, 9), referencia: 'Factura KP-2207' },
+      { id: 'x3', destinatarioId: 'npc', monto: 250_000, fecha: new Date(2026, 9, 13), referencia: 'Pedido NP-0418' },
+    ],
+  },
   contexto: [
     `Faltan ${fmt.monto(PAGOS_USD.reduce((acc, p) => acc + p.monto, 0) - CUENTAS[1].saldo, 'USD')} para los pagos de la semana`,
     `Paga ${fmt.monto(PAGOS_USD[0].monto, 'USD')} a ${PAGOS_USD[0].destinatario} con pesos`,
@@ -225,14 +241,16 @@ export const pagoA = (destinatarios: Destinatario[], id: string, destinatarioId:
 /**
  * Datos del escenario pedido para un arquetipo. "resuelta" y "pactada" parten del base y aplican el pago principal (src/state/escenarios.ts);
  * "sin-saldo" deja la cuenta en pesos en 20,000.00 sin el cobro de hoy y sin pagos en pesos; "mercado-cerrado" solo cambia el mercado;
- * "otras-divisas" suma al base un pago cargado en una divisa sin cuenta (C-54).
+ * "otras-divisas" suma al base pagos cargados en divisas sin cuenta (C-54; en la importadora, uno en libras y dos en yenes, C-57) con sus
+ * destinatarios.
  */
 export function datosEscenario(nombre: EscenarioNombre, arquetipo: Arquetipo = IMPORTADORA): Datos {
   const d = arquetipo.datos;
   const base: Datos = { ...d, cuentas: d.cuentas.map((c) => ({ ...c })), pagosFuturos: [...d.pagosFuturos] };
   if (nombre === 'otras-divisas') {
-    const o = arquetipo.pagoOtrasDivisas;
-    return { ...base, pagosFuturos: [...base.pagosFuturos, pagoA(d.destinatarios, 'x1', o.destinatarioId, o.monto, o.fecha, o.referencia)] };
+    const o = arquetipo.otrasDivisas;
+    const destinatarios = [...d.destinatarios, ...o.destinatarios];
+    return { ...base, destinatarios, pagosFuturos: [...base.pagosFuturos, ...o.pagos.map((x) => pagoA(destinatarios, x.id, x.destinatarioId, x.monto, x.fecha, x.referencia))] };
   }
   if (nombre === 'sin-saldo') {
     const cobro = d.loNuevo;

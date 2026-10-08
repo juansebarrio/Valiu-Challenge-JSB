@@ -1,5 +1,6 @@
 'use client';
 import type { FC } from 'react';
+import * as fmt from '@/lib/format';
 import type { Accion } from '@/state/estado';
 import { fechaDeIso, type VistaAgenda } from '@/state/vistas';
 import { ChipDivisa } from './ui/ChipDivisa';
@@ -15,7 +16,7 @@ export const AgendarPago: FC<{ vista: VistaAgenda; dispatch: (a: Accion) => void
         <span className="flex min-w-0 flex-1 flex-col"><span className="truncate text-body font-semibold">{v.destinatario}</span><span className="truncate text-caption text-app-ink-2 tabular-nums">{v.destinoSub}</span></span>
       </div>
       <div className="grid grid-cols-2 gap-3">
-        <CampoTexto etiqueta="Monto" monto inputMode="decimal" placeholder="0.00" sufijo={v.divisa} valor={v.montoTexto} onCambiar={(t) => dispatch({ tipo: 'agendaMonto', texto: t })} error={v.montoError} autoFocus />
+        <CampoTexto etiqueta="Monto" monto inputMode={fmt.decimales(v.divisa) === 0 ? 'numeric' : 'decimal'} placeholder={fmt.numero(0, v.divisa)} sufijo={v.divisa} valor={v.montoTexto} onCambiar={(t) => dispatch({ tipo: 'agendaMonto', texto: t })} error={v.montoError} autoFocus />
         <CampoTexto etiqueta="Vence el" type="date" min={v.fechaMin} max={v.fechaMax} valor={v.fecha} onCambiar={(t) => dispatch({ tipo: 'agendaFecha', fecha: fechaDeIso(t) })} error={v.fechaError} className="tabular-nums" />
       </div>
       <div className="grid grid-cols-2 gap-3">

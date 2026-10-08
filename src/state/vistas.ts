@@ -140,7 +140,7 @@ export function vistaTipoDeCambio(e: EstadoApp): VistaTipoDeCambio {
       pagas: { divisa: d.pagas, valor: c.pagas },
       ladoFijo: c.ladoFijo,
       invertir: puedeInvertir(e, c),
-      desde: v.cuenta ? `Desde ${v.cuenta.nombre} · saldo ${fmt.numero(v.cuenta.saldo)}` : null,
+      desde: v.cuenta ? `Desde ${v.cuenta.nombre} · saldo ${fmt.numero(v.cuenta.saldo, v.cuenta.divisa)}` : null,
       error: v.superaSaldo && v.cuenta ? `Supera tu saldo disponible: ${fmt.monto(v.cuenta.saldo, v.cuenta.divisa)}.` : null,
       mercadoCerrado: e.datos.mercado === 'cerrado' ? avisoMercadoCerrado() : null,
       continuar: v.valido,
@@ -174,7 +174,7 @@ export function vistaHome(e: EstadoApp): VistaHome {
         const t = op ? tdcDe(op, e.tdcVivo) : null;
         const cot = t != null ? cotizar({ origen: 'MXN', destino: c.divisa, monto: p.resultado.monto, ladoFijo: 'recibe', pares: e.tdcVivo }) : null;
         if (cot) linea = `≈ ${fmt.monto(cot.pagas, 'MXN')} a precio de compra`;
-        accion = { label: `Comprar ${fmt.compacto(p.resultado.monto)} ${c.divisa}`, orden: ordenACuenta(c, p.resultado.monto) };
+        accion = { label: `Comprar ${fmt.compacto(p.resultado.monto, c.divisa)} ${c.divisa}`, orden: ordenACuenta(c, p.resultado.monto) };
       }
     } else if (p.resultado.tipo === 'nada') {
       // Sin pendientes porque el único pago en esta divisa ya se pagó (o pactó) desde otra cuenta: la tarjeta dice con qué.
@@ -595,7 +595,7 @@ export function vistaPanel(e: EstadoApp): VistaPanel | null {
       primario: { label: panel.volverA === 'destino' ? 'Guardar y pagar' : 'Guardar', habilitado: Object.keys(errores).length === 0, accion: 'guardarDestinatario' },
       secundario: panel.volverA === 'destino' ? { label: 'Volver', accion: 'volverDestino' } : { label: 'Cancelar', accion: 'cancelar' },
       // Cualquier divisa de Valiu, haya o no cuenta en ella (C-54): se paga con tipo de cambio desde una cuenta que sí la tenga.
-      destinatario: { nombre: d.nombre, divisa: d.divisa, divisas: ['MXN', 'USD', 'EUR', 'GBP', 'CAD'], banco: d.banco, cuenta: d.cuenta, errores: mostrar, valido: Object.keys(errores).length === 0, volverA: panel.volverA },
+      destinatario: { nombre: d.nombre, divisa: d.divisa, divisas: ['MXN', 'USD', 'EUR', 'GBP', 'CAD', 'JPY'], banco: d.banco, cuenta: d.cuenta, errores: mostrar, valido: Object.keys(errores).length === 0, volverA: panel.volverA },
     };
   }
 
@@ -1046,7 +1046,7 @@ function vistaAgendarPanel(e: EstadoApp, vacio: VistaPanel): VistaPanel {
       primario: { label: 'Volver al inicio', habilitado: true, accion: 'volverInicio' }, secundario: { label: 'Pagar ahora', accion: 'pagar' },
     };
   }
-  const monto = leerCentavos(agenda.montoTexto);
+  const monto = leerCentavos(agenda.montoTexto, d.divisa);
   const montoError = agenda.montoTexto && (monto == null || monto <= 0) ? 'Escribe un monto mayor a 0.' : null;
   const validez = agenda.fecha ? fechaAgendable(agenda.fecha) : null;
   const fechaError = validez === 'fin-de-semana' ? 'Elige un día hábil.' : validez === 'fuera-de-rango' ? `Elige una fecha entre hoy y el ${fmt.fechaLarga(fechaMaximaAgendable())}.` : null;

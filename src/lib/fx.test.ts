@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { cotizar, deducir, ejecutable, fechasLiquidacion, siguienteHabil } from './fx';
-import { centavos, entreTdc, escalarTdc, leerCentavos, porTdc } from './dinero';
+import { aUnidad, centavos, entreTdc, escalarTdc, leerCentavos, limpiarMonto, porTdc } from './dinero';
 import * as fmt from './format';
 import { ARQUETIPO_IDS, arquetipoDe } from '@/data/arquetipos';
 
@@ -150,5 +150,49 @@ describe('la tabla de pares cierra (C-45)', () => {
   }
   it('los dos arquetipos usan la misma tabla', () => {
     expect(arquetipoDe('turismo').pares).toEqual(arquetipoDe('importadora').pares);
+  });
+});
+
+describe('C-57 · el yen no tiene decimales', () => {
+  const CON_DECIMALES = ['MXN', 'USD', 'EUR', 'GBP', 'CAD'] as const;
+  it('monto() y numero(): JPY sin decimales; MXN, USD, EUR, GBP y CAD siguen con dos', () => {
+    expect(fmt.decimales('JPY')).toBe(0);
+    expect(fmt.monto(centavos(600_000), 'JPY')).toBe('600,000 JPY');
+    expect(fmt.montoSigno(-centavos(250_000), 'JPY')).toBe('−250,000 JPY');
+    expect(fmt.numero(centavos(600_000), 'JPY')).toBe('600,000');
+    expect(fmt.numero(0, 'JPY')).toBe('0');
+    for (const d of CON_DECIMALES) {
+      expect(fmt.decimales(d)).toBe(2);
+      expect(fmt.monto(centavos(1_234.5), d)).toBe(`1,234.50 ${d}`);
+      expect(fmt.numero(0, d)).toBe('0.00');
+    }
+  });
+  it('lectura de campos: en JPY rechaza decimales; en las demás, hasta dos', () => {
+    expect(leerCentavos('600,000', 'JPY')).toBe(centavos(600_000));
+    expect(leerCentavos('600000.5', 'JPY')).toBeNull();
+    expect(leerCentavos('600,000.00', 'JPY')).toBeNull();
+    expect(limpiarMonto('600000.', 'JPY')).toBeNull();
+    expect(limpiarMonto('600,000', 'JPY')).toBe('600,000');
+    for (const d of CON_DECIMALES) {
+      expect(leerCentavos('1,234.56', d)).toBe(centavos(1_234.56));
+      expect(leerCentavos('1234.567', d)).toBeNull();
+      expect(limpiarMonto('1,234.5', d)).toBe('1,234.5');
+    }
+  });
+  it('internamente sigue en centavos: lo que se convierte a yenes va a unidades enteras (múltiplos de 100), half-up', () => {
+    expect(aUnidad(8_163_265, 'JPY')).toBe(8_163_300);
+    expect(aUnidad(8_163_249, 'JPY')).toBe(8_163_200);
+    expect(aUnidad(123_456, 'MXN')).toBe(123_456);
+    const c = cotizar({ origen: 'MXN', destino: 'JPY', monto: centavos(10_000), ladoFijo: 'pagas' })!; // 10,000 / 0.122500 = 81,632.65…
+    expect(c.recibe).toBe(centavos(81_633));
+    expect(fmt.monto(c.recibe, 'JPY')).toBe('81,633 JPY');
+  });
+  it('JPY/MXN: ejecutable 0.122508 al comprar; 600,000 JPY son 73,500.00 MXN al indicativo y 600,000 × 0.122508 = 73,504.80 MXN al ejecutable, half-up', () => {
+    expect(deducir('MXN', 'JPY')).toMatchObject({ tipo: 'compra', par: 'JPY/MXN', lado: 'comprar' });
+    expect(deducir('USD', 'JPY')).toBeNull();
+    expect(ejecutable(122_500, 'comprar')).toBe(122_508);
+    expect(cotizar({ origen: 'MXN', destino: 'JPY', monto: centavos(600_000), ladoFijo: 'recibe' })!.pagas).toBe(centavos(73_500));
+    expect(cotizar({ origen: 'MXN', destino: 'JPY', monto: centavos(600_000), ladoFijo: 'recibe', tdc: 122_508 })!.pagas).toBe(porTdc(centavos(600_000), 122_508));
+    expect(porTdc(centavos(600_000), 122_508)).toBe(centavos(73_504.8));
   });
 });

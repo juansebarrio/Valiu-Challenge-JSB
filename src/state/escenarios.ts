@@ -73,9 +73,9 @@ export function filasTablero(): FilaTablero[] {
   const conMonto = aplicar([{ tipo: 'cotMonto', lado: 'recibe', valor: '10000' }, { tipo: 'cotEditando', lado: null }], base);
   const desdeCotizador = aplicar([{ tipo: 'cotContinuar' }], conMonto);
 
-  // Otras divisas (C-54): el base más un pago de 40,000.00 GBP sin cuenta en libras, que paga la cuenta en pesos.
+  // Otras divisas (C-54, C-57): el base más 40,000.00 GBP, 600,000 JPY y 250,000 JPY sin cuenta en esas divisas, que paga la cuenta en pesos.
   const otras = estadoDeEscenario('otras-divisas');
-  const origenLibras = aplicar([{ tipo: 'abrirPanel', orden: ordenDePago(pagoPorId(otras, 'x1')!) }], otras);
+  const origenYenes = aplicar([{ tipo: 'abrirPanel', orden: ordenDePago(pagoPorId(otras, 'x2')!) }], otras);
 
   return [
     {
@@ -114,12 +114,12 @@ export function filasTablero(): FilaTablero[] {
     },
     {
       titulo: 'Otras divisas',
-      nota: 'Escenario otras-divisas: un pago cargado de 40,000.00 GBP sin cuenta en libras cuenta contra la cuenta de fondeo (pesos), al indicativo de compra, y se paga con tipo de cambio',
+      nota: 'Escenario otras-divisas: tres pagos cargados en divisas sin cuenta (40,000.00 GBP, 600,000 JPY y 250,000 JPY) cuentan contra la cuenta de fondeo (pesos), al indicativo de compra, y se pagan con tipo de cambio; el yen va sin decimales',
       frames: [
-        { n: 'O1', titulo: 'Inicio con un pago en libras', nota: 'MXN suma "Pagos en otras divisas (1) ≈ −972,000.00" y "Sobran ≈ 127,649.50"; la fila del pago, −40,000.00 GBP con "≈ 972,000.00 MXN hoy"; GBP/MXN entra en "Tus pares".', estado: otras },
-        { n: 'O2', titulo: 'Desglose · Pagos en otras divisas', nota: 'La fila de la tarjeta abre su desglose en la ventana de pago: el pago en libras con su equivalente al indicativo y "Pagar".', estado: aplicar([{ tipo: 'abrirDesglose', cuentaId: 'mxn', fila: 'pagosOtrasDivisas' }], otras) },
-        { n: 'O3', titulo: 'Ventana de pago · Origen del pago en libras', nota: 'La cuenta de fondeo viene preseleccionada con "Pagas ≈ 972,000.00 MXN"; la Cuenta USD y la Cuenta EUR no tienen par con libras: "Sin par disponible".', estado: origenLibras },
-        { n: 'O4', titulo: 'Ventana de pago · Revisión del pago en libras', nota: 'Como cualquier pago con tipo de cambio: GBP/MXN indicativo, fecha valor, comisión y la cuenta en pesos después del pago.', estado: aplicar(revision, origenLibras) },
+        { n: 'O1', titulo: 'Inicio con pagos en libras y en yenes', nota: 'MXN suma "Pagos en otras divisas (3) ≈ −1,076,125.00" y "Sobran ≈ 23,524.50"; la proyección baja el vie 9 por la libra y el primer pago en yenes. En la semana, −40,000.00 GBP con "≈ 972,000.00 MXN hoy" y −600,000 JPY con "≈ 73,500.00 MXN hoy"; el de 250,000 JPY vence el mar 13 y está en la lista completa. GBP/MXN y JPY/MXN entran en "Tus pares".', estado: otras },
+        { n: 'O2', titulo: 'Desglose · Pagos en otras divisas', nota: 'La fila de la tarjeta abre su desglose en la ventana de pago: los tres pagos por fecha, cada uno en su divisa con su equivalente y el precio, y "Pagar".', estado: aplicar([{ tipo: 'abrirDesglose', cuentaId: 'mxn', fila: 'pagosOtrasDivisas' }], otras) },
+        { n: 'O3', titulo: 'Ventana de pago · Origen del pago en yenes', nota: 'Pago de 600,000 JPY a Kanto Precision Parts K.K.: la cuenta de fondeo viene preseleccionada con "Pagas ≈ 73,500.00 MXN"; la Cuenta USD y la Cuenta EUR no tienen par con yenes: "Sin par disponible". Igual con las libras.', estado: origenYenes },
+        { n: 'O4', titulo: 'Ventana de pago · Revisión del pago en yenes', nota: 'Como cualquier pago con tipo de cambio: JPY/MXN indicativo, fecha valor, comisión y la cuenta en pesos después del pago; los yenes, sin decimales.', estado: aplicar(revision, origenYenes) },
       ],
     },
     {

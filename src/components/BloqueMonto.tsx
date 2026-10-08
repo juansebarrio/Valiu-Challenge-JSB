@@ -1,6 +1,6 @@
 'use client';
 import { useState, type FC, type ReactNode } from 'react';
-import { leerCentavos, type Centavos } from '@/lib/dinero';
+import { leerCentavos, limpiarMonto, type Centavos } from '@/lib/dinero';
 import * as fmt from '@/lib/format';
 import type { Divisa } from '@/lib/fx';
 import { Badge } from './ui/Badge';
@@ -40,17 +40,24 @@ const Lado: FC<{ label: string; monto: Centavos; divisa: Divisa; aprox: boolean;
             <span className="sr-only">{label}</span>
             {aprox ? <span className="text-amount font-semibold">≈</span> : null}
             <input
-              inputMode="decimal"
-              value={texto ?? (monto > 0 ? fmt.numero(monto) : '')}
-              placeholder="0.00"
-              onFocus={() => setTexto(monto > 0 ? fmt.numero(monto) : '')}
-              onChange={(e) => { const t = e.target.value.replace(/[^\d.,]/g, ''); setTexto(t); const c = leerCentavos(t); if (c != null) onCambiar?.(c); }}
+              inputMode={fmt.decimales(divisa) === 0 ? 'numeric' : 'decimal'}
+              value={texto ?? (monto > 0 ? fmt.numero(monto, divisa) : '')}
+              placeholder={fmt.numero(0, divisa)}
+              onFocus={() => setTexto(monto > 0 ? fmt.numero(monto, divisa) : '')}
+              onChange={(e) => {
+                // En una divisa sin decimales (JPY) el punto no se acepta (C-57).
+                const t = limpiarMonto(e.target.value, divisa);
+                if (t == null) return;
+                setTexto(t);
+                const c = leerCentavos(t, divisa);
+                if (c != null) onCambiar?.(c);
+              }}
               onBlur={() => setTexto(null)}
               className="min-w-0 flex-1 rounded-xs bg-transparent text-amount font-semibold outline-none placeholder:text-app-ink-3 focus:bg-app-accent-bg"
             />
           </label>
         ) : (
-          <span className="text-amount font-semibold">{aprox ? '≈ ' : ''}{fmt.numero(monto)}</span>
+          <span className="text-amount font-semibold">{aprox ? '≈ ' : ''}{fmt.numero(monto, divisa)}</span>
         )}
         <span className="text-caption font-semibold text-app-ink-2">{divisa}</span>
       </div>

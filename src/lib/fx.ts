@@ -1,8 +1,8 @@
 // src/lib/fx.ts — deduce tipo de operación, par y lado a partir de origen y destino, y cotiza.
 // Sección 5 y Anexo A de la consigna; dinero en centavos y tipo de cambio en micro-unidades (dinero.ts).
-import { entreTdc, escalarTdc, porBp, porTdc, sinBp, type Centavos, type TdcMicro } from './dinero';
+import { aUnidad, entreTdc, escalarTdc, porBp, porTdc, sinBp, type Centavos, type TdcMicro } from './dinero';
 
-export type Divisa = 'MXN' | 'USD' | 'EUR' | 'GBP' | 'CAD';
+export type Divisa = 'MXN' | 'USD' | 'EUR' | 'GBP' | 'CAD' | 'JPY';
 /** Lado del tipo de cambio: si el usuario recibe la divisa base, aplica comprar; si la entrega, vender. */
 export type Lado = 'comprar' | 'vender';
 export type TipoOperacion = 'transferencia' | 'compra' | 'venta';
@@ -20,7 +20,7 @@ export type TablaPares = Record<string, Pick<Par, 'compra' | 'venta'>>;
  * El par siempre es BASE/COTIZADA. USD/MXN viene del handoff; EUR/MXN 21.250000 / 21.100000 y EUR/USD 1.175000 / 1.171000 cierran con él:
  * ninguna vuelta MXN → USD → EUR → MXN (ni la inversa) termina con más de lo que empezó (C-45). Una sola tabla para los dos arquetipos;
  * el EUR/MXN 19.619888 / 19.474706 del handoff de la importadora no cerraba (19.474706 / 18.091183 = 1.0765 USD por EUR contra 1.171 directo).
- * GBP/MXN y CAD/MXN son inventados y se operan como los demás (C-53, C-54).
+ * GBP/MXN y CAD/MXN son inventados y se operan como los demás (C-53, C-54); JPY/MXN también (C-57).
  */
 export const PARES: Record<string, Par> = {
   'USD/MXN': { compra: 18_091_183, venta: 18_032_135, ejemplo: false },
@@ -28,6 +28,7 @@ export const PARES: Record<string, Par> = {
   'EUR/MXN': { compra: 21_250_000, venta: 21_100_000, ejemplo: false },
   'GBP/MXN': { compra: 24_300_000, venta: 24_100_000, ejemplo: true },
   'CAD/MXN': { compra: 13_200_000, venta: 13_050_000, ejemplo: true },
+  'JPY/MXN': { compra: 122_500, venta: 121_500, ejemplo: true },
 };
 
 export interface Operacion {
@@ -94,7 +95,8 @@ export interface Cotizacion extends Operacion {
 /**
  * Una sola función para cotizar: calcula el otro lado del monto con el tipo de cambio que corresponde y la comisión (C-50).
  * Pagas = lo que recibe el destino convertido al precio × (1 + tasa), half-up a centavos; con tasa 0 ningún número cambia.
- * Si el lado fijo es "pagas", la comisión sale de ese monto y el resto se convierte.
+ * Si el lado fijo es "pagas", la comisión sale de ese monto y el resto se convierte. En una divisa sin decimales (JPY) el monto
+ * calculado va a unidades enteras, half-up (C-57).
  */
 export function cotizar(p: ParamsCotizar): Cotizacion | null {
   const op = deducir(p.origen, p.destino);
@@ -110,11 +112,11 @@ export function cotizar(p: ParamsCotizar): Cotizacion | null {
   const aOrigen = (recibe: Centavos) => (t == null ? recibe : baseEsDestino ? porTdc(recibe, t) : entreTdc(recibe, t));
   const aDestino = (sale: Centavos) => (t == null ? sale : baseEsDestino ? entreTdc(sale, t) : porTdc(sale, t));
   if (p.ladoFijo === 'pagas') {
-    const sinComision = sinBp(p.monto, bp);
-    return { ...op, tdc: t, pagas: p.monto, recibe: aDestino(sinComision), comision: p.monto - sinComision, comisionBp: bp };
+    const sinComision = aUnidad(sinBp(p.monto, bp), p.origen);
+    return { ...op, tdc: t, pagas: p.monto, recibe: aUnidad(aDestino(sinComision), p.destino), comision: p.monto - sinComision, comisionBp: bp };
   }
-  const base = aOrigen(p.monto);
-  const comision = porBp(base, bp);
+  const base = aUnidad(aOrigen(p.monto), p.origen);
+  const comision = aUnidad(porBp(base, bp), p.origen);
   return { ...op, tdc: t, recibe: p.monto, pagas: base + comision, comision, comisionBp: bp };
 }
 

@@ -46,8 +46,8 @@ export const TarjetaTipoDeCambio: FC<TarjetaTipoDeCambioProps> = ({ par, compra,
       <CampoTexto
         etiqueta={lado === 'recibe' ? 'Recibes' : 'Pagas'}
         monto
-        inputMode="decimal"
-        placeholder="0.00"
+        inputMode={fmt.decimales(v.divisa) === 0 ? 'numeric' : 'decimal'}
+        placeholder={fmt.numero(0, v.divisa)}
         valor={v.valor}
         sufijo={v.divisa}
         onCambiar={(t) => onMonto?.(lado, t)}
@@ -88,7 +88,8 @@ export const TarjetaTipoDeCambio: FC<TarjetaTipoDeCambioProps> = ({ par, compra,
       {otros.map((o) => (
         <dl key={o.par} className="flex items-baseline justify-between gap-3 border-t border-app-divider pt-2.5 tabular-nums">
           <dt className="text-body font-semibold">{o.par}</dt>
-          <dd className="text-caption text-app-ink-2"><span className="sr-only">Para </span>comprar {o.base} <span className="font-semibold text-app-ink">{fmt.tdc(o.compra)}</span> · vender {o.base} <span className="font-semibold text-app-ink">{fmt.tdc(o.venta)}</span></dd>
+          {/* "vender" no se separa de su precio (con JPY/MXN quedaba solo al final de la línea, C-57). */}
+          <dd className="text-caption text-app-ink-2"><span className="sr-only">Para </span>comprar {o.base} <span className="font-semibold text-app-ink">{fmt.tdc(o.compra)}</span> · <span className="whitespace-nowrap">vender {o.base} <span className="font-semibold text-app-ink">{fmt.tdc(o.venta)}</span></span></dd>
         </dl>
       ))}
       <div data-component="Cotizador" className="flex flex-col border-t border-app-divider pt-2.5">

@@ -53,7 +53,7 @@ export const TURISMO: Arquetipo = {
   ordenPosiciones: ['eur', 'usd', 'mxn'],
   pagoPrincipal: 't-p1',
   // Escenario "otras-divisas" (C-54) en turismo: inventado; el monto deja que la cuenta en pesos lo pague hoy.
-  pagoOtrasDivisas: { destinatarioId: 'lhg', monto: 4_000, fecha: new Date(2026, 9, 9), referencia: 'Reserva LHG-552' },
+  otrasDivisas: { destinatarios: [], pagos: [{ id: 'x1', destinatarioId: 'lhg', monto: 4_000, fecha: new Date(2026, 9, 9), referencia: 'Reserva LHG-552' }] },
   contexto: [
     `La ${CUENTAS[2].nombre} está en cero: faltan ${fmt.monto(PAGOS[1].monto, 'EUR')}`,
     `Cobra ${fmt.monto(LO_NUEVO.monto, 'MXN')} de ${LO_NUEVO.de} y paga al ${PAGOS[1].destinatario} el viernes`,

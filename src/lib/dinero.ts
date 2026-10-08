@@ -1,5 +1,6 @@
 // src/lib/dinero.ts — dinero en centavos enteros y tipo de cambio en micro-unidades (6 decimales).
 // Nada de floats para dinero: las operaciones mixtas usan BigInt y redondeo half-up.
+import { decimales } from './format';
 
 /** Monto en centavos (entero). 1,180,000.00 MXN = 118_000_000. */
 export type Centavos = number;
@@ -39,12 +40,28 @@ export const sinBp = (c: Centavos, bp: number): Centavos => Number(dividirHalfUp
 /** Tipo de cambio × (1 + r), con r una fracción chica (oscilación del indicativo). */
 export const oscilarTdc = (t: TdcMicro, r: number): TdcMicro => Math.round(t * (1 + r));
 
-/** Texto escrito por el usuario ("1,000" / "1000.5") → centavos. Null si no es un número. */
-export function leerCentavos(texto: string): Centavos | null {
+/** Centavos a la unidad mínima de la divisa, half-up: en una sin decimales (JPY, C-57), múltiplos de 100. */
+export function aUnidad(c: Centavos, divisa?: string): Centavos {
+  const paso = 10n ** BigInt(2 - decimales(divisa));
+  return paso === 1n ? c : Number(dividirHalfUp(BigInt(c), paso) * paso);
+}
+
+/**
+ * Texto escrito por el usuario ("1,000" / "1000.5") → centavos. Null si no es un número o si trae decimales en una divisa que no los
+ * tiene ("600000.5" en JPY, C-57).
+ */
+export function leerCentavos(texto: string, divisa?: string): Centavos | null {
   const limpio = texto.replace(/,/g, '').trim();
-  if (!/^\d*(\.\d{0,2})?$/.test(limpio) || limpio === '' || limpio === '.') return null;
+  const patron = decimales(divisa) === 0 ? /^\d+$/ : /^\d*(\.\d{0,2})?$/;
+  if (!patron.test(limpio) || limpio === '' || limpio === '.') return null;
   const [ent, dec = ''] = limpio.split('.');
   return Number(ent || '0') * 100 + Number((dec + '00').slice(0, 2));
+}
+
+/** Lo que se acepta al escribir un monto: dígitos, comas y el punto decimal; null si trae un punto en una divisa sin decimales (C-57). */
+export function limpiarMonto(texto: string, divisa?: string): string | null {
+  if (decimales(divisa) === 0 && texto.includes('.')) return null;
+  return texto.replace(/[^\d.,]/g, '');
 }
 
 /** Solo para gráficas: centavos → número de pantalla. */

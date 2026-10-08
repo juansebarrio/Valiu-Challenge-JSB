@@ -21,7 +21,7 @@ Todo corre en el navegador, con estado en memoria (recargar reinicia el escenari
 | `/tablero/alta` | Todos los frames (01–07, 03B–07B, Estados, C1–C4, O1–O4, G1, D1–D3, A1–A4, S01–S08 con S07H/S08H, N4–N6, 17–19) renderizados desde el estado del reducer a 1280 px. `/tablero` redirige acá. |
 | `/sistema` | Guía viva: tokens del design system y cada componente en sus estados. |
 
-Parámetros: `?escenario=faltante|resuelta|pactada|sin-saldo|mercado-cerrado|otras-divisas` (`otras-divisas`: el base más un pago cargado en libras, sin cuenta en libras), `?congelar=1` (tipo de cambio fijo), `?demo=1` (vencer precio, ver recorrido, reiniciar), `?recorrido=0`, `?pago=<id>`, `?cobro=<id>`, `?seccion=movimientos` (cualquier otra sección cae en Inicio, C-52). Tecla P: pausa el indicativo y la cuenta regresiva, solo con `?demo=1` (nunca desde un campo).
+Parámetros: `?escenario=faltante|resuelta|pactada|sin-saldo|mercado-cerrado|otras-divisas` (`otras-divisas`: el base más pagos cargados en divisas sin cuenta: en la importadora, uno en libras y dos en yenes; en turismo, uno en libras), `?congelar=1` (tipo de cambio fijo), `?demo=1` (vencer precio, ver recorrido, reiniciar), `?recorrido=0`, `?pago=<id>`, `?cobro=<id>`, `?seccion=movimientos` (cualquier otra sección cae en Inicio, C-52). Tecla P: pausa el indicativo y la cuenta regresiva, solo con `?demo=1` (nunca desde un campo).
 
 ## 2. Qué se desarrolló, en orden
 
@@ -102,6 +102,11 @@ Decisión de Juanse: el módulo Cuentas de la columna derecha quedaba al fondo d
 1. "Tus cuentas" en el menú lateral, debajo de las secciones y arriba de "Cerrar sesión": nombre, saldo de la sesión y máscara de cada cuenta; cada fila abre el panel "Tus cuentas" con esa cuenta primero y el foco en ella, y "Ver todas mis cuentas" el mismo panel. Con el menú colapsado, un ícono que abre el panel.
 2. Sale el módulo Cuentas: la columna derecha queda solo con la tarjeta de tipo de cambio. La ventana de pago se centra a la derecha del menú cuando entra (shell de 1208 px o más), para no tapar el bloque.
 
+### Etapa 13 · Pagos en yenes (C-57)
+Mateo: las empresas cargan pagos en divisas en las que no tienen cuenta, como yenes.
+1. JPY sin decimales en pantalla y en los campos (tabla de decimales en `format.ts`), JPY/MXN de ejemplo (0.122500 / 0.121500) y el yen en el alta de destinatario.
+2. `?escenario=otras-divisas` de la importadora suma 600,000 JPY a Kanto Precision Parts K.K. y 250,000 JPY a Nagoya Packaging Co. (inventados): "Pagos en otras divisas (3) ≈ −1,076,125.00" y "Sobran ≈ 23,524.50"; el escenario base no cambia.
+
 ## 3. Estado actual por área
 
 ### Flujos que funcionan de punta a punta
@@ -120,12 +125,12 @@ Decisión de Juanse: el módulo Cuentas de la columna derecha quedaba al fondo d
 - `src/state/estado.ts` (reducer puro), `derivados.ts`, `vistas.ts` (selectores), `escenarios.ts` (escenarios y frames).
 
 ### Calidad
-- 175 tests de Vitest (motor, posición, pagos en otras divisas, comisión, cotizador, desglose, "Tus cuentas" en el menú y el flujo frame por frame con los números del brief), `npm run lint`, `tsc --noEmit` y `next build` limpios.
-- Recorridos con Playwright del flujo principal, movimientos, arquetipos, turismo, sección 7, la ventana de pago (C-47) y el precio en vivo, la comisión, las fechas y el menú (C-48 a C-52), y el cotizador, los pagos en otras divisas y el desglose con teclado (C-53 a C-55), a 1024 × 700 y 1280 × 800, y "Tus cuentas" en el menú lateral con teclado a 1024 × 700, 1100 × 700, 1280 × 800 y 1440 × 900 (C-56), con cero errores de consola; capturas en `docs/design/verificacion/` y de los prototipos en `docs/design/frames/`.
+- 186 tests de Vitest (motor, posición, pagos en otras divisas, yenes sin decimales, comisión, cotizador, desglose, "Tus cuentas" en el menú y el flujo frame por frame con los números del brief), `npm run lint`, `tsc --noEmit` y `next build` limpios.
+- Recorridos con Playwright del flujo principal, movimientos, arquetipos, turismo, sección 7, la ventana de pago (C-47) y el precio en vivo, la comisión, las fechas y el menú (C-48 a C-52), y el cotizador, los pagos en otras divisas y el desglose con teclado (C-53 a C-55), a 1024 × 700 y 1280 × 800, y "Tus cuentas" en el menú lateral con teclado a 1024 × 700, 1100 × 700, 1280 × 800 y 1440 × 900 (C-56), y el escenario otras-divisas con los pagos en yenes de punta a punta a 1024 × 700 y 1280 × 800 (C-57), con cero errores de consola; capturas en `docs/design/verificacion/` y de los prototipos en `docs/design/frames/`.
 - Accesibilidad: diálogo con foco atrapado y Esc, radiogroups con flechas (saltan deshabilitadas), cuenta regresiva con aria-live, estados siempre en badge con texto, foco visible, es-MX con tuteo.
 
 ### Documentación
-- `README.md` (cómo correr, rutas, parámetros, estructura, decisiones), `docs/decisiones.md` (C-01 a C-56), `docs/diferencias-cc-vs-diseno.md` (turismo, sección 7, ventana de pago, check-in, C-53 a C-55 y C-56), `docs/handoff/` y `docs/handoff-turismo/` (paquetes de diseño tal como llegaron).
+- `README.md` (cómo correr, rutas, parámetros, estructura, decisiones), `docs/decisiones.md` (C-01 a C-57), `docs/diferencias-cc-vs-diseno.md` (turismo, sección 7, ventana de pago, check-in, C-53 a C-55 y C-56), `docs/handoff/` y `docs/handoff-turismo/` (paquetes de diseño tal como llegaron).
 
 ## 4. Pendiente y límites conocidos
 

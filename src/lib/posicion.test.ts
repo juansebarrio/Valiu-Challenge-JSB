@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { diasSemana, proyeccion, diaDeCruce, posicion, evaluarOrigen, agregar, posicionesDe, cuentaQuePaga } from './posicion';
 import { centavos } from './dinero';
 import { PARES } from './fx';
+import { datosEscenario } from '@/data/escenario';
 
 const HOY = new Date(2026, 9, 6);
 const pagosUSD = [
@@ -135,5 +136,15 @@ describe('pagos en divisas sin cuenta (C-54): cada pago cuenta contra la cuenta 
   it('sin cuenta y ya pactado: sale de "Pagos en otras divisas" y entra a "Pactadas por liquidar" con el monto exacto, sin "≈"', () => {
     const r = calcular([], { pactadas: [{ origenId: 'mxn', pagas: centavos(972_486), recibe: centavos(40_000) }] });
     expect(r.porCuenta.mxn).toMatchObject({ pagosOtrasDivisas: null, pactadasLiquidar: { cantidad: 1, total: centavos(972_486) }, resultado: { tipo: 'sobran', monto: centavos(207_514) }, aprox: false });
+  });
+});
+
+describe('pagos en yenes (C-57): la regla de C-54 con más de una divisa sin cuenta', () => {
+  it('importadora en otras-divisas: la libra y los dos pagos en yenes van a la cuenta en pesos, "Pagos en otras divisas (3)" ≈ 1,076,125.00 y sobran ≈ 23,524.50', () => {
+    const d = datosEscenario('otras-divisas');
+    const r = posicionesDe({ cuentas: d.cuentas, pendientes: d.pagosFuturos, pactadas: [], fondeoId: d.cuentaFondeo, pares: PARES });
+    expect(r.convertidos).toEqual({ x1: { cuentaId: 'mxn', monto: centavos(972_000) }, x2: { cuentaId: 'mxn', monto: centavos(73_500) }, x3: { cuentaId: 'mxn', monto: centavos(30_625) } });
+    expect(r.porCuenta.mxn).toMatchObject({ pagosFuturos: { cantidad: 7, total: centavos(80_350.5) }, pagosOtrasDivisas: { cantidad: 3, total: centavos(1_076_125) }, resultado: { tipo: 'sobran', monto: centavos(23_524.5) }, aprox: true });
+    expect(r.porCuenta.usd.resultado).toEqual({ tipo: 'faltan', monto: centavos(1000) });
   });
 });

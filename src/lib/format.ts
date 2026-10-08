@@ -11,17 +11,26 @@ const pad = (n: number) => String(n).padStart(2, '0');
 const d = (x: Date | string) => (x instanceof Date ? x : new Date(x));
 const miles = (n: number) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 
-/** 1,000,000.00 — coma de miles, punto decimal, sin símbolo (centavos → texto). */
-export const numero = (c: Centavos) => {
+/**
+ * Decimales con que se muestra y se escribe cada divisa (C-57): el yen no tiene; las demás, dos. Internamente todo sigue en centavos
+ * (los yenes, en múltiplos de 100); los montos convertidos a pesos siguen con dos decimales.
+ */
+const DECIMALES: Record<string, number> = { MXN: 2, USD: 2, EUR: 2, GBP: 2, CAD: 2, JPY: 0 };
+/** Decimales de una divisa; sin divisa, dos. */
+export const decimales = (div?: string) => (div ? DECIMALES[div] ?? 2 : 2);
+
+/** 1,000,000.00 — coma de miles, punto decimal, sin símbolo (centavos → texto). En una divisa sin decimales, 600,000. */
+export const numero = (c: Centavos, div?: string) => {
   const abs = Math.abs(Math.round(c));
+  if (decimales(div) === 0) return miles(Math.round(abs / 100));
   return `${miles(Math.floor(abs / 100))}.${pad(abs % 100)}`;
 };
-/** 1,000,000.00 MXN — código al final, negativos con "−" (U+2212). */
-export const monto = (c: Centavos, div?: string) => (c < 0 ? '−' : '') + numero(c) + (div ? ' ' + div : '');
-/** +180,000.00 MXN / −3,000.00 USD */
-export const montoSigno = (c: Centavos, div?: string) => (c > 0 ? '+' : c < 0 ? '−' : '') + numero(c) + (div ? ' ' + div : '');
+/** 1,000,000.00 MXN / 600,000 JPY — código al final, negativos con "−" (U+2212). */
+export const monto = (c: Centavos, div?: string) => (c < 0 ? '−' : '') + numero(c, div) + (div ? ' ' + div : '');
+/** +180,000.00 MXN / −3,000.00 USD / −600,000 JPY */
+export const montoSigno = (c: Centavos, div?: string) => (c > 0 ? '+' : c < 0 ? '−' : '') + numero(c, div) + (div ? ' ' + div : '');
 /** 1,000 — sin decimales cuando el monto es entero; si no, con centavos. */
-export const compacto = (c: Centavos) => (c % 100 === 0 ? miles(Math.abs(c) / 100) : numero(c));
+export const compacto = (c: Centavos, div?: string) => (c % 100 === 0 || decimales(div) === 0 ? miles(Math.round(Math.abs(c) / 100)) : numero(c, div));
 /** 18.091183 — siempre 6 decimales, sin símbolo. */
 export const tdc = (t: TdcMicro) => {
   const abs = Math.abs(Math.round(t));

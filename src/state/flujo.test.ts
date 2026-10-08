@@ -309,7 +309,7 @@ describe('C-53 · cotizador en la tarjeta de tipo de cambio', () => {
   });
   it('selector: "Tus pares" (los de tus posiciones) y "Otros pares" (el resto); debajo, los demás de "Tus pares"', () => {
     const t = vistaTipoDeCambio(base);
-    expect(t.selector.grupos.map((g) => [g.titulo, g.items.map((i) => i.par)])).toEqual([['Tus pares', ['USD/MXN', 'EUR/MXN']], ['Otros pares', ['EUR/USD', 'GBP/MXN', 'CAD/MXN']]]);
+    expect(t.selector.grupos.map((g) => [g.titulo, g.items.map((i) => i.par)])).toEqual([['Tus pares', ['USD/MXN', 'EUR/MXN']], ['Otros pares', ['EUR/USD', 'GBP/MXN', 'CAD/MXN', 'JPY/MXN']]]);
     expect(t.otros.map((o) => o.par)).toEqual(['EUR/MXN']);
     const eur = vistaTipoDeCambio(aplicar([{ tipo: 'cotPar', par: 'EUR/MXN' }], base));
     expect(eur).toMatchObject({ par: 'EUR/MXN', compra: 21_250_000, cotizador: { recibe: { divisa: 'EUR' }, pagas: { divisa: 'MXN' } } });
@@ -780,7 +780,7 @@ describe('pendientes: destinatario nuevo, secciones del menú, notificaciones y 
     expect(c.grupos.map((g) => [g.titulo, g.filas.length])).toEqual([['Pactadas (1)', 1], ['En proceso (0)', 0], ['Realizadas (3)', 3]]);
     expect(c.grupos[0].filas[0]).toMatchObject({ nombre: 'Shenzhen Parts Co.', badge: { texto: 'Pactada', tono: 'pactada' }, detalle: '1,500.00 USD a 18.092415' });
     const m = vistaMonitoreo(base);
-    expect(m.pares.map((p) => p.par)).toEqual(['USD/MXN', 'EUR/MXN', 'EUR/USD', 'GBP/MXN', 'CAD/MXN']);
+    expect(m.pares.map((p) => p.par)).toEqual(['USD/MXN', 'EUR/MXN', 'EUR/USD', 'GBP/MXN', 'CAD/MXN', 'JPY/MXN']);
     expect(fmt.tdc(m.pares[0].ejecutableCompra)).toBe('18.092415');
     expect(m.pares[2]).toMatchObject({ compra: 1_175_000, venta: 1_171_000, enPosiciones: false });
   });
@@ -1109,9 +1109,10 @@ describe('C-54 · pagos en divisas sin cuenta (?escenario=otras-divisas)', () =>
   it('el escenario base no cambia: sin pagos en otras divisas ni "≈"', () => {
     expect(vistaHome(base).posiciones.map((p) => [p.divisa, p.pagosOtrasDivisas, p.aprox])).toEqual([['USD', null, false], ['MXN', null, false], ['EUR', null, false]]);
   });
-  it('tarjeta MXN: "Pagos en otras divisas (1)" ≈ −972,000.00 a 24.300000 y "Sobran ≈ 127,649.50"; no hay tarjeta en libras', () => {
+  it('tarjeta MXN: "Pagos en otras divisas (3)" ≈ −1,076,125.00 (la libra a 24.300000 y los yenes a 0.122500, C-57) y "Sobran ≈ 23,524.50"; no hay tarjeta en libras ni en yenes', () => {
     expect(otras.tdcVivo['GBP/MXN'].compra).toBe(24_300_000);
-    expect(pos(otras, 'MXN')).toMatchObject({ pagosFuturos: { cantidad: 7, total: centavos(80_350.5) }, pagosOtrasDivisas: { cantidad: 1, total: centavos(972_000) }, resultado: { tipo: 'sobran', monto: centavos(127_649.5) }, aprox: true });
+    expect(otras.tdcVivo['JPY/MXN'].compra).toBe(122_500);
+    expect(pos(otras, 'MXN')).toMatchObject({ pagosFuturos: { cantidad: 7, total: centavos(80_350.5) }, pagosOtrasDivisas: { cantidad: 3, total: centavos(1_076_125) }, resultado: { tipo: 'sobran', monto: centavos(23_524.5) }, aprox: true });
     expect(vistaHome(otras).posiciones.map((p) => p.divisa)).toEqual(['USD', 'MXN', 'EUR']);
     expect(pos(otras, 'USD').resultado).toEqual({ tipo: 'faltan', monto: centavos(1000) });
   });
@@ -1120,10 +1121,10 @@ describe('C-54 · pagos en divisas sin cuenta (?escenario=otras-divisas)', () =>
     expect(f).toMatchObject({ nombre: 'Thames Tooling Ltd.', fecha: 'vie 9', monto: centavos(-40_000), divisa: 'GBP', detalle: '≈ 972,000.00 MXN hoy' });
     expect(f.orden).toMatchObject({ pagoId: 'x1', monto: centavos(40_000) });
   });
-  it('GBP/MXN entra a "Tus pares" mientras el pago está pendiente', () => {
+  it('GBP/MXN y JPY/MXN entran a "Tus pares" mientras sus pagos están pendientes', () => {
     const t = vistaTipoDeCambio(otras);
-    expect(t.selector.grupos.map((g) => [g.titulo, g.items.map((i) => i.par)])).toEqual([['Tus pares', ['USD/MXN', 'EUR/MXN', 'GBP/MXN']], ['Otros pares', ['EUR/USD', 'CAD/MXN']]]);
-    expect(t.otros.map((o) => o.par)).toEqual(['EUR/MXN', 'GBP/MXN']);
+    expect(t.selector.grupos.map((g) => [g.titulo, g.items.map((i) => i.par)])).toEqual([['Tus pares', ['USD/MXN', 'EUR/MXN', 'GBP/MXN', 'JPY/MXN']], ['Otros pares', ['EUR/USD', 'CAD/MXN']]]);
+    expect(t.otros.map((o) => o.par)).toEqual(['EUR/MXN', 'GBP/MXN', 'JPY/MXN']);
   });
   it('Pagar: Origen con la cuenta de fondeo preseleccionada y "Pagas ≈"; las cuentas sin par con libras, deshabilitadas', () => {
     const e = aplicar([{ tipo: 'abrirPanel', orden: ordenDePago(pagoPorId(otras, 'x1')!) }], otras);
@@ -1134,24 +1135,88 @@ describe('C-54 · pagos en divisas sin cuenta (?escenario=otras-divisas)', () =>
     expect(p.origenes.slice(1).map((o) => o.consecuencia?.texto)).toEqual(['Sin par disponible', 'Sin par disponible']);
     expect(aplicar([{ tipo: 'elegirOrigen', origenId: 'usd' }], e).panel.origenId).toBe('mxn');
   });
-  it('con Hoy: sale de Próximos y de "Pagos en otras divisas"; GBP/MXN deja "Tus pares"', () => {
+  it('con Hoy: sale de Próximos y de "Pagos en otras divisas" (quedan los dos en yenes); GBP/MXN deja "Tus pares"', () => {
     const e = aplicar(pagarLibras(), otras);
     expect(e.operaciones[0]).toMatchObject({ origenId: 'mxn', recibe: centavos(40_000), tdc: ejecutable(24_300_000, 'comprar') });
-    expect(pos(e, 'MXN')).toMatchObject({ pagosOtrasDivisas: null, aprox: false, saldo: centavos(1_180_000) - e.operaciones[0].pagas });
+    expect(pos(e, 'MXN')).toMatchObject({ pagosOtrasDivisas: { cantidad: 2, total: centavos(104_125) }, aprox: true, saldo: centavos(1_180_000) - e.operaciones[0].pagas });
     expect(vistaHome(e).proximos.some((f) => f.id === 'x1')).toBe(false);
-    expect(vistaTipoDeCambio(e).selector.grupos[0].items.map((i) => i.par)).toEqual(['USD/MXN', 'EUR/MXN']);
+    expect(vistaTipoDeCambio(e).selector.grupos[0].items.map((i) => i.par)).toEqual(['USD/MXN', 'EUR/MXN', 'JPY/MXN']);
   });
   it('con fecha valor: pactado, en "Pactadas por liquidar" con el monto exacto y sin "≈"', () => {
     const e = aplicar(pagarLibras([{ tipo: 'fechaValor', fecha: VIE9 }]), otras);
     const op = e.operaciones[0];
     expect(op.pagas).toBe(porTdc(centavos(40_000), ejecutable(24_300_000, 'comprar')));
-    expect(pos(e, 'MXN')).toMatchObject({ pagosOtrasDivisas: null, pactadasLiquidar: { cantidad: 1, total: op.pagas }, aprox: false, saldo: centavos(1_180_000) });
+    expect(pos(e, 'MXN')).toMatchObject({ pagosOtrasDivisas: { cantidad: 2, total: centavos(104_125) }, pactadasLiquidar: { cantidad: 1, total: op.pagas }, saldo: centavos(1_180_000) });
     expect(vistaHome(e).proximos.find((f) => f.id === 'x1')).toMatchObject({ badge: { texto: 'Pactada' }, detalle: `${fmt.monto(op.pagas, 'MXN')} a ${fmt.tdc(op.tdc!)}` });
   });
   it('turismo: el pago en libras también lo paga la cuenta en pesos', () => {
     const t = estadoDeEscenario('otras-divisas', {}, 'turismo');
     expect(pos(t, 'MXN')).toMatchObject({ pagosOtrasDivisas: { cantidad: 1, total: centavos(97_200) }, aprox: true });
     expect(vistaHome(t).proximos.find((f) => f.nombre === 'London Hotels Group')).toMatchObject({ monto: centavos(-4000), divisa: 'GBP', detalle: '≈ 97,200.00 MXN hoy' });
+  });
+});
+
+describe('C-57 · pagos en yenes en el escenario otras-divisas', () => {
+  const VIE9 = new Date(2026, 9, 9);
+  const otras = estadoDeEscenario('otras-divisas');
+  const escribir = (lado: 'recibe' | 'pagas', valor: string): Accion[] => [{ tipo: 'cotEditando', lado }, { tipo: 'cotMonto', lado, valor }, { tipo: 'cotEditando', lado: null }];
+  const pagar = (id: string, extra: Accion[] = []): Accion[] => [{ tipo: 'abrirPanel', orden: ordenDePago(pagoPorId(otras, id)!) }, { tipo: 'irPaso', paso: 'revision' }, ...extra, { tipo: 'pedirPrecio' }, ...TOKEN];
+  it('el escenario base no cambia: sin destinatarios ni pagos en yenes, y JPY/MXN en "Otros pares"', () => {
+    expect(base.datos.destinatarios.some((d) => d.divisa === 'JPY')).toBe(false);
+    expect(base.datos.pagosFuturos.some((p) => p.divisa === 'JPY')).toBe(false);
+    expect(vistaHome(base).resumenProximos).toBe('10 pagos próximos · 3,000.00 USD · 80,350.50 MXN');
+    expect(vistaTipoDeCambio(base).selector.grupos[1].items.map((i) => i.par)).toContain('JPY/MXN');
+  });
+  it('tarjeta MXN: "Pagos futuros (7) −80,350.50", "Pagos en otras divisas (3) ≈ −1,076,125.00" y "Sobran ≈ 23,524.50"; la proyección baja el vie 9 y sigue en positivo; USD sigue con "Faltan 1,000.00"', () => {
+    const mxn = pos(otras, 'MXN');
+    expect(mxn).toMatchObject({ pagosFuturos: { cantidad: 7, total: centavos(80_350.5) }, pagosOtrasDivisas: { cantidad: 3, total: centavos(1_076_125) }, resultado: { tipo: 'sobran', monto: centavos(23_524.5) }, aprox: true });
+    // 1,180,000.00 − 972,000.00 (libras) − 73,500.00 (Kanto) el vie 9; Nagoya vence el mar 13, fuera de la semana.
+    expect(mxn.proyeccion?.serie).toEqual([1_180_000, 1_180_000, 1_180_000, 134_500].map(centavos));
+    expect(pos(otras, 'USD').resultado).toEqual({ tipo: 'faltan', monto: centavos(1000) });
+  });
+  it('Movimientos: Kanto en la semana con "≈ 73,500.00 MXN hoy"; Nagoya en la lista completa', () => {
+    const h = vistaHome(otras);
+    const kanto = h.proximos.find((f) => f.id === 'x2')!;
+    expect(kanto).toMatchObject({ nombre: 'Kanto Precision Parts K.K.', fecha: 'vie 9', monto: -centavos(600_000), divisa: 'JPY', detalle: '≈ 73,500.00 MXN hoy' });
+    expect(fmt.montoSigno(kanto.monto, kanto.divisa)).toBe('−600,000 JPY');
+    expect(h.proximos.some((f) => f.id === 'x3')).toBe(false);
+    expect(h.proximosTodos.find((f) => f.id === 'x3')).toMatchObject({ nombre: 'Nagoya Packaging Co.', monto: -centavos(250_000), divisa: 'JPY', detalle: '≈ 30,625.00 MXN hoy' });
+    // Por divisa, en el orden de su primer vencimiento: USD el jue 8, libras y yenes el vie 9, pesos desde el lun 12.
+    expect(h.resumenProximos).toBe('13 pagos próximos · 3,000.00 USD · 40,000.00 GBP · 850,000 JPY · 80,350.50 MXN');
+  });
+  it('cotizador JPY/MXN: Recibes en yenes sin decimales y Pagas en pesos (600,000 JPY → 73,500.00 MXN); invertir deshabilitado; Recibes no acepta decimales', () => {
+    const jpy = aplicar([{ tipo: 'cotPar', par: 'JPY/MXN' }, ...escribir('recibe', '600000')], otras);
+    expect(vistaTipoDeCambio(jpy)).toMatchObject({ par: 'JPY/MXN', compra: 122_500, venta: 121_500, cotizador: { recibe: { divisa: 'JPY', valor: '600,000' }, pagas: { divisa: 'MXN', valor: '73,500.00' }, invertir: false, continuar: true } });
+    expect(aplicar([{ tipo: 'cotMonto', lado: 'recibe', valor: '600000.5' }], jpy).cotizador).toEqual(jpy.cotizador);
+    expect(aplicar([{ tipo: 'cotInvertir' }], jpy).cotizador).toEqual(jpy.cotizador);
+    expect(vistaTipoDeCambio(aplicar([{ tipo: 'cotPar', par: 'JPY/MXN' }, ...escribir('pagas', '10000')], otras)).cotizador).toMatchObject({ recibe: { valor: '81,633' }, pagas: { valor: '10,000.00' } });
+    const destino = vistaPanel(aplicar([{ tipo: 'cotContinuar' }], jpy))!;
+    expect(destino.titulo).toBe('¿A dónde llegan los 600,000 JPY?');
+    expect(destino.destino!.grupos.map((g) => [g.titulo, g.items.map((i) => i.nombre)])).toEqual([['Destinatarios en JPY', ['Kanto Precision Parts K.K.', 'Nagoya Packaging Co.']]]);
+  });
+  it('pagar Kanto: Origen con la Cuenta Principal MXN preseleccionada y USD y EUR "Sin par disponible"; con Hoy debita 600,000 × 0.122508 = 73,504.80 MXN', () => {
+    const e = aplicar([{ tipo: 'abrirPanel', orden: ordenDePago(pagoPorId(otras, 'x2')!) }], otras);
+    const p = vistaPanel(e)!;
+    expect(p).toMatchObject({ titulo: 'Pagar a Kanto Precision Parts K.K.', sub: '600,000 JPY · vence vie 9 · Factura KP-2207' });
+    expect(e.panel.origenId).toBe('mxn');
+    expect(p.origenes.map((o) => [o.nombre, o.pagas, o.deshabilitada])).toEqual([['Cuenta Principal MXN', 'Pagas ≈ 73,500.00 MXN', false], ['Cuenta USD', '', true], ['Cuenta EUR', '', true]]);
+    expect(p.origenes.slice(1).map((o) => o.consecuencia?.texto)).toEqual(['Sin par disponible', 'Sin par disponible']);
+    const confirmado = aplicar(pagar('x2'), otras);
+    const op = confirmado.operaciones[0];
+    expect(op).toMatchObject({ origenId: 'mxn', recibe: centavos(600_000), tdc: 122_508, pagas: centavos(73_504.8), estado: 'En proceso' });
+    const c = vistaPanel(confirmado)!.confirmacion!;
+    expect(c.filasComprobante.slice(0, 2)).toEqual([{ k: 'Pagas', v: '73,504.80 MXN' }, { k: 'Kanto Precision Parts K.K. recibe', v: '600,000 JPY' }]);
+    const inicio = aplicar([{ tipo: 'volverInicio' }], confirmado);
+    expect(pos(inicio, 'MXN')).toMatchObject({ saldo: centavos(1_106_495.2), pagosOtrasDivisas: { cantidad: 2, total: centavos(1_002_625) }, aprox: true });
+    expect(vistaHome(inicio).realizados[0]).toMatchObject({ nombre: 'Kanto Precision Parts K.K.', monto: -centavos(73_504.8), divisa: 'MXN', detalle: '600,000 JPY a 0.122508' });
+    expect(vistaTipoDeCambio(inicio).selector.grupos[0].items.map((i) => i.par)).toContain('JPY/MXN');
+  });
+  it('pagar Nagoya pactado: pasa a "Pactadas por liquidar" con el monto exacto (250,000 × 0.122508 = 30,627.00 MXN), sin "≈"', () => {
+    const e = aplicar([...pagar('x3', [{ tipo: 'fechaValor', fecha: VIE9 }]), { tipo: 'volverInicio' }], otras);
+    const op = e.operaciones[0];
+    expect(op).toMatchObject({ estado: 'Pactada', recibe: centavos(250_000), pagas: centavos(30_627) });
+    expect(pos(e, 'MXN')).toMatchObject({ pactadasLiquidar: { cantidad: 1, total: centavos(30_627) }, pagosOtrasDivisas: { cantidad: 2, total: centavos(1_045_500) }, saldo: centavos(1_180_000) });
+    expect(vistaHome(e).proximosTodos.find((f) => f.id === 'x3')).toMatchObject({ monto: -centavos(250_000), divisa: 'JPY', badge: { texto: 'Pactada' }, detalle: '30,627.00 MXN a 0.122508' });
   });
 });
 
@@ -1175,10 +1240,14 @@ describe('C-55 · desglose de las filas de la posición', () => {
     expect(pos(pagado, 'USD').pagosFuturos).toEqual({ cantidad: 2, total: centavos(1500) });
     expect(vistaPanel(aplicar([{ tipo: 'pagarDesdeDesglose', pagoId: 'p1' }], base))).toBeNull();
   });
-  it('"Pagos en otras divisas": el monto en su divisa y debajo "≈ 972,000.00 MXN a 24.300000"', () => {
+  it('"Pagos en otras divisas": por fecha, el monto en su divisa y debajo el equivalente y el precio ("≈ 972,000.00 MXN a 24.300000"; yenes sin decimales, C-57)', () => {
     const p = vistaPanel(desglose(estadoDeEscenario('otras-divisas'), 'mxn', 'pagosOtrasDivisas'))!;
-    expect(p).toMatchObject({ titulo: 'Pagos en otras divisas', sub: '1 pago · ≈ −972,000.00 MXN' });
-    expect(p.desglose!.items).toEqual([{ id: 'x1', dia: 'vie 9', nombre: 'Thames Tooling Ltd.', referencia: 'Factura TT-3381', monto: '−40,000.00 GBP', linea: '≈ 972,000.00 MXN a 24.300000', pagoId: 'x1' }]);
+    expect(p).toMatchObject({ titulo: 'Pagos en otras divisas', sub: '3 pagos · ≈ −1,076,125.00 MXN' });
+    expect(p.desglose!.items).toEqual([
+      { id: 'x1', dia: 'vie 9', nombre: 'Thames Tooling Ltd.', referencia: 'Factura TT-3381', monto: '−40,000.00 GBP', linea: '≈ 972,000.00 MXN a 24.300000', pagoId: 'x1' },
+      { id: 'x2', dia: 'vie 9', nombre: 'Kanto Precision Parts K.K.', referencia: 'Factura KP-2207', monto: '−600,000 JPY', linea: '≈ 73,500.00 MXN a 0.122500', pagoId: 'x2' },
+      { id: 'x3', dia: 'mar 13', nombre: 'Nagoya Packaging Co.', referencia: 'Pedido NP-0418', monto: '−250,000 JPY', linea: '≈ 30,625.00 MXN a 0.122500', pagoId: 'x3' },
+    ]);
   });
   it('pactadas: el día que sale o entra y el precio cerrado, sin acción', () => {
     const liquidar = vistaPanel(desglose(estadoDeEscenario('pactada'), 'mxn', 'pactadasLiquidar'))!;
