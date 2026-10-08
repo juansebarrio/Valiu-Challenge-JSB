@@ -22,12 +22,12 @@ import { CampoToken } from '@/components/CampoToken';
 import { FranjaNuevo } from '@/components/FranjaNuevo';
 import { FilaMovimiento } from '@/components/FilaMovimiento';
 import { TarjetaTipoDeCambio, accionesCotizador } from '@/components/TarjetaTipoDeCambio';
-import { ModuloCuentas } from '@/components/ModuloCuentas';
+import { MenuCuentas } from '@/components/MenuCuentas';
 import { HojaEstados, Caso } from '@/components/HojaEstados';
 import { DesglosePosicion } from '@/components/DesglosePosicion';
 import { aplicar, estadoInicial, reducer } from '@/state/estado';
 import { estadoDeEscenario } from '@/state/escenarios';
-import { vistaPanel, vistaTipoDeCambio } from '@/state/vistas';
+import { vistaHome, vistaPanel, vistaTipoDeCambio } from '@/state/vistas';
 
 /** La tarjeta de tipo de cambio con su cotizador, viva sobre un estado del arquetipo (C-53). */
 const TarjetaTipoDeCambioViva: FC<{ arquetipo: 'importadora' | 'turismo' }> = ({ arquetipo }) => {
@@ -39,6 +39,8 @@ const TarjetaTipoDeCambioViva: FC<{ arquetipo: 'importadora' | 'turismo' }> = ({
 /** Desgloses de la posición (C-55) desde el escenario base y el de otras divisas. */
 const DESGLOSE_USD = vistaPanel(aplicar([{ tipo: 'abrirDesglose', cuentaId: 'usd', fila: 'pagosFuturos' }], estadoInicial('faltante', { congelado: true })))!;
 const DESGLOSE_OTRAS = vistaPanel(aplicar([{ tipo: 'abrirDesglose', cuentaId: 'mxn', fila: 'pagosOtrasDivisas' }], estadoDeEscenario('otras-divisas', { congelado: true })))!;
+/** "Tus cuentas" del menú lateral (C-56) con las cuentas del arquetipo importadora. */
+const MENU_CUENTAS = vistaHome(estadoInicial('faltante', { congelado: true })).cuentas;
 
 const Seccion: FC<{ id: string; titulo: string; nota?: string; children: ReactNode }> = ({ id, titulo, nota, children }) => (
   <section id={id} aria-labelledby={`${id}-t`} className="flex flex-col gap-4">
@@ -251,7 +253,7 @@ export const Sistema: FC = () => {
           </div>
         </Seccion>
 
-        <Seccion id="home" titulo="Módulos del inicio" nota="FranjaNuevo, FilaMovimiento (badge solo en estados no finales, D-23), TarjetaTipoDeCambio con el selector de par (Tus pares y Otros pares), los demás pares de Tus pares compactos y el cotizador abierto al entrar (C-53), y ModuloCuentas.">
+        <Seccion id="home" titulo="Módulos del inicio" nota="FranjaNuevo, FilaMovimiento (badge solo en estados no finales, D-23), TarjetaTipoDeCambio con el selector de par (Tus pares y Otros pares), los demás pares de Tus pares compactos y el cotizador abierto al entrar (C-53), y MenuCuentas, el bloque Tus cuentas del menú lateral (C-56).">
           <div className="grid grid-cols-2 gap-6 xl:grid-cols-3">
             <div className="col-span-2 flex flex-col gap-4">
               <FranjaNuevo monto={centavos(180_000)} divisa="MXN" origen="Comercial Norte" meta="Hoy 10:42 · BBVA México · Ref. factura 2231" onUsar={() => {}} />
@@ -266,7 +268,7 @@ export const Sistema: FC = () => {
             <div className="flex flex-col gap-4">
               <TarjetaTipoDeCambioViva arquetipo="importadora" />
               <TarjetaTipoDeCambioViva arquetipo="turismo" />
-              <ModuloCuentas cuentas={[{ id: 'mxn', nombre: 'Cuenta Principal MXN', mascara: '1025', saldo: centavos(1_180_000), divisa: 'MXN' }, { id: 'usd', nombre: 'Cuenta USD', mascara: '2024', saldo: centavos(2000), divisa: 'USD' }]} />
+              <div className="w-(--app-sidebar-w) rounded-sm bg-app-surface px-2 pb-2"><MenuCuentas vista={MENU_CUENTAS} dispatch={() => {}} /></div>
             </div>
           </div>
           <div className="flex items-center gap-3"><ChipDivisa divisa="USD" /><ChipDivisa divisa="MXN" chico /><span className="text-caption text-app-ink-2">ChipDivisa: bg Grey4, radio 4, Shadow Mid</span></div>

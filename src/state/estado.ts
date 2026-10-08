@@ -105,6 +105,8 @@ export interface Panel {
   desglose: Desglose | null;
   /** Entrada desde el cotizador de la tarjeta de tipo de cambio (C-53). */
   desdeCotizador: DesdeCotizador | null;
+  /** Cuenta elegida en el menú lateral: va primera en "Tus cuentas" y con el foco (C-56). */
+  cuentaElegida: CuentaId | null;
 }
 
 export type Clase = ClaseOperacion;
@@ -178,7 +180,7 @@ export const VENCE_EN_DEMO = 5;
 
 const AGENDA_VACIA: Agenda = { destino: null, montoTexto: '', fecha: null, motivo: null, referencia: '', creado: null };
 const DESTINATARIO_VACIO: DestinatarioNuevo = { nombre: '', divisa: 'MXN', banco: '', cuenta: '' };
-const PANEL_CERRADO: Panel = { abierto: false, tipo: 'pago', paso: 'origen', movimientoId: null, agenda: AGENDA_VACIA, cobroId: null, pagoElegidoId: null, destinatarioNuevo: DESTINATARIO_VACIO, volverA: null, orden: null, origenId: null, fechaValor: HOY, precio: { estado: 'indicativo' }, token: '', tokenError: null, confirmando: false, busquedaDestino: '', desglose: null, desdeCotizador: null };
+const PANEL_CERRADO: Panel = { abierto: false, tipo: 'pago', paso: 'origen', movimientoId: null, agenda: AGENDA_VACIA, cobroId: null, pagoElegidoId: null, destinatarioNuevo: DESTINATARIO_VACIO, volverA: null, orden: null, origenId: null, fechaValor: HOY, precio: { estado: 'indicativo' }, token: '', tokenError: null, confirmando: false, busquedaDestino: '', desglose: null, desdeCotizador: null, cuentaElegida: null };
 
 /** Cotizador al entrar: el par de la decisión de la semana del arquetipo, sin montos. */
 export const cotizadorInicial = (par: string, abierto = true): Cotizador => ({ par, parAbierto: false, abierto, invertido: false, recibe: '', pagas: '', ladoFijo: null, editando: null });
@@ -235,7 +237,7 @@ export type Accion =
   | { tipo: 'otroDestinatario' }
   // Secciones del menú, notificaciones, cuentas y alta de destinatario
   | { tipo: 'abrirNotificaciones' }
-  | { tipo: 'abrirCuentas' }
+  | { tipo: 'abrirCuentas'; cuentaId?: CuentaId }
   | { tipo: 'pagarA'; destinatarioId: string }
   | { tipo: 'abrirDestinatarioNuevo' }
   | { tipo: 'destinatarioCampo'; campo: keyof DestinatarioNuevo; valor: string }
@@ -547,7 +549,7 @@ export function reducer(e: EstadoApp, a: Accion): EstadoApp {
     case 'abrirNotificaciones':
       return { ...e, onboarding: { ...e.onboarding, activo: false }, cotizador: cerrarSelector(e.cotizador), panel: { ...PANEL_CERRADO, abierto: true, tipo: 'notificaciones', paso: 'origen' } };
     case 'abrirCuentas':
-      return { ...e, onboarding: { ...e.onboarding, activo: false }, cotizador: cerrarSelector(e.cotizador), panel: { ...PANEL_CERRADO, abierto: true, tipo: 'cuentas', paso: 'origen' } };
+      return { ...e, onboarding: { ...e.onboarding, activo: false }, cotizador: cerrarSelector(e.cotizador), panel: { ...PANEL_CERRADO, abierto: true, tipo: 'cuentas', paso: 'origen', cuentaElegida: a.cuentaId ?? null } };
     case 'pagarA': {
       const d = e.datos.destinatarios.find((x) => x.id === a.destinatarioId);
       return d ? reducer(e, { tipo: 'abrirPanel', orden: ordenADestinatario(d) }) : e;

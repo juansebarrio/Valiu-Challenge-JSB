@@ -12,7 +12,7 @@ import { TarjetaPosicion } from './TarjetaPosicion';
 import { FranjaNuevo } from './FranjaNuevo';
 import { ListaMovimientos } from './FilaMovimiento';
 import { TarjetaTipoDeCambio, accionesCotizador } from './TarjetaTipoDeCambio';
-import { ModuloCuentas } from './ModuloCuentas';
+import { MenuCuentas } from './MenuCuentas';
 import { CapaOperacion, type Contenedor } from './CapaOperacion';
 import { PasoOnboarding, PASOS_ONBOARDING } from './PasoOnboarding';
 import { Boton } from './ui/Boton';
@@ -54,6 +54,7 @@ export const HomeVista: FC<HomeVistaProps> = ({ estado, dispatch, modo = 'app', 
         onNoDisponible={noDisponible}
         onNavegar={() => dispatch({ tipo: 'seccion', seccion: 'inicio' })}
         campana={{ cantidad: avisos, onClick: () => dispatch({ tipo: 'abrirNotificaciones' }) }}
+        cuentas={<MenuCuentas vista={home.cuentas} dispatch={dispatch} />}
         capas={
           <>
             {panel ? <CapaOperacion vista={panel} estado={estado} dispatch={dispatch} modo={modo} depositoEn={depositoEn} onDepositar={setDepositoEn} /> : null}
@@ -98,7 +99,6 @@ export const HomeVista: FC<HomeVistaProps> = ({ estado, dispatch, modo = 'app', 
               </div>
               <div className="flex min-w-0 flex-col gap-5">
                 <TarjetaTipoDeCambio {...home.tdc} {...accionesCotizador(dispatch)} />
-                <ModuloCuentas cuentas={home.cuentas} onVerTodas={() => dispatch({ tipo: 'abrirCuentas' })} />
               </div>
             </div>
           </>
@@ -163,7 +163,6 @@ export const HomeVista: FC<HomeVistaProps> = ({ estado, dispatch, modo = 'app', 
             </div>
             <div className="flex min-w-0 flex-col gap-5">
               <TarjetaTipoDeCambio tour="tdc" {...home.tdc} {...accionesCotizador(dispatch)} />
-              <ModuloCuentas cuentas={home.cuentas} onVerTodas={() => dispatch({ tipo: 'abrirCuentas' })} />
             </div>
           </div>
         </div>
@@ -177,7 +176,7 @@ export const HomeVista: FC<HomeVistaProps> = ({ estado, dispatch, modo = 'app', 
 
 const TITULOS: Record<'control' | 'destinatarios' | 'monitoreo', string> = { control: 'Control de operaciones', destinatarios: 'Destinatarios', monitoreo: 'Monitoreo de divisas' };
 
-/** Secciones del menú: encabezado como el inicio, contenido propio y la columna de tipo de cambio y cuentas (salvo en Monitoreo). */
+/** Secciones del menú: encabezado como el inicio, contenido propio y la columna de tipo de cambio (salvo en Monitoreo). */
 const SeccionGenerica: FC<{ estado: EstadoApp; dispatch: (a: Accion) => void; home: ReturnType<typeof vistaHome>; noDisponible: () => void }> = ({ estado, dispatch, home, noDisponible }) => {
   const seccion = estado.seccion as 'control' | 'destinatarios' | 'monitoreo';
   const control = useMemo(() => (seccion === 'control' ? vistaControl(estado) : null), [estado, seccion]);
@@ -207,7 +206,6 @@ const SeccionGenerica: FC<{ estado: EstadoApp; dispatch: (a: Accion) => void; ho
           </div>
           <div className="flex min-w-0 flex-col gap-5">
             <TarjetaTipoDeCambio {...home.tdc} {...accionesCotizador(dispatch)} />
-            <ModuloCuentas cuentas={home.cuentas} onVerTodas={() => dispatch({ tipo: 'abrirCuentas' })} />
           </div>
         </div>
       )}

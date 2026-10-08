@@ -57,7 +57,14 @@ export interface VistaFila {
   estaSemana: boolean;
 }
 
-export interface VistaCuenta { id: CuentaId; nombre: string; mascara: string; saldo: Centavos; divisa: Divisa }
+/** Cuentas a la vista en el menú lateral; con más, "Ver todas mis cuentas (n)" (C-56). */
+export const CUENTAS_EN_MENU = 3;
+
+/** Bloque "Tus cuentas" del menú lateral (C-56): nombre, saldo con lo operado en la sesión y máscara, en el orden de las cuentas. */
+export interface VistaMenuCuentas {
+  items: { id: CuentaId; nombre: string; saldo: string; mascara: string }[];
+  verTodas: string;
+}
 
 export interface VistaHome {
   arquetipo: ArquetipoId;
@@ -72,7 +79,7 @@ export interface VistaHome {
   totalProximos: number;
   realizados: VistaFila[];
   tdc: VistaTipoDeCambio;
-  cuentas: VistaCuenta[];
+  cuentas: VistaMenuCuentas;
   totalMXN: Centavos;
 }
 
@@ -238,7 +245,10 @@ export function vistaHome(e: EstadoApp): VistaHome {
     totalProximos: todas.length,
     realizados: [...hechas, ...pasados],
     tdc: vistaTipoDeCambio(e),
-    cuentas: ctas.map((c) => ({ id: c.id, nombre: c.nombre, mascara: c.mascara, saldo: c.saldo, divisa: c.divisa })),
+    cuentas: {
+      items: ctas.slice(0, CUENTAS_EN_MENU).map((c) => ({ id: c.id, nombre: c.nombre, saldo: fmt.monto(c.saldo, c.divisa), mascara: `····${c.mascara}` })),
+      verTodas: ctas.length > CUENTAS_EN_MENU ? `Ver todas mis cuentas (${ctas.length})` : 'Ver todas mis cuentas',
+    },
     totalMXN,
   };
 }
@@ -455,7 +465,8 @@ export interface VistaPanel {
   /** Paso de datos de "Cargar un pago". */
   agenda: VistaAgenda | null;
   notificaciones: { id: string; texto: string; movimientoId: string | null; tono: TonoBadge }[] | null;
-  cuentas: { id: CuentaId; nombre: string; divisa: Divisa; banco: string; mascara: string; saldo: string; clabe: string | null }[] | null;
+  /** elegida: la cuenta desde la que se abrió en el menú lateral, primera y con el foco (C-56). */
+  cuentas: { id: CuentaId; nombre: string; divisa: Divisa; banco: string; mascara: string; saldo: string; clabe: string | null; elegida: boolean }[] | null;
   destinatario: { nombre: string; divisa: Divisa; divisas: Divisa[]; banco: string; cuenta: string; errores: Partial<Record<'nombre' | 'banco' | 'cuenta', string>>; valido: boolean; volverA: 'destino' | null } | null;
   /** Lo que compone una fila de la posición (C-55). */
   desglose: { items: VistaItemDesglose[] } | null;
@@ -570,7 +581,9 @@ export function vistaPanel(e: EstadoApp): VistaPanel | null {
     return { ...vacio, tipo: 'notificaciones', titulo: 'Notificaciones', sub: items.length ? `${items.length} ${items.length === 1 ? 'aviso' : 'avisos'} de hoy y de la semana` : 'Nada nuevo por ahora.', primario: { label: 'Cerrar', habilitado: true, accion: 'cerrar' }, secundario: null, notificaciones: items };
   }
   if (panel.tipo === 'cuentas') {
-    const items = cuentasActuales(e).map((c) => ({ id: c.id, nombre: c.nombre, divisa: c.divisa, banco: c.banco, mascara: c.mascara, saldo: fmt.monto(c.saldo, c.divisa), clabe: c.clabe ?? null }));
+    const todas = cuentasActuales(e).map((c) => ({ id: c.id, nombre: c.nombre, divisa: c.divisa, banco: c.banco, mascara: c.mascara, saldo: fmt.monto(c.saldo, c.divisa), clabe: c.clabe ?? null, elegida: c.id === panel.cuentaElegida }));
+    // Desde una fila del menú lateral, esa cuenta va primera; las demás siguen en su orden (C-56).
+    const items = [...todas.filter((c) => c.elegida), ...todas.filter((c) => !c.elegida)];
     return { ...vacio, tipo: 'cuentas', titulo: 'Tus cuentas', sub: `${items.length} cuentas en Banco BASE`, primario: { label: 'Cerrar', habilitado: true, accion: 'cerrar' }, secundario: null, cuentas: items };
   }
   if (panel.tipo === 'destinatario') {

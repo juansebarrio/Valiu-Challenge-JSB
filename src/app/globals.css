@@ -113,6 +113,7 @@
   --breakpoint-stack: 800px; /* la pantalla inicial apila las tarjetas por debajo */
   --container-md: 900px;
   --container-lg: 1100px;
+  --container-modal: 1208px; /* menú 240 + ventana de pago 920 + 2 × 24: desde acá la ventana se centra a la derecha del menú (C-56) */
 
   --default-transition-duration: 150ms;
   --default-transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);

@@ -119,3 +119,13 @@ Motivo y alcance en `docs/decisiones.md` (C-53 a C-55). Los frames del archivo d
 | OpcionOrigen | Cuenta sin par con la divisa del pago | Deshabilitada con "Sin par disponible"; la de fondeo, preseleccionada (C-54) | — | — |
 | TarjetaPosicion | Filas con cantidad | Botones con chevron a la derecha del monto que abren su desglose en la ventana de pago; "Saldo" no (C-55) | Texto | 01, S01 |
 | PasoOnboarding | Pasos | Tres: el 3 rodea la tarjeta de tipo de cambio entera, "El tipo de cambio, y operar desde ahí" (C-53) | Cuatro: el 3 sobre el tipo de cambio y el 4 sobre la pestaña Operar clásico | 17–20 |
+
+## Cuentas al menú lateral (C-56)
+
+Motivo y alcance en `docs/decisiones.md` (C-56). Los frames del archivo de diseño (`docs/design/frames/`) muestran el módulo Cuentas en la columna derecha; en `/tablero/alta` las cuentas van en el menú lateral.
+
+| Componente | Propiedad | Valor en código (ahora) | Valor anterior / en diseño | Frame |
+|---|---|---|---|---|
+| AppShell | Menú lateral | "Tus cuentas" debajo de las entradas: nombre, saldo y máscara de cada cuenta (hasta tres) y "Ver todas mis cuentas"; cada fila abre el panel con su cuenta primero; con el menú colapsado, un ícono (C-56) | Solo las entradas y "Cerrar sesión" | todos |
+| Inicio | Columna derecha | Solo la tarjeta de tipo de cambio (C-56) | Tipo de cambio y ModuloCuentas | 01, S01 |
+| ModalOperar | Posición | Centrada a la derecha del menú cuando entra (shell de 1208 px o más), sin tapar "Tus cuentas" (C-56) | Centrada en la pantalla | 02–06, S02–S08 |

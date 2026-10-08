@@ -206,7 +206,7 @@ export const CapaOperacion: FC<CapaOperacionProps> = ({ vista: v, estado, dispat
 
       {v.tipo === 'desglose' && v.desglose ? <DesglosePosicion items={v.desglose.items} onPagar={(pagoId) => dispatch({ tipo: 'pagarDesdeDesglose', pagoId })} /> : null}
       {v.tipo === 'notificaciones' && v.notificaciones ? <ListaNotificaciones items={v.notificaciones} dispatch={dispatch} /> : null}
-      {v.tipo === 'cuentas' && v.cuentas ? <ListaCuentas items={v.cuentas} dispatch={dispatch} /> : null}
+      {v.tipo === 'cuentas' && v.cuentas ? <ListaCuentas items={v.cuentas} dispatch={dispatch} enfocar={modo === 'app'} /> : null}
       {v.tipo === 'destinatario' && v.destinatario ? <FormularioDestinatario vista={v.destinatario} dispatch={dispatch} /> : null}
 
       {v.tipo === 'detalle' && v.detalle ? <DetalleMovimiento vista={v.detalle} /> : null}

@@ -22,6 +22,7 @@ export interface ModalOperarProps {
  * 560 px en los de una; el ancho cambia con una transición de 200 ms (sin animación con prefers-reduced-motion ni en los frames).
  * Encabezado y pie siempre visibles: si algo no entra en calc(100dvh − 48px), scrollea solo el cuerpo. Pie alineado a la derecha.
  * En los frames de /tablero/alta va absoluta dentro del frame, centrada en horizontal y con un top fijo, sin depender del alto del frame.
+ * Si entra a la derecha del menú expandido (shell de 1208 px o más, como los frames), se centra ahí y no tapa "Tus cuentas" (C-56).
  */
 export const ModalOperar: FC<ModalOperarProps> = ({ titulo, sub, primario, secundario, onCerrar, ancho, children, modo = 'app' }) => {
   const ref = useRef<HTMLDivElement>(null);
@@ -30,7 +31,7 @@ export const ModalOperar: FC<ModalOperarProps> = ({ titulo, sub, primario, secun
   return (
     <>
       <div onClick={onCerrar} aria-hidden className={`${esApp ? 'fixed' : 'absolute'} inset-0 z-20 bg-app-overlay`} />
-      <div className={esApp ? 'pointer-events-none fixed inset-0 z-30 flex items-center justify-center' : 'pointer-events-none absolute inset-x-0 top-(--app-modal-top-frame) z-30 flex justify-center'}>
+      <div className={[esApp ? 'pointer-events-none fixed inset-0 z-30 flex items-center justify-center' : 'pointer-events-none absolute inset-x-0 top-(--app-modal-top-frame) z-30 flex justify-center', '@min-modal/shell:left-(--app-sidebar-w)'].join(' ')}>
         <div
           ref={ref}
           tabIndex={-1}

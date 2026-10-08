@@ -28,6 +28,8 @@ export interface AppShellProps {
   onNavegar?: (indice: number) => void;
   /** Campana: cantidad de avisos y qué abre. */
   campana?: { cantidad: number; onClick: () => void };
+  /** Bloque "Tus cuentas" (MenuCuentas): debajo de las entradas del menú y arriba de "Cerrar sesión", que no se mueve (C-56). */
+  cuentas?: ReactNode;
 }
 
 const ITEM_BASE = 'flex h-(--app-nav-item-h) items-center gap-2.5 rounded-sm px-2.5 text-body whitespace-nowrap @max-lg/shell:w-(--app-nav-item-w-min) @max-lg/shell:justify-center @max-lg/shell:px-0';
@@ -36,7 +38,7 @@ const ITEM = `${ITEM_BASE} cursor-pointer transition-colors hover:bg-app-accent-
 const NAVEGABLES = new Set([0]);
 
 /** Sidebar 240 · header 48 · main 24 32 32 · footer 40 (README · Layout del AppShell). */
-export const AppShell: FC<AppShellProps> = ({ children, capas, modo = 'app', raizRef, activo = 0, onNoDisponible, onNavegar, campana }) => {
+export const AppShell: FC<AppShellProps> = ({ children, capas, modo = 'app', raizRef, activo = 0, onNoDisponible, onNavegar, campana, cuentas }) => {
   const esApp = modo === 'app';
   const noDisponible = (e: React.MouseEvent) => { e.preventDefault(); onNoDisponible?.(); };
   return (
@@ -62,6 +64,7 @@ export const AppShell: FC<AppShellProps> = ({ children, capas, modo = 'app', rai
             ),
           )}
         </nav>
+        {cuentas}
         <div className="flex-1" />
         {esApp ? (
           // Cerrar sesión vuelve a la pantalla inicial de arquetipos.

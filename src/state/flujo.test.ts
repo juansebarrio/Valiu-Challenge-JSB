@@ -729,13 +729,13 @@ describe('sección 7 del brief · destino propio sin monto y transferencia por e
     expect(vistaPanel(precio)!.precio).toMatchObject({ estado: 'sinTdc', pagas: centavos(1500), recibe: centavos(1500) });
     const hecho = aplicar([...TOKEN, { tipo: 'volverInicio' }], precio);
     expect(hecho.operaciones[0]).toMatchObject({ clase: 'pago', estado: 'En proceso', pagas: centavos(1500), recibe: centavos(1500), tdc: null });
-    expect(vistaHome(hecho).cuentas.find((c) => c.id === 'usd')?.saldo).toBe(centavos(500));
+    expect(vistaHome(hecho).cuentas.items.find((c) => c.id === 'usd')?.saldo).toBe('500.00 USD');
   });
   it('Mayorista Caribe desde la Cuenta USD (turismo) también es transferencia', () => {
     const t = estadoInicial('faltante', {}, 'turismo');
     const e = aplicar([{ tipo: 'abrirPanel', orden: ordenDePago(pagoPorId(t, 't-p2')!) }, { tipo: 'elegirOrigen', origenId: 'usd' }, { tipo: 'irPaso', paso: 'revision' }, { tipo: 'pedirPrecio' }, ...TOKEN, { tipo: 'volverInicio' }], t);
     expect(e.operaciones[0]).toMatchObject({ estado: 'En proceso', tdc: null, pagas: centavos(2500) });
-    expect(vistaHome(e).cuentas.find((c) => c.id === 'usd')?.saldo).toBe(centavos(3500));
+    expect(vistaHome(e).cuentas.items.find((c) => c.id === 'usd')?.saldo).toBe('3,500.00 USD');
   });
   it('"Pagar a otro destinatario" va al paso Destino con la cuenta del cobro y "Volver" regresa', () => {
     const t = estadoInicial('faltante', {}, 'turismo');

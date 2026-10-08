@@ -2,14 +2,14 @@
 
 Generadas con Playwright (Chromium) con `scripts/presentacion.mjs` contra el build de producción del commit publicado (`npm run build && npm start`, nunca `next dev`), servido en localhost: producción (https://valiu-challenge.vercel.app) no es alcanzable desde el entorno donde corre el script (el proxy rechaza el túnel a `vercel.app`); el código es el mismo.
 
-Reglas aplicadas: PNG con `deviceScaleFactor` 2 (plan B a 1); frames de `/tablero/alta` a zoom 1 (ventana de 2700 px para que el tablero no escale) y recortes al frame, al componente o a la columna principal, sin títulos, notas ni fondo del tablero; `document.fonts.ready` esperado y Montserrat verificada en cada página; sin barras de scroll (ocultas por CSS), sin foco visible, sin toasts y sin el control de demo. Desde C-47 el pago va en una ventana centrada (`ModalOperar`): `d2-origen`, `d3-precio-token` y `d5-fecha-valor` la toman entera (920 × 596 px css), `d1-desglose` también (560 px css, una columna) y `d2-destino` del borde superior hasta Asia Packaging. Sus esquinas redondeadas (16 px css, 32 px en el PNG) quedaron transparentes con `scripts/esquinas.py`, las cuatro en las enteras y las dos de arriba en `d2-destino`: fuera de la ventana solo había fondo oscurecido del prototipo. El script también comprueba que en los frames 17 a 19 la tarjeta del recorrido esté junto a su objetivo y con el recorte (C-46), y que en el 19 el recorte rodee la tarjeta de tipo de cambio entera (C-53). Este README y `capturas-deck.zip` salen de `scripts/readme-capturas.py`, con las medidas reales de cada archivo.
+Reglas aplicadas: PNG con `deviceScaleFactor` 2 (plan B a 1); frames de `/tablero/alta` a zoom 1 (ventana de 2700 px para que el tablero no escale) y recortes al frame, al componente o a la columna principal, sin títulos, notas ni fondo del tablero; `document.fonts.ready` esperado y Montserrat verificada en cada página; sin barras de scroll (ocultas por CSS), sin foco visible, sin toasts y sin el control de demo. Desde C-47 el pago va en una ventana centrada (`ModalOperar`; desde C-56, a la derecha del menú, que en los frames de 1280 px lleva "Tus cuentas"): `d2-origen`, `d3-precio-token` y `d5-fecha-valor` la toman entera (920 × 596 px css), `d1-desglose` también (560 px css, una columna) y `d2-destino` del borde superior hasta Asia Packaging. Sus esquinas redondeadas (16 px css, 32 px en el PNG) quedaron transparentes con `scripts/esquinas.py`, las cuatro en las enteras y las dos de arriba en `d2-destino`: fuera de la ventana solo había fondo oscurecido del prototipo. El script también comprueba que en los frames 17 a 19 la tarjeta del recorrido esté junto a su objetivo y con el recorte (C-46), y que en el 19 el recorte rodee la tarjeta de tipo de cambio entera (C-53). Este README y `capturas-deck.zip` salen de `scripts/readme-capturas.py`, con las medidas reales de cada archivo.
 
 ## Deck (los 12 archivos de `capturas-deck.zip`)
 
 | # | Archivo | Qué muestra | De dónde sale | Slide | Medidas (px) |
 |---|---|---|---|---|---|
-| 1 | `inicio-importadora.png` | Inicio de la importadora: posición por divisa con el faltante de 1,000.00 USD, Cobraste hoy (+180,000.00 MXN), Movimientos y el tipo de cambio (USD/MXN 18.091183 / 18.032135, EUR/MXN 21.250000 / 21.100000) con "Operar con este par" desplegado. | Frame 01 de `/tablero/alta`, entero | Deck · inicio | 2560 × 3158 |
-| 2 | `turismo-cobro.png` | Inicio de la minorista de turismo con la ventana de pago en "¿Qué pagas con este cobro?" sobre el cobro de 95,000.00 MXN de Familia Ortega; el hotel (4,200.00 EUR) preseleccionado. | Frame S02 de `/tablero/alta`, entero | Deck · turismo | 2560 × 3158 |
+| 1 | `inicio-importadora.png` | Inicio de la importadora: posición por divisa con el faltante de 1,000.00 USD, Cobraste hoy (+180,000.00 MXN), Movimientos y el tipo de cambio (USD/MXN 18.091183 / 18.032135, EUR/MXN 21.250000 / 21.100000) con "Operar con este par" desplegado; en el menú lateral, "Tus cuentas" con los saldos (C-56). | Frame 01 de `/tablero/alta`, entero | Deck · inicio | 2560 × 2506 |
+| 2 | `turismo-cobro.png` | Inicio de la minorista de turismo con la ventana de pago en "¿Qué pagas con este cobro?" sobre el cobro de 95,000.00 MXN de Familia Ortega; el hotel (4,200.00 EUR) preseleccionado. La ventana se centra a la derecha del menú, donde se ve "Tus cuentas" (C-56). | Frame S02 de `/tablero/alta`, entero | Deck · turismo | 2560 × 2506 |
 | 3 | `d1-posicion.png` | Sección Posición por divisa: título y las tres tarjetas (USD faltan 1,000.00 con la proyección, MXN sobran 1,099,649.50, EUR sin pendientes); las filas con cantidad llevan el chevron que abre su desglose. | Frame 01 · `[data-tour="posicion"]` con 16 px de aire | Decisión 1 · posición por divisa | 2016 × 824 |
 | 4 | `d1-otras-divisas.png` | Tarjeta en pesos con un pago de 40,000.00 GBP sin cuenta en libras: "Pagos en otras divisas (1) ≈ −972,000.00" al indicativo de compra GBP/MXN 24.300000, la proyección de la semana y "Sobran ≈ 127,649.50". | Frame O1 (`?escenario=otras-divisas`) · TarjetaPosicion en pesos con 16 px de aire | Decisión 1 · posición por divisa | 682 × 754 |
 | 5 | `d1-desglose.png` | Desglose de "Pagos futuros (3)" de la tarjeta en dólares, en la ventana de pago (una columna, 560 px): "Pagos futuros en USD", 3 pagos · −3,000.00 USD; por fecha, Shenzhen Parts Co., Logística Pacífico y Asia Packaging con su referencia, su monto y "Pagar"; pie con "Cerrar". | Frame G1 · ModalOperar entera | Decisión 1 · posición por divisa | 1120 × 736 |
@@ -27,48 +27,48 @@ Todos los frames de `/tablero/alta` a escala 1 y `deviceScaleFactor` 1, uno por 
 
 | Archivo | Frame | Medidas (px) |
 |---|---|---|
-| `plan-b/01.png` | 01 | 1280 × 1579 |
-| `plan-b/02.png` | 02 | 1280 × 1579 |
-| `plan-b/03.png` | 03 | 1280 × 1579 |
-| `plan-b/04.png` | 04 | 1280 × 1579 |
-| `plan-b/05.png` | 05 | 1280 × 1579 |
-| `plan-b/06.png` | 06 | 1280 × 1529 |
-| `plan-b/07.png` | 07 | 1280 × 1595 |
-| `plan-b/03B.png` | 03B | 1280 × 1579 |
-| `plan-b/04B.png` | 04B | 1280 × 1579 |
-| `plan-b/06B.png` | 06B | 1280 × 1529 |
-| `plan-b/07B.png` | 07B | 1280 × 1595 |
-| `plan-b/C1.png` | C1 | 1280 × 1579 |
-| `plan-b/C2.png` | C2 | 1280 × 1301 |
-| `plan-b/C3.png` | C3 | 1280 × 1579 |
-| `plan-b/C4.png` | C4 | 1280 × 1579 |
-| `plan-b/O1.png` | O1 | 1280 × 1637 |
-| `plan-b/O2.png` | O2 | 1280 × 1637 |
-| `plan-b/O3.png` | O3 | 1280 × 1637 |
-| `plan-b/O4.png` | O4 | 1280 × 1637 |
-| `plan-b/G1.png` | G1 | 1280 × 1579 |
-| `plan-b/D1.png` | D1 | 1280 × 1579 |
-| `plan-b/D2.png` | D2 | 1280 × 1579 |
-| `plan-b/D3.png` | D3 | 1280 × 1595 |
-| `plan-b/A1.png` | A1 | 1280 × 1579 |
-| `plan-b/A2.png` | A2 | 1280 × 1579 |
-| `plan-b/A3.png` | A3 | 1280 × 1579 |
-| `plan-b/A4.png` | A4 | 1280 × 1645 |
-| `plan-b/S01.png` | S01 | 1280 × 1579 |
-| `plan-b/S02.png` | S02 | 1280 × 1579 |
-| `plan-b/S03.png` | S03 | 1280 × 1579 |
-| `plan-b/S04.png` | S04 | 1280 × 1579 |
-| `plan-b/S05.png` | S05 | 1280 × 1579 |
-| `plan-b/S06.png` | S06 | 1280 × 1579 |
-| `plan-b/S07.png` | S07 | 1280 × 1529 |
-| `plan-b/S08.png` | S08 | 1280 × 1595 |
-| `plan-b/S07H.png` | S07H | 1280 × 1529 |
-| `plan-b/S08H.png` | S08H | 1280 × 1595 |
-| `plan-b/N4.png` | N4 | 1280 × 1579 |
-| `plan-b/N5.png` | N5 | 1280 × 1579 |
-| `plan-b/N6.png` | N6 | 1280 × 1579 |
-| `plan-b/17.png` | 17 | 1280 × 1579 |
-| `plan-b/18.png` | 18 | 1280 × 1579 |
-| `plan-b/19.png` | 19 | 1280 × 1579 |
+| `plan-b/01.png` | 01 | 1280 × 1253 |
+| `plan-b/02.png` | 02 | 1280 × 1253 |
+| `plan-b/03.png` | 03 | 1280 × 1253 |
+| `plan-b/04.png` | 04 | 1280 × 1253 |
+| `plan-b/05.png` | 05 | 1280 × 1253 |
+| `plan-b/06.png` | 06 | 1280 × 1203 |
+| `plan-b/07.png` | 07 | 1280 × 1269 |
+| `plan-b/03B.png` | 03B | 1280 × 1253 |
+| `plan-b/04B.png` | 04B | 1280 × 1253 |
+| `plan-b/06B.png` | 06B | 1280 × 1203 |
+| `plan-b/07B.png` | 07B | 1280 × 1269 |
+| `plan-b/C1.png` | C1 | 1280 × 1253 |
+| `plan-b/C2.png` | C2 | 1280 × 1167 |
+| `plan-b/C3.png` | C3 | 1280 × 1253 |
+| `plan-b/C4.png` | C4 | 1280 × 1253 |
+| `plan-b/O1.png` | O1 | 1280 × 1311 |
+| `plan-b/O2.png` | O2 | 1280 × 1311 |
+| `plan-b/O3.png` | O3 | 1280 × 1311 |
+| `plan-b/O4.png` | O4 | 1280 × 1311 |
+| `plan-b/G1.png` | G1 | 1280 × 1253 |
+| `plan-b/D1.png` | D1 | 1280 × 1253 |
+| `plan-b/D2.png` | D2 | 1280 × 1253 |
+| `plan-b/D3.png` | D3 | 1280 × 1269 |
+| `plan-b/A1.png` | A1 | 1280 × 1253 |
+| `plan-b/A2.png` | A2 | 1280 × 1253 |
+| `plan-b/A3.png` | A3 | 1280 × 1253 |
+| `plan-b/A4.png` | A4 | 1280 × 1319 |
+| `plan-b/S01.png` | S01 | 1280 × 1253 |
+| `plan-b/S02.png` | S02 | 1280 × 1253 |
+| `plan-b/S03.png` | S03 | 1280 × 1253 |
+| `plan-b/S04.png` | S04 | 1280 × 1253 |
+| `plan-b/S05.png` | S05 | 1280 × 1253 |
+| `plan-b/S06.png` | S06 | 1280 × 1253 |
+| `plan-b/S07.png` | S07 | 1280 × 1203 |
+| `plan-b/S08.png` | S08 | 1280 × 1269 |
+| `plan-b/S07H.png` | S07H | 1280 × 1203 |
+| `plan-b/S08H.png` | S08H | 1280 × 1269 |
+| `plan-b/N4.png` | N4 | 1280 × 1253 |
+| `plan-b/N5.png` | N5 | 1280 × 1253 |
+| `plan-b/N6.png` | N6 | 1280 × 1253 |
+| `plan-b/17.png` | 17 | 1280 × 1253 |
+| `plan-b/18.png` | 18 | 1280 × 1253 |
+| `plan-b/19.png` | 19 | 1280 × 1253 |
 | `plan-b/Estados.png` | Estados | 2636 × 773 |
 

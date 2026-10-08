@@ -61,7 +61,7 @@ Parámetros: `?escenario=faltante|resuelta|pactada|sin-saldo|mercado-cerrado|otr
 ### Etapa 7 · Pendientes del prototipo
 - Alta de destinatario ("Agregar destinatario" en el paso Destino, en Destinatarios y en el clásico): nombre, divisa, banco y cuenta o CLABE; desde el paso Destino, "Guardar y pagar" sigue con el pago.
 - Secciones del menú como vistas reales: Control de operaciones (pactadas, en proceso y realizadas, con detalle), Destinatarios (cuenta, pendientes, "Pagar" sin monto) y Monitoreo de divisas (pares con sus dos lados, el ejecutable y la tendencia). "Operaciones recientes" del clásico lleva a Control. (Desde C-52 quedan en el código sin entrada.)
-- Campana con notificaciones derivadas del estado; "Ver todas mis cuentas" abre el panel lateral de cuentas con CLABE, "Pasar dinero" y "Ver datos para depositar".
+- Campana con notificaciones derivadas del estado; "Ver todas mis cuentas" abre el panel lateral de cuentas con CLABE, "Pasar dinero" y "Ver datos para depositar" (desde C-56, desde "Tus cuentas" en el menú lateral).
 - Transferencia con saldo insuficiente: la cuenta queda deshabilitada ("No alcanza el saldo") y la revisión bloquea si el monto escrito supera el saldo.
 - `?seccion=control|destinatarios|monitoreo`; frames N1–N6 en `/tablero/alta` (desde C-52 esas secciones caen en Inicio y quedan N4–N6).
 
@@ -97,6 +97,11 @@ Del check-in con Mateo: no quieren conservar Comprar / Vender / Transferir; el t
 2. Pagos en divisas sin cuenta: cuentan contra la cuenta de fondeo al indicativo de compra ("Pagos en otras divisas (n) ≈"), se pagan con tipo de cambio desde ahí y, pactados, pasan exactos a "Pactadas por liquidar"; `?escenario=otras-divisas` (C-54).
 3. Desglose: las filas con cantidad de la posición abren en la ventana de pago lo que las compone, con "Pagar" en los pendientes (C-55).
 
+### Etapa 12 · Cuentas al menú lateral (C-56)
+Decisión de Juanse: el módulo Cuentas de la columna derecha quedaba al fondo del scroll, debajo del cotizador.
+1. "Tus cuentas" en el menú lateral, debajo de las secciones y arriba de "Cerrar sesión": nombre, saldo de la sesión y máscara de cada cuenta; cada fila abre el panel "Tus cuentas" con esa cuenta primero y el foco en ella, y "Ver todas mis cuentas" el mismo panel. Con el menú colapsado, un ícono que abre el panel.
+2. Sale el módulo Cuentas: la columna derecha queda solo con la tarjeta de tipo de cambio. La ventana de pago se centra a la derecha del menú cuando entra (shell de 1208 px o más), para no tapar el bloque.
+
 ## 3. Estado actual por área
 
 ### Flujos que funcionan de punta a punta
@@ -104,7 +109,7 @@ Del check-in con Mateo: no quieren conservar Comprar / Vender / Transferir; el t
 - Pago desde la cuenta de la misma divisa (transferencia sin TDC, un solo monto: "Envías").
 - Compra o venta a cuenta propia desde "Comprar X", desde el "Pagar" del encabezado o desde "Pagar a otro destinatario", con montos "Recibe" / "Pagas" editables.
 - Entrada desde el cobro ("Usar para pagar"): paso "¿Qué pagas con este cobro?" en los dos arquetipos.
-- Detalle de movimientos, cargar pagos, comprobantes descargables, lista completa de movimientos ("Ver todos los movimientos"), alta de destinatario, notificaciones y panel de cuentas; el menú solo navega a Inicio (C-52).
+- Detalle de movimientos, cargar pagos, comprobantes descargables, lista completa de movimientos ("Ver todos los movimientos"), alta de destinatario, notificaciones y panel de cuentas, que se abre desde "Tus cuentas" en el menú lateral (C-56); el menú solo navega a Inicio (C-52).
 - Cotizador en la tarjeta de tipo de cambio (C-53): compra o venta a tu cuenta, o pago a un destinatario en esa divisa, desde el precio; error de saldo y mercado cerrado por escenario.
 - Pagos cargados en divisas sin cuenta, pagados desde la cuenta de fondeo con Hoy o con fecha valor (C-54), y el desglose de cada fila de la posición con "Pagar" (C-55).
 - Onboarding, modo demo (con la tecla P), escenarios por URL, TDC en vivo.
@@ -115,12 +120,12 @@ Del check-in con Mateo: no quieren conservar Comprar / Vender / Transferir; el t
 - `src/state/estado.ts` (reducer puro), `derivados.ts`, `vistas.ts` (selectores), `escenarios.ts` (escenarios y frames).
 
 ### Calidad
-- 168 tests de Vitest (motor, posición, pagos en otras divisas, comisión, cotizador, desglose y el flujo frame por frame con los números del brief), `npm run lint`, `tsc --noEmit` y `next build` limpios.
-- Recorridos con Playwright del flujo principal, movimientos, arquetipos, turismo, sección 7, la ventana de pago (C-47) y el precio en vivo, la comisión, las fechas y el menú (C-48 a C-52), y el cotizador, los pagos en otras divisas y el desglose con teclado (C-53 a C-55), a 1024 × 700 y 1280 × 800, con cero errores de consola; capturas en `docs/design/verificacion/` y de los prototipos en `docs/design/frames/`.
+- 175 tests de Vitest (motor, posición, pagos en otras divisas, comisión, cotizador, desglose, "Tus cuentas" en el menú y el flujo frame por frame con los números del brief), `npm run lint`, `tsc --noEmit` y `next build` limpios.
+- Recorridos con Playwright del flujo principal, movimientos, arquetipos, turismo, sección 7, la ventana de pago (C-47) y el precio en vivo, la comisión, las fechas y el menú (C-48 a C-52), y el cotizador, los pagos en otras divisas y el desglose con teclado (C-53 a C-55), a 1024 × 700 y 1280 × 800, y "Tus cuentas" en el menú lateral con teclado a 1024 × 700, 1100 × 700, 1280 × 800 y 1440 × 900 (C-56), con cero errores de consola; capturas en `docs/design/verificacion/` y de los prototipos en `docs/design/frames/`.
 - Accesibilidad: diálogo con foco atrapado y Esc, radiogroups con flechas (saltan deshabilitadas), cuenta regresiva con aria-live, estados siempre en badge con texto, foco visible, es-MX con tuteo.
 
 ### Documentación
-- `README.md` (cómo correr, rutas, parámetros, estructura, decisiones), `docs/decisiones.md` (C-01 a C-55), `docs/diferencias-cc-vs-diseno.md` (turismo, sección 7, ventana de pago, check-in y C-53 a C-55), `docs/handoff/` y `docs/handoff-turismo/` (paquetes de diseño tal como llegaron).
+- `README.md` (cómo correr, rutas, parámetros, estructura, decisiones), `docs/decisiones.md` (C-01 a C-56), `docs/diferencias-cc-vs-diseno.md` (turismo, sección 7, ventana de pago, check-in, C-53 a C-55 y C-56), `docs/handoff/` y `docs/handoff-turismo/` (paquetes de diseño tal como llegaron).
 
 ## 4. Pendiente y límites conocidos
 
